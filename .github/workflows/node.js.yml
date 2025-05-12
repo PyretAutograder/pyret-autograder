@@ -17,4 +17,4 @@ jobs:
           node-version: 22.x
           cache: "npm"
       - run: npm ci
-      - run: npx pyret main.arr --builtin-js-dir pyret/src/js/trove/ -q --checks none
+      - run: npm run it
