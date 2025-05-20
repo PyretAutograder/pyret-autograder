@@ -114,9 +114,11 @@ multiple autograders doesn't end up being supported)
 files should be able to run individually
 
 
-two types of nodes, test, guard
+two types of nodes: test and guard
 - guard can continue or block
 - test can run or skipped
+
+(how to integrate artifacts into this naming?)
 
 
 ```arr
