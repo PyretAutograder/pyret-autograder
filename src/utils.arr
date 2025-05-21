@@ -7,8 +7,8 @@ import lists as L
 
 
 fun unique<T>(lst :: List<T>) -> List<T>:
-  fun helper(remaining, seen):
-    cases (List) remaining:
+  fun helper(remaining :: List<T>, seen :: List<T>):
+    cases (List<T>) remaining:
       | empty => seen
       | link(first, rest) =>
         if seen.member(first):
