@@ -53,6 +53,18 @@ sharing:
     | skipped(_) => true
     | internal-error(_) => true
     end
+  end,
+
+  # id: id of the node which produced this outcome
+  method handle-skip(self, id :: Id) -> Option<Outcome<BlockReason, RanResult, Error>>:
+    cases (Outcome) self:
+    | block(_) => some(id)
+    | proceed => none
+    | done(_) => none
+    | artifact(_) => none
+    | skipped(shadow id) => some(id)
+    | internal-error(_) => some(id)
+    end
   end
 end
 
@@ -72,8 +84,8 @@ where:
   valid-dag(
     [list:
       node("a", [list:], run),
-      node("b", [list:"a"], run),
-      node("c", [list:"a", "b"], run)])
+      node("b", [list: "a"], run),
+      node("c", [list: "a", "b"], run)])
     is true
 end
 
@@ -101,19 +113,19 @@ fun should-skip(results :: StrDictOut, deps :: List<Id>) -> Option<Id>:
     cases (Option) results.get(id):
     | none => raise("oops")
     | some(outcome) => 
-      if outcome.should-skip():
-        some(id)
-      else:
-        should-skip(results, rst)
+      cases (Option) outcome.handle-skip(id):
+      | none => should-skip(results, rst)
+      | some(responsible-id) => some(responsible-id)
       end
     end
   end
 end
-fun execute(dag :: DAG<ExBlockReason, Number, String>) -> SD.StringDict<Outcome<ExBlockReason, Number, String>>:
+
+fun execute<B, R, E>(dag :: DAG<B, R, E>) -> SD.StringDict<Outcome<B, R, E>>:
   doc: "assume topo sort"
   
-  fun help(shadow dag, acc):
-    cases (List) dag:
+  fun help(shadow dag :: List<Node<B, R, E>>, acc :: SD.StringDict<Outcome<B, R, E>>) -> SD.StringDict<Outcome<B, R, E>>:
+    cases (List<Node<B, R, E>>) dag:
     | empty => acc
     | link(shadow node, rst) => 
       help(rst, 
