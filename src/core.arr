@@ -12,6 +12,8 @@ provide:
   type Id,
   type Runner,
   type Outcome,
+
+  execute,
 end
 
 type Id = String
@@ -77,7 +79,7 @@ fun valid-dag<BlockReason, RanResult, Error>(
 
   dict = list-to-stringdict(dag.map(lam(n): {n.id; n.deps} end))
   
-  fun has-cycle-from(id, path-set):
+  fun has-cycle-from(id :: Id, path-set :: S.Set<Id>):
     dict.get-value(id).any(lam(dep):
       path-set.member(dep) or
       has-cycle-from(dep, path-set.add(dep))
@@ -124,8 +126,53 @@ type DAG<BlockReason, RanResult, Error> =
 fun topological-sort<BlockReason, RanResult, Error>(
   dag :: DAG<BlockReason, RanResult, Error>
 ) -> DAG<BlockReason, RanResult, Error>:
-  doc: ""
-  ...
+  doc: ```Return a new list whose order guarantees that every node appears only
+          after all of its dependencies.```
+
+  fun help(
+    remaining :: List<Node<BlockReason, RanResult, Error>>,
+    sorted :: List<Node<BlockReason, RanResult, Error>>,
+    visited :: List<Id>
+  ) -> List<Node<BlockReason, RanResult, Error>>:
+    cases (List<Node<BlockReason, RanResult, Error>>) remaining:
+    | empty => sorted
+    | else => 
+      block:
+        ready = remaining.filter(lam(n): n.deps.all(visited.member(_)) end)
+        rest = remaining.filter(lam(n): not(n.deps.all(visited.member(_))) end)
+        help(rest, sorted + ready, visited + ready.map(_.id))
+      end
+    end
+  end
+
+  help(dag, [list:], [list:])
+where:
+
+  run = lam(): proceed end
+  ids = lam(dag): dag.map(_.id) end
+
+  ids(topological-sort([list:])) is [list:]
+
+  single = [list: node("x", [list:], run)]
+  ids(topological-sort(single)) is [list: "x"]
+
+  chain = [list:
+            node("a", [list:], run),
+            node("b", [list: "a"], run),
+            node("c", [list: "b"], run)]
+  ids(topological-sort(chain)) is [list: "a", "b", "c"]
+
+  rev-chain = [list:
+                node("c", [list: "b"], run),
+                node("b", [list: "a"], run),
+                node("a", [list:], run)]
+  ids(topological-sort(rev-chain)) is [list: "a", "b", "c"]
+
+  branching = [list:
+                node("c", [list: "a"], run),
+                node("b", [list: "a"], run),
+                node("a", [list:], run)]
+  ids(topological-sort(branching)) is [list: "a", "c", "b"]
 end
 
 
@@ -146,7 +193,7 @@ fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: Lis
 end
 
 fun execute<B, R, E>(dag :: DAG<B, R, E>) -> SD.StringDict<Outcome<B, R, E>>:
-  doc: "assume topo sort"
+  doc: "executes the dag, propogating outcomes"
   
   fun help(shadow dag :: List<Node<B, R, E>>, acc :: SD.StringDict<Outcome<B, R, E>>) -> SD.StringDict<Outcome<B, R, E>>:
     cases (List<Node<B, R, E>>) dag:
@@ -160,7 +207,7 @@ fun execute<B, R, E>(dag :: DAG<B, R, E>) -> SD.StringDict<Outcome<B, R, E>>:
     end
   end
   
-  help(dag, [SD.string-dict:])
+  help(topological-sort(dag), [SD.string-dict:])
 where: 
   execute(empty) is [SD.string-dict:]
 
