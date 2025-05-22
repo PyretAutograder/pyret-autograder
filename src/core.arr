@@ -70,15 +70,23 @@ end
 
 fun valid-dag<BlockReason, RanResult, Error>(
   dag :: List<Node<BlockReason, RanResult, Error>>
-) -> Boolean:
-  block:
-    ids = dag.map(_.id)
+) -> Boolean block:
+  ids = dag.map(_.id)
+  no-dups = lam(): not(has-duplicates(ids)) end
+  all-deps-exist = lam(): dag.all(lam(x): x.deps.all(ids.member(_)) end) end
 
-    # TODO: make sure that there are no cycles, etc
-
-    not(has-duplicates(ids)) and
-    dag.all(lam(x): x.deps.all(ids.member(_)) end)
+  dict = list-to-stringdict(dag.map(lam(n): {n.id; n.deps} end))
+  
+  fun has-cycle-from(id, path-set):
+    dict.get-value(id).any(lam(dep):
+      path-set.member(dep) or
+      has-cycle-from(dep, path-set.add(dep))
+    end)
   end
+  
+  no-cycles = lam(): not(ids.any(lam(id): has-cycle-from(id, [S.list-set: id]) end)) end
+
+  no-dups() and all-deps-exist() and no-cycles()
 where:
   run = lam(): done(1) end
   valid-dag(
@@ -87,6 +95,27 @@ where:
       node("b", [list: "a"], run),
       node("c", [list: "a", "b"], run)])
     is true
+  valid-dag(
+    [list: 
+      node("block_guard", [list:], lam(): block("block reason") end),
+      node("has_dep1", [list: "block_guard"], lam(): done(1) end),
+      node("has_dep2", [list: "has_dep1"], lam(): done(2) end)]) 
+    is true
+  valid-dag(
+    [list:
+      node("x", [list: "y"], run),
+      node("y", [list:], run)])
+    is true
+  valid-dag(
+    [list:
+      node("x", [list: "y"], run),
+      node("z", [list:], run)])
+    is false
+  valid-dag(
+    [list:
+      node("p", [list: "q"], run),
+      node("q", [list: "p"], run)])
+  is false
 end
 
 type DAG<BlockReason, RanResult, Error> = 
@@ -109,13 +138,9 @@ fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: Lis
   cases (List) deps:
   | empty => none
   | link(id, rst) =>
-    cases (Option) results.get(id):
-    | none => raise("oops")
-    | some(outcome) => 
-      cases (Option) outcome.handle-skip(id):
-      | none => should-skip(results, rst)
-      | some(responsible-id) => some(responsible-id)
-      end
+    cases (Option) results.get-value(id).handle-skip(id):
+    | none => should-skip(results, rst)
+    | some(responsible-id) => some(responsible-id)
     end
   end
 end

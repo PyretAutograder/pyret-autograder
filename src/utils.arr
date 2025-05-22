@@ -4,6 +4,7 @@ import string-dict as SD
 provide:
   unique,
   has-duplicates,
+  list-to-stringdict,
 end
 
 fun unique<T>(lst :: List<T>) -> List<T>:
