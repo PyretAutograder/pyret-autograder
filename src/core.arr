@@ -56,7 +56,7 @@ sharing:
   end,
 
   # id: id of the node which produced this outcome
-  method handle-skip(self, id :: Id) -> Option<Outcome<BlockReason, RanResult, Error>>:
+  method handle-skip(self, id :: Id) -> Option<Id>:
     cases (Outcome) self:
     | block(_) => some(id)
     | proceed => none
@@ -105,8 +105,7 @@ data ExBlockReason:
 end
 
 
-type StrDictOut = SD.StringDict<Outcome<ExBlockReason, Number, String>>
-fun should-skip(results :: StrDictOut, deps :: List<Id>) -> Option<Id>:
+fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: List<Id>) -> Option<Id>:
   cases (List) deps:
   | empty => none
   | link(id, rst) =>
