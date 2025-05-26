@@ -7,12 +7,15 @@ import parse-pyret as P
 import string-dict as SD
 import runtime-lib as R
 import sets as S
-import file("./ast-util.arr") as U
-import file("./resolve-scope.arr") as RN
-import file("./compile-structs.arr") as CS
-import file("./compile-lib.arr") as CL
-import file("./type-structs.arr") as TS
-import file("./ast-util.arr") as AU
+import file("pyret/src/arr/compiler/ast-util.arr") as U
+import file("pyret/src/arr/compiler/resolve-scope.arr") as RN
+import file("pyret/src/arr/compiler/compile-structs.arr") as CS
+# import file("pyret/src/arr/compiler/compile-lib.arr") as CL
+import file("my-compile-lib.arr") as CL
+import file("pyret/src/arr/compiler/type-structs.arr") as TS
+import file("pyret/src/arr/compiler/ast-util.arr") as AU
+
+include file("./profiling.arr")
 
 fun make-provide-for-repl(p :: A.Program):
   cases(A.Program) p:
@@ -99,12 +102,22 @@ fun make-repl<a>(
   end
 
   fun run-interaction(locator :: CL.Locator) block:
+    time-ctx = init-time()
+
     worklist = CL.compile-worklist-known-modules(finder, locator, compile-context, current-modules)
+    worklist-time = time(time-ctx)
+
     compiled = CL.compile-program-with(worklist, current-modules, current-compile-options)
+    compiled-time = time(time-ctx)
+
     for SD.each-key-now(k from compiled.modules) block:
       current-modules.set-now(k, compiled.modules.get-value-now(k))
     end
+    current-modules-time = time(time-ctx)
+
     result = CL.run-program(worklist, compiled, current-realm, runtime, current-compile-options)
+    result-time = time(time-ctx)
+
     cases(E.Either) result:
       | right(answer) =>
         when L.is-success-result(answer):
@@ -113,6 +126,12 @@ fun make-repl<a>(
       | left(err) =>
         nothing
     end
+    cases-time = time(time-ctx)
+
+    spy "run-interaction":
+      worklist-time, compiled-time, current-modules-time, result-time, cases-time
+    end
+
     result
   end
 

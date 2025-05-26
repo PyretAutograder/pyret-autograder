@@ -11,20 +11,35 @@ import sets as S
 import sha as SHA
 import srcloc as Loc
 import string-dict as SD
-import file("compile-structs.arr") as CS
-import file("concat-lists.arr") as C
-import file("gensym.arr") as G
-import file("js-of-pyret.arr") as JSP
-import file("js-ast.arr") as J
-import file("ast-util.arr") as AU
-import file("well-formed.arr") as W
-import file("desugar.arr") as D
-import file("desugar-post-tc.arr") as DP
-import file("type-check.arr") as T
-import file("desugar-check.arr") as CH
-import file("resolve-scope.arr") as RS
+import file("pyret/src/arr/compiler/compile-structs.arr") as CS
+import file("pyret/src/arr/compiler/concat-lists.arr") as C
+import file("pyret/src/arr/compiler/gensym.arr") as G
+import file("pyret/src/arr/compiler/js-of-pyret.arr") as JSP
+import file("pyret/src/arr/compiler/js-ast.arr") as J
+import file("pyret/src/arr/compiler/ast-util.arr") as AU
+import file("pyret/src/arr/compiler/well-formed.arr") as W
+import file("pyret/src/arr/compiler/desugar.arr") as D
+import file("pyret/src/arr/compiler/desugar-post-tc.arr") as DP
+import file("pyret/src/arr/compiler/type-check.arr") as T
+import file("pyret/src/arr/compiler/desugar-check.arr") as CH
+import file("pyret/src/arr/compiler/resolve-scope.arr") as RS
 
-data CompilationPhase:
+include file("./profiling.arr")
+
+import file("pyret/src/arr/compiler/compile-lib.arr") as CL
+include from CL:
+  data CompilationPhase,
+  data PyretCode,
+  data Located
+end
+
+provide from CL:
+  data CompilationPhase,
+  data PyretCode,
+  data Located
+end
+
+#| data CompilationPhase:
   | start(time :: Number)
   | phase(name :: String, result :: Any, time :: Number, prev :: CompilationPhase)
 sharing:
@@ -40,7 +55,7 @@ sharing:
     end
     help(self, empty)
   end
-end
+end |#
 
 j-fun = J.j-fun
 j-var = J.j-var
@@ -98,10 +113,10 @@ mtd = [SD.string-dict:]
 
 type URI = String
 
-data PyretCode:
+#| data PyretCode:
   | pyret-string(s :: String)
   | pyret-ast(ast :: A.Program)
-end
+end |#
 
 type ModuleResult = Any
 
@@ -171,9 +186,9 @@ fun string-locator(uri :: URI, s :: String):
   }
 end
 
-data Located<a>:
+#| data Located<a>:
   | located(locator :: Locator, context :: a)
-end
+end |#
 
 fun get-ast(p :: PyretCode, uri :: URI):
   cases(PyretCode) p:
@@ -301,25 +316,43 @@ fun compile-program-with(worklist :: List<ToCompile>, modules, options) -> Compi
   loadables = for map(w from worklist):
     uri = w.locator.uri()
     if not(cache.has-key-now(uri)) block:
+      time-ctx = init-time()
       provide-map = dict-map(
           w.dependency-map,
           lam(_, v): v.uri() end
       )
+      provide-map-time = time(time-ctx)
       options.before-compile(w.locator)
+      options-time = time(time-ctx)
       {loadable :: Loadable; trace :: List} = compile-module(w.locator, provide-map, cache, options)
+      compile-module-time = time(time-ctx)
       # I feel like here we want to generate two copies of the loadable:
       # - One local for calling on-compile with and serializing
       # - One canonicalized for the local cache
       cache.set-now(uri, loadable)
+      update-cache-time = time(time-ctx)
       local-loadable = cases(Loadable) loadable:
         | module-as-string(provides, env, post-env, result) =>
           module-as-string(AU.localize-provides(provides, env), env, post-env, result)
       end
+      local-loadable-time = time(time-ctx)
       # allow on-compile to return a new loadable
-      options.on-compile(w.locator, local-loadable, trace)
+      res = options.on-compile(w.locator, local-loadable, trace)
+      on-compile-time = time(time-ctx)
+      spy "compile-program-with: map (not cached)": 
+        provide-map-time, options-time, compile-module-time, update-cache-time,
+        local-loadable-time, on-compile-time
+      end
+      res
     else:
-      cache.get-value-now(uri)
+      time-ctx = init-time()
+      res = cache.get-value-now(uri)
+      spy "compile-program-with: map (cached)": 
+        get-cache: time(time-ctx)
+      end
+      res
     end
+
   end
   { loadables: loadables, modules: cache }
 end
