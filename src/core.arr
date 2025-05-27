@@ -37,7 +37,7 @@ data Outcome<BlockReason, RanResult, Error>:
   | block(reason :: BlockReason)
   # node has no effect 
   | proceed
- 
+
   | done(res :: RanResult)
   # path: the path of the artifacts 
   | artifact(path :: String)
@@ -50,12 +50,12 @@ sharing:
   # id: id of the node which produced this outcome
   method handle-skip(self, id :: Id) -> Option<Id>:
     cases (Outcome) self:
-    | block(_) => some(id)
-    | proceed => none
-    | done(_) => none
-    | artifact(_) => none
-    | skipped(shadow id) => some(id)
-    | internal-error(_) => some(id)
+      | block(_) => some(id)
+      | proceed => none
+      | done(_) => none
+      | artifact(_) => none
+      | skipped(shadow id) => some(id)
+      | internal-error(_) => some(id)
     end
   end
 end
@@ -125,13 +125,11 @@ fun topological-sort<BlockReason, RanResult, Error, Metadata>(
     visited :: List<Id>
   ) -> List<Node<BlockReason, RanResult, Error, Metadata>>:
     cases (List<Node<BlockReason, RanResult, Error, Metadata>>) remaining:
-    | empty => sorted
-    | else => 
-      block:
+      | empty => sorted
+      | else =>
         ready = remaining.filter(lam(n): n.deps.all(visited.member(_)) end)
         rest = remaining.filter(lam(n): not(n.deps.all(visited.member(_))) end)
         help(rest, sorted + ready, visited + ready.map(_.id))
-      end
     end
   end
 
@@ -166,18 +164,18 @@ end
 
 
 data ExBlockReason:
-| invalid
+  | invalid
 end
 
 
 fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: List<Id>) -> Option<Id>:
   cases (List) deps:
-  | empty => none
-  | link(id, rst) =>
-    cases (Option) results.get-value(id).handle-skip(id):
-    | none => should-skip(results, rst)
-    | some(responsible-id) => some(responsible-id)
-    end
+    | empty => none
+    | link(id, rst) =>
+      cases (Option) results.get-value(id).handle-skip(id):
+        | none => should-skip(results, rst)
+        | some(responsible-id) => some(responsible-id)
+      end
   end
 end
 
@@ -186,13 +184,13 @@ fun execute<B, R, E, M>(dag :: DAG<B, R, E, M>) -> SD.StringDict<Outcome<B, R, E
   
   fun help(shadow dag :: List<Node<B, R, E, M>>, acc :: SD.StringDict<Outcome<B, R, E>>) -> SD.StringDict<Outcome<B, R, E>>:
     cases (List<Node<B, R, E, M>>) dag:
-    | empty => acc
-    | link(shadow node, rst) => 
-      help(rst, 
-        cases (Option) should-skip(acc, node.deps):
-        | none => acc.set(node.id, node.run())
-        | some(blocking-id) => acc.set(node.id, skipped(blocking-id))
-        end)
+      | empty => acc
+      | link(shadow node, rst) => 
+        help(rst, 
+          cases (Option) should-skip(acc, node.deps):
+            | none => acc.set(node.id, node.run())
+            | some(blocking-id) => acc.set(node.id, skipped(blocking-id))
+          end)
     end
   end
   
