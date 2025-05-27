@@ -1,6 +1,6 @@
 provide:
-    run-with-alternate-impl,
-    run-extra-check
+  run-with-alternate-impl,
+  run-extra-check
 end
 
 import ast as A
@@ -24,7 +24,7 @@ import file("./jsonutils.arr") as JU
 context = {
   current-load-path: Path.resolve("./"),
   cache-base-dir: Path.resolve("./.pyret/compiled"),
-  compiled-read-only-dirs: link("node_modules/pyret-npm/pyret-lang/build/phaseA/lib-compiled", empty),
+  compiled-read-only-dirs: link("pyret-npm/pyret-lang/build/phaseA/lib-compiled", empty),
   url-file-mode: CS.all-remote
 }
 repl = R.make-repl(RT.make-runtime(), [SD.mutable-string-dict:], LL.empty-realm(), context, lam(): CLI.module-finder end)

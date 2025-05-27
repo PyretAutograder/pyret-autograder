@@ -1,16 +1,9 @@
 {
   "name": "pyret-autograder",
   "version": "0.0.1",
-  "description": "The best Pyret autograder (not chaff)",
-  "main": "main.jarr",
-  "directories": {
-    "example": "examples"
-  },
-  "scripts": {
-    "it": "npx pyret main.arr --builtin-js-dir pyret/src/js/trove/ -q --checks none"
-  },
+  "description": "Pyret autograder.",
   "author": "",
-  "license": "ISC",
+  "license": "LGPL-3.0-or-later",
   "devDependencies": {
     "pyret-lang": "github:brownplt/pyret-lang#horizon",
     "pyret-npm": "latest"
