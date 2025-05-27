@@ -3,7 +3,18 @@ include file("utils.arr")
 import string-dict as SD
 
 provide:
+  data GradingMetadata,
+  type Graders,
   type GradingRunner,
+  type GradingOutcome,
+  data InternalError,
+  data BlockReason,
+  data DefType,
+  data WrongDefReason,
+  data GradingResult,
+  data AggregateOutput,
+  data AggregateResult,
+  grade
 end
 
 data GradingMetadata:
