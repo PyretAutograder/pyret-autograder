@@ -19,7 +19,7 @@ fun unique<T>(lst :: List<T>) -> List<T>:
         end
     end
   end
-  helper(lst, [list:]).reverse()
+  helper(lst, [list:])
 end
 
 fun has-duplicates<T>(lst :: List<T>) -> Boolean:
