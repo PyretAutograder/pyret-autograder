@@ -4,7 +4,7 @@
   "description": "Pyret autograder.",
   "author": "",
   "license": "LGPL-3.0-or-later",
-  "devDependencies": {
+  "dependencies": {
     "pyret-lang": "github:brownplt/pyret-lang#horizon",
     "pyret-npm": "latest"
   }
