@@ -1,8 +1,8 @@
-include file("utils.arr")
-import file("core.arr") as C
-import file("grading.arr") as G
+include file("../utils.arr")
+import file("../core.arr") as C
+import file("../grading.arr") as G
 # TODO: proper implementation
-import file("../poc/runners.arr") as R
+import file("../../poc/runners.arr") as R
 import lists as L
 
 provide:

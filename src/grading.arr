@@ -1,5 +1,5 @@
-include file("core.arr")
-include file("utils.arr")
+include file("./core.arr")
+include file("./utils.arr")
 import string-dict as SD
 import error as ERR
 
@@ -42,7 +42,7 @@ end
 
 data BlockReason:
   # the following are both the result of well-formed
-  | cannot-parse(reason :: ERR.ParseError) 
+  | cannot-parse(error :: ERR.ParseError) 
   | not-wf(message :: String)
 
   | br-missing-def(typ :: DefType, name :: String)
