@@ -18,9 +18,10 @@ provide:
   grade
 end
 
+# FIXME: artifacts will need more metadata
 data GradingMetadata:
   | invisible
-  | visible(max_score :: Number)
+  | visible(max-score :: Number)
 sharing:
   method is-visible(self):
     cases (GradingMetadata) self:
@@ -86,13 +87,15 @@ data AggregateResult:
   | aggregate-skipped(
       name :: String,
       student-output :: AggregateOutput,
-      instructor-output :: Option<AggregateOutput>)
+      instructor-output :: Option<AggregateOutput>,
+      max-score :: Number)
   | aggregate-test(
       name :: String,
       student-output :: AggregateOutput,
       instructor-output :: Option<AggregateOutput>,
       score :: Number,
       max-score :: Number)
+  # FIXME: we need a way to indicate an artifact failure / skip
   | aggregate-artifact(
       name :: String,
       path :: String,
@@ -118,9 +121,10 @@ fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
   # try match the id orderting provided by the graders
   for fold(acc :: List<{Id; AggregateResult;}> from [list:], 
            key :: Id from outcomes.keys().to-list()):
-    if meta-dict.get-value(key).is-visible() block:
+    metadata = meta-dict.get-value(key)
+    if metadata.is-visible() block:
       outcome = outcomes.get-value(key)
-      
+
       agg-res = cases (GradingOutcome) outcome:
         | block(reason) => none
         | proceed => none
@@ -135,7 +139,8 @@ fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
               "test skipped because of " + id + ". Gave reason of " +
               grading-outcome-explanation-to-string(outcomes.get-value(id)).or-else("<no reason>") + "."
             ),
-            none
+            none,
+            metadata.max-score # FIXME: this is brittle
           ))
         | internal-error(err) =>
           some(aggregate-skipped(
@@ -144,7 +149,8 @@ fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
               "an internal error occured while running " + key + ". Error: " +
               err.to-string() + "."
             ),
-            none
+            none,
+            metadata.max-score # FIXME: this is brittle
           ))
       end
       

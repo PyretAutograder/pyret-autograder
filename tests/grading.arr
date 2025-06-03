@@ -14,7 +14,8 @@ check "grading: simple":
       aggregate-skipped(
         "test_1",
         output-text("test skipped because of guard_1. Gave reason of something caused block :(."),
-        none)
+        none,
+        10)
     }]
 end
 
