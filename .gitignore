@@ -1,7 +1,7 @@
 node_modules/
-.pyret
-*.jarr
-.DS_Store
+.pyret/
+.direnv/
 
-.direnv
+*.jarr
+
 

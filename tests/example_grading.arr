@@ -1,7 +1,7 @@
 # pyret tests/example_grading.arr --compiled-dir .pyret/tests -o tests/example_grading.jarr
 
 include file("../src/grading.arr")
-include file("../src/graders/main.arr")
+include file("../src/runners/main.arr")
 include file("../src/core.arr")
 
 student-path = "examples/gcd.arr"

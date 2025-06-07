@@ -1,7 +1,7 @@
 # TODO: replace with npm import
-import file("../../pyret/src/arr/compiler/well-formed.arr") as WF
-import file("../../pyret/src/arr/compiler/compile-structs.arr") as C
-import file("../../pyret/src/arr/compiler/ast-util.arr") as AU
+import file("../../node_modules/pyret-lang/src/arr/compiler/well-formed.arr") as WF
+import file("../../node_modules/pyret-lang/src/arr/compiler/compile-structs.arr") as C
+import file("../../node_modules/pyret-lang/src/arr/compiler/ast-util.arr") as AU
 import file("../common/ast.arr") as CA
 import error as ERR
 

@@ -11,10 +11,10 @@ import pprint as P
 import string-dict as SD
 import json as J
 import pathlib as Path
-import file("pyret/src/arr/compiler/repl.arr") as R
-import file("pyret/src/arr/compiler/cli-module-loader.arr") as CLI
-import file("pyret/src/arr/compiler/compile-structs.arr") as CS
-import file("pyret/src/arr/compiler/compile-lib.arr") as CL
+import file("../node_modules/pyret-lang/src/arr/compiler/repl.arr") as R
+import file("../node_modules/pyret-lang/src/arr/compiler/cli-module-loader.arr") as CLI
+import file("../node_modules/pyret-lang/src/arr/compiler/compile-structs.arr") as CS
+import file("../node_modules/pyret-lang/src/arr/compiler/compile-lib.arr") as CL
 import runtime-lib as RT
 import load-lib as LL
 
