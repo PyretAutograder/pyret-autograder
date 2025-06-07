@@ -17,14 +17,17 @@ import file("../node_modules/pyret-lang/src/arr/compiler/compile-structs.arr") a
 import file("../node_modules/pyret-lang/src/arr/compiler/compile-lib.arr") as CL
 import runtime-lib as RT
 import load-lib as LL
+include js-file("../src/proj-dir")
 
 import file("./visitors.arr") as V
 import file("./jsonutils.arr") as JU
 
+project-root = get-proj-dir()
+
 context = {
-  current-load-path: Path.resolve("./"),
+  current-load-path: Path.resolve(project-root),
   cache-base-dir: Path.resolve("./.pyret/compiled"),
-  compiled-read-only-dirs: link("pyret-npm/pyret-lang/build/phaseA/lib-compiled", empty),
+  compiled-read-only-dirs: [list: Path.join(project-root, "node_modules/pyret-npm/pyret-lang/build/phaseA/lib-compiled")],
   url-file-mode: CS.all-remote
 }
 repl = R.make-repl(RT.make-runtime(), [SD.mutable-string-dict:], LL.empty-realm(), context, lam(): CLI.module-finder end)
