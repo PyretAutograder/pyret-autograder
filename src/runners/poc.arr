@@ -56,20 +56,20 @@ fun functional(
 end
 
 fun chaff(
-  student-path :: String, chaff-path :: String, check-name :: String
+  student-path :: String, chaff-path :: String, function-name:: String
 ) -> (-> G.GradingOutcome):
   lam():
-    { passed; total } = tmp-run-with-alternate-impl(student-path, chaff-path, check-name)
+    { passed; total } = tmp-run-with-alternate-impl(student-path, chaff-path, function-name)
     score = if passed <> total: 1 else: 0 end
     C.done(G.score(score, 1))
   end
 end
 
 fun wheat(
-  student-path :: String, wheat-path :: String, check-name :: String
+  student-path :: String, wheat-path :: String, function-name :: String
 ) -> (-> G.GradingOutcome):
   lam():
-    { passed; total } = tmp-run-with-alternate-impl(student-path, wheat-path, check-name)
+    { passed; total } = tmp-run-with-alternate-impl(student-path, wheat-path, function-name)
     score = if passed == total: 1 else: 0 end
     C.done(G.score(score, 1))
   end
