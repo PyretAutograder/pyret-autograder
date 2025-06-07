@@ -5,7 +5,7 @@
   "author": "",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
-    "pyret-lang": "github:brownplt/pyret-lang#5fd829e0f1726ce4fc68127aecb4e884229d7d72",
-    "pyret-npm": "latest"
+    "pyret-lang": "github:brownplt/pyret-lang#6953af521eed8c44e408a6165d441b6b72dd15d0",
+    "pyret-npm": "npm:@ironm00n/pyret-npm@0.0.41-dev-6953af521eed8c44e408a6165d441b6b72dd15d0"
   }
 }
