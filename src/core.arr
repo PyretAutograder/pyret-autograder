@@ -14,6 +14,8 @@ provide:
   type Outcome,
 
   execute,
+  valid-dag as _valid-dag,
+  topological-sort as _topological-sort
 end
 
 type Id = String
@@ -79,35 +81,6 @@ fun valid-dag<BlockReason, RanResult, Error, Metadata>(
   no-cycles = lam(): not(ids.any(lam(id): has-cycle-from(id, [S.list-set: id]) end)) end
 
   no-dups() and all-deps-exist() and no-cycles()
-where:
-  run = lam(): done(1) end
-  valid-dag(
-    [list:
-      node("a", [list:], run, none),
-      node("b", [list: "a"], run, none),
-      node("c", [list: "a", "b"], run, none)])
-    is true
-  valid-dag(
-    [list: 
-      node("block_guard", [list:], lam(): block("block reason") end, none),
-      node("has_dep1", [list: "block_guard"], lam(): done(1) end, none),
-      node("has_dep2", [list: "has_dep1"], lam(): done(2) end, none)]) 
-    is true
-  valid-dag(
-    [list:
-      node("x", [list: "y"], run, none),
-      node("y", [list:], run, none)])
-    is true
-  valid-dag(
-    [list:
-      node("x", [list: "y"], run, none),
-      node("z", [list:], run, none)])
-    is false
-  valid-dag(
-    [list:
-      node("p", [list: "q"], run, none),
-      node("q", [list: "p"], run, none)])
-  is false
 end
 
 type DAG<BlockReason, RanResult, Error, Metadata> = 
@@ -134,32 +107,6 @@ fun topological-sort<BlockReason, RanResult, Error, Metadata>(
   end
 
   help(dag, [list:], [list:])
-where:
-  run = lam(): proceed end
-  ids = lam(dag): dag.map(_.id) end
-
-  ids(topological-sort([list:])) is [list:]
-
-  single = [list: node("x", [list:], run, true)]
-  ids(topological-sort(single)) is [list: "x"]
-
-  chain = [list:
-            node("a", [list:], run, true),
-            node("b", [list: "a"], run, true),
-            node("c", [list: "b"], run, true)]
-  ids(topological-sort(chain)) is [list: "a", "b", "c"]
-
-  rev-chain = [list:
-                node("c", [list: "b"], run, true),
-                node("b", [list: "a"], run, true),
-                node("a", [list:], run, true)]
-  ids(topological-sort(rev-chain)) is [list: "a", "b", "c"]
-
-  branching = [list:
-                node("c", [list: "a"], run, true),
-                node("b", [list: "a"], run, true),
-                node("a", [list:], run, true)]
-  ids(topological-sort(branching)) is [list: "a", "c", "b"]
 end
 
 fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: List<Id>) -> Option<Id>:

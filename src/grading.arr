@@ -4,6 +4,7 @@ import string-dict as SD
 import error as ERR
 
 provide:
+  type Grader,
   data GradingMetadata,
   type Graders,
   type GradingRunner,
@@ -15,7 +16,7 @@ provide:
   data GradingResult,
   data AggregateOutput,
   data AggregateResult,
-  grade
+  grade,
 end
 
 # FIXME: artifacts will need more metadata
@@ -30,6 +31,8 @@ sharing:
     end
   end
 end
+
+type Grader = Node<BlockReason, GradingResult, InternalError, GradingMetadata>
 type Graders = DAG<BlockReason, GradingResult, InternalError, GradingMetadata> 
 type GradingRunner = Runner<BlockReason, GradingResult, InternalError> 
 type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError>
