@@ -6,7 +6,7 @@ import file("../../poc/runners.arr") as R
 import lists as L
 
 provide:
-  validator,
+  self-test,
   functional,
   chaff,
   wheat,
@@ -34,11 +34,10 @@ fun tmp-run-extra-check(
   { passed; total }
 end
 
-# TODO: this needs a better name
-fun validator(
+fun self-test(
   student-path :: String, fun-name :: String
 ) -> (-> G.GradingOutcome):
-  lam(): 
+  lam():
     { passed; total } = tmp-run-with-alternate-impl(student-path, student-path, fun-name)
     score = if total == 0: 0 else: passed / total end
     C.done(G.score(score))
