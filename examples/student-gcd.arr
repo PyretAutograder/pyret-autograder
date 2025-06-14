@@ -1,3 +1,5 @@
+include image
+
 fun is-true(x): x end
 
 type True = Boolean%(is-true)

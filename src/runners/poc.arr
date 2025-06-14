@@ -41,7 +41,7 @@ fun validator(
   lam(): 
     { passed; total } = tmp-run-with-alternate-impl(student-path, student-path, fun-name)
     score = if total == 0: 0 else: passed / total end
-    C.done(G.score(score, 1))
+    C.done(G.score(score))
   end
 end
 
@@ -51,7 +51,7 @@ fun functional(
   lam():
     { passed; total } = tmp-run-extra-check(student-path, reference-path, check-name)
     score = if total == 0: 0 else: passed / total end
-    C.done(G.score(passed, 1))
+    C.done(G.score(score))
   end
 end
 
@@ -61,7 +61,7 @@ fun chaff(
   lam():
     { passed; total } = tmp-run-with-alternate-impl(student-path, chaff-path, function-name)
     score = if passed <> total: 1 else: 0 end
-    C.done(G.score(score, 1))
+    C.done(G.score(score))
   end
 end
 
@@ -71,7 +71,7 @@ fun wheat(
   lam():
     { passed; total } = tmp-run-with-alternate-impl(student-path, wheat-path, function-name)
     score = if passed == total: 1 else: 0 end
-    C.done(G.score(score, 1))
+    C.done(G.score(score))
   end
 end
 

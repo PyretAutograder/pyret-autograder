@@ -20,7 +20,7 @@ end
 
 type Id = String
 
-type Runner<BlockReason, RanResult, Error> = 
+type Runner<BlockReason, RanResult, Error> =
   (-> Outcome<BlockReason, RanResult, Error>)
 
 data Node<BlockReason, RanResult, Error, Metadata>:
@@ -37,15 +37,15 @@ end
 data Outcome<BlockReason, RanResult, Error>:
   # reason: the reason for the block
   | block(reason :: BlockReason)
-  # node has no effect 
+  # node has no effect
   | proceed
 
   | done(res :: RanResult)
-  # path: the path of the artifacts 
+  # path: the path of the artifacts
   | artifact(path :: String)
 
   # id: the id of the node which `block`ed this node
-  | skipped(id :: Id) 
+  | skipped(id :: Id)
 
   | internal-error(err :: Error)
 sharing:
@@ -70,20 +70,20 @@ fun valid-dag<BlockReason, RanResult, Error, Metadata>(
   all-deps-exist = lam(): dag.all(lam(x): x.deps.all(ids.member(_)) end) end
 
   dict = list-to-stringdict(dag.map(lam(n): {n.id; n.deps} end))
-  
+
   fun has-cycle-from(id :: Id, path-set :: S.Set<Id>):
     dict.get-value(id).any(lam(dep):
       path-set.member(dep) or
       has-cycle-from(dep, path-set.add(dep))
     end)
   end
-  
+
   no-cycles = lam(): not(ids.any(lam(id): has-cycle-from(id, [S.list-set: id]) end)) end
 
   no-dups() and all-deps-exist() and no-cycles()
 end
 
-type DAG<BlockReason, RanResult, Error, Metadata> = 
+type DAG<BlockReason, RanResult, Error, Metadata> =
   List<Node<BlockReason, RanResult, Error, Metadata>>%(valid-dag)
 
 fun topological-sort<BlockReason, RanResult, Error, Metadata>(
@@ -122,19 +122,19 @@ end
 
 fun execute<B, R, E, M>(dag :: DAG<B, R, E, M>) -> SD.StringDict<Outcome<B, R, E>>:
   doc: "executes the dag, propogating outcomes"
-  
+
   fun help(shadow dag :: List<Node<B, R, E, M>>, acc :: SD.StringDict<Outcome<B, R, E>>) -> SD.StringDict<Outcome<B, R, E>>:
     cases (List<Node<B, R, E, M>>) dag:
       | empty => acc
-      | link(shadow node, rst) => 
-        help(rst, 
+      | link(shadow node, rst) =>
+        help(rst,
           cases (Option) should-skip(acc, node.deps):
             | none => acc.set(node.id, node.run())
             | some(blocking-id) => acc.set(node.id, skipped(blocking-id))
           end)
     end
   end
-  
+
   help(topological-sort(dag), [SD.string-dict:])
-end 
+end
 

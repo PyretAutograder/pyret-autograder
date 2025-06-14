@@ -2,10 +2,11 @@
   "name": "pyret-autograder",
   "version": "0.0.1",
   "description": "Pyret autograder.",
-  "author": "",
+  "author": "Owen Duckham <me@ironmoon.dev>",
   "license": "LGPL-3.0-or-later",
+  "main": "src/main.arr",
   "dependencies": {
-    "pyret-lang": "github:brownplt/pyret-lang#6953af521eed8c44e408a6165d441b6b72dd15d0",
-    "pyret-npm": "npm:@ironm00n/pyret-npm@0.0.41-dev-6953af521eed8c44e408a6165d441b6b72dd15d0"
+    "pyret-lang": "github:brownplt/pyret-lang",
+    "pyret-npm": "^0.0.50"
   }
 }

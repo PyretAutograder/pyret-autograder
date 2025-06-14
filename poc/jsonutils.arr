@@ -18,7 +18,7 @@ data PJSON:
       op = "get(" + key + ")"
       self.chain(op, lam(j):
           cases(J.JSON) j:
-            | j-obj(d) => 
+            | j-obj(d) =>
               cases(Option) d.get(key):
                 | none => mk(none, link(E.left(op + " missing, keys are " + d.keys.torepr()), self.ops))
                 | some(val) => mk(some(val), link(E.right(op), self.ops))
@@ -31,14 +31,14 @@ data PJSON:
       op = "find-match(" + key + " = " + val + ")"
       self.chain(op, lam(j):
           cases(J.JSON) j:
-            |j-arr(l) => 
+            |j-arr(l) =>
               cases(Option) L.find(
                     lam(o): cases(J.JSON) o:
                         | j-obj(d) => d.get(key) == some(J.j-str(val))
                         | else => false
                       end
                     end, l):
-                | none => mk(none, link(E.left(op + " matches nothing against object summaries: " + 
+                | none => mk(none, link(E.left(op + " matches nothing against object summaries: " +
                         torepr(l.map(lam(o): cases(J.JSON) o:
                                 | j-obj(d) => d.keys()
                                 | else => "nonobj"

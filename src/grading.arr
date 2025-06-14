@@ -33,20 +33,20 @@ sharing:
 end
 
 type Grader = Node<BlockReason, GradingResult, InternalError, GradingMetadata>
-type Graders = DAG<BlockReason, GradingResult, InternalError, GradingMetadata> 
-type GradingRunner = Runner<BlockReason, GradingResult, InternalError> 
+type Graders = DAG<BlockReason, GradingResult, InternalError, GradingMetadata>
+type GradingRunner = Runner<BlockReason, GradingResult, InternalError>
 type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError>
 
 data InternalError:
-sharing: 
-  method to-string(self): 
+sharing:
+  method to-string(self):
     "something went wrong :("
   end
 end
 
 data BlockReason:
   # the following are both the result of well-formed
-  | cannot-parse(error :: ERR.ParseError) 
+  | cannot-parse(error :: ERR.ParseError)
   | not-wf(message :: String)
 
   | br-missing-def(typ :: DefType, name :: String)
@@ -77,7 +77,7 @@ data WrongDefReason:
 end
 
 data GradingResult:
-  | score(earned :: Number, total :: Number)
+  | score(earned :: Number)
 end
 
 data AggregateOutput:
@@ -106,7 +106,9 @@ data AggregateResult:
 end
 
 
-fun grading-outcome-explanation-to-string(outcome :: GradingOutcome) -> Option<String>: 
+fun grading-outcome-explanation-to-string(
+  outcome :: GradingOutcome
+) -> Option<String>:
   cases (GradingOutcome) outcome:
     | block(reason) => some(reason.to-string())
     | internal-error(err) => some(err.to-string())
@@ -120,19 +122,28 @@ end
 fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
   meta-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.metadata} end))
   outcomes = execute(graders)
-  
-  # try match the id orderting provided by the graders
-  for fold(acc :: List<{Id; AggregateResult;}> from [list:], 
+
+  for fold(acc :: List<{Id; AggregateResult;}> from [list:],
            key :: Id from outcomes.keys().to-list()):
     metadata = meta-dict.get-value(key)
     if metadata.is-visible() block:
       outcome = outcomes.get-value(key)
 
-      agg-res = cases (GradingOutcome) outcome:
+      agg-res = cases (GradingOutcome) outcome block:
         | block(reason) => none
         | proceed => none
         | done(res) =>
-          some(aggregate-test(key, output-text("output"), none,res.earned, res.total))
+          when ((res.earned < 0) or (res.earned > 1)):
+            spy: key, metadata, res end
+            raise(
+              "expected earned to be in the range [0, 1], but got: " +
+              to-repr(res.earned)
+            )
+          end
+          output = output-markdown("output") # TODO: outputs
+          max-score = metadata.max-score
+          scaled-score = res.earned * max-score
+          some(aggregate-test(key, output, none, scaled-score, max-score))
         | artifact(path) =>
           some(aggregate-artifact(key, path, none))
         | skipped(id) =>
@@ -140,7 +151,8 @@ fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
             key,
             output-text(
               "test skipped because of " + id + ". Gave reason of " +
-              grading-outcome-explanation-to-string(outcomes.get-value(id)).or-else("<no reason>") + "."
+              grading-outcome-explanation-to-string(outcomes.get-value(id))
+                .or-else("<no reason>") + "."
             ),
             none,
             metadata.max-score # FIXME: this is brittle
@@ -156,7 +168,7 @@ fun grade(graders :: Graders) -> List<{Id; AggregateResult;}> block:
             metadata.max-score # FIXME: this is brittle
           ))
       end
-      
+
       cases (Option) agg-res:
         | some(res) => link({key; res;}, acc)
         | none => acc

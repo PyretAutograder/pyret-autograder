@@ -41,7 +41,7 @@ fun run-functional(student-path, reference-path, check-name):
   tests = A.run-extra-check(student-path, reference-path, check-name)
   passed = tests.get("passed").n().v
   total = tests.get("total").n().v
-  
+
   [string-dict:
     "name", check-name,
     "score", if passed == total: 1 else: 0 end,
