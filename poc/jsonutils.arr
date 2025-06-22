@@ -20,7 +20,7 @@ data PJSON:
           cases(J.JSON) j:
             | j-obj(d) =>
               cases(Option) d.get(key):
-                | none => mk(none, link(E.left(op + " missing, keys are " + d.keys.torepr()), self.ops))
+                | none => mk(none, link(E.left(op + " missing, keys are " + (d.keys() ^ to-repr)), self.ops))
                 | some(val) => mk(some(val), link(E.right(op), self.ops))
               end
             | else => mk(none, link(E.left(op + " not an object"), self.ops))

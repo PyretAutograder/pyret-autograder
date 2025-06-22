@@ -29,9 +29,9 @@ fun tmp-run-extra-check(
   student-path :: String, check-path :: String, check-name :: String
 ) -> { Number; Number }:
   tests = R.run-extra-check(student-path, check-path, check-name)
-  passed = L.length(tests.get("passed").n().v)
-  total = L.length(tests.get("total").n().v)
   { passed; total }
+  passed = tests.get("passed").n().v
+  total = tests.get("total").n().v
 end
 
 fun self-test(

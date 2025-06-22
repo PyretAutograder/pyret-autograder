@@ -57,6 +57,14 @@ fun make-check-filter(pred):
       else:
         A.s-id(l, A.s-name(l, "nothing"))
       end
+    end,
+
+    method s-fun(self, l, name, params, args, ann, doc, body, _check-loc, _check, blocky):
+      if pred(name):
+        A.s-fun(l, name, params, args, ann, doc, body, _check-loc, _check, blocky)
+      else:
+        A.s-fun(l, name, params, args, ann, doc, body, _check-loc, none, blocky)
+      end
     end
   }
 end

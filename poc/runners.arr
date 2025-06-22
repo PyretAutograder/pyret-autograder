@@ -18,7 +18,7 @@ import npm("pyret-lang", "../../src/arr/compiler/compile-lib.arr") as CL
 import runtime-lib as RT
 import load-lib as LL
 import require-util as RU
-include js-file("../src/proj-dir")
+include js-file("../src/utils")
 
 import file("./visitors.arr") as V
 import file("./jsonutils.arr") as JU
@@ -43,16 +43,20 @@ repl = R.make-repl(
   lam(): CLI.module-finder end
 )
 
-fun run-with-alternate-impl(student-path, chaff-path, fun-name):
+fun run-with-alternate-impl(student-path, chaff-path, fun-name) block:
   student = load-syntax(student-path)
   chaff = load-syntax(chaff-path)
   to-run = replace-fun({base: student, replacement: chaff, fun-name: fun-name})
 
-  without-checks = remove-checks(to-run)
+  without-checks = remove-checks(to-run, some(fun-name))
+
+  # print(without-checks.tosource().pretty(80).join-str("\n") + "\n")
 
   result = run(without-checks)
 
   json = J.read-json(result)
+
+  # spy: result end
 
   JU.pson(json).get(student-path).find-match("name", fun-name)
 end
@@ -62,7 +66,7 @@ fun run-extra-check(student-path, check-path, check-name) block:
 
   checks = load-syntax(check-path)
 
-  without-checks = remove-checks(student)
+  without-checks = remove-checks(student, none)
   extra-check = cases(Option) get-check-named(checks, check-name):
     | none => raise("Missing check block named " + check-name + " in reference.")
     | some(c) => c
@@ -70,13 +74,12 @@ fun run-extra-check(student-path, check-path, check-name) block:
 
   prog = add-to-program(without-checks, extra-check)
 
-  #print(prog.tosource().pretty(80))
+  # print(prog.tosource().pretty(80).join-str("\n") + "\n")
 
   result = run(prog)
 
   json = J.read-json(result)
-
-  JU.pson(json).get(student-path).find-match("name", check-name)
+  JU.pson(json).get(check-path).find-match("name", check-name)
 end
 
 fun load-syntax(path :: String):
@@ -105,8 +108,11 @@ fun replace-fun(opts ::
   opts.base.visit(fun-splicer)
 end
 
-fun remove-checks(stx :: A.Program):
-  stx.visit(V.make-check-filter(lam(_): false end))
+fun remove-checks(stx :: A.Program, check-name :: Option<String>):
+  pred = check-name
+          .and-then(lam(cn): lam(actual-name): (cn == actual-name) end end)
+          .or-else(lam(_): false end)
+  stx.visit(V.make-check-filter(pred))
 end
 
 fun get-check-named(stx :: A.Program, str :: String) block:
