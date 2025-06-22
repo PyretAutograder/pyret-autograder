@@ -20,34 +20,34 @@ end
 
 type Id = String
 
-type Runner<BlockReason, RanResult, Error> =
-  (-> Outcome<BlockReason, RanResult, Error>)
+type Runner<BlockReason, RanResult, Error, Info> =
+  (-> Outcome<BlockReason, RanResult, Error, Info>)
 
-data Node<BlockReason, RanResult, Error, Metadata>:
+data Node<BlockReason, RanResult, Error, Metadata, Info>:
   # id: unique id of the node
   # deps: the dependencies of this node
   # run: the action that will be executed if dependencies are met
   | node(
       id :: Id,
       deps :: List<Id>,
-      run :: Runner<BlockReason, RanResult, Error>,
+      run :: Runner<BlockReason, RanResult, Error, Info>,
       metadata :: Metadata)
 end
 
-data Outcome<BlockReason, RanResult, Error>:
+data Outcome<BlockReason, RanResult, Error, Info>:
   # reason: the reason for the block
-  | block(reason :: BlockReason)
+  | block(reason :: BlockReason, info :: Info)
   # node has no effect
-  | proceed
+  | proceed(info :: Info)
 
-  | done(res :: RanResult)
+  | done(res :: RanResult, info :: Info)
   # path: the path of the artifacts
-  | artifact(path :: String)
+  | artifact(path :: String, info :: Info)
 
   # id: the id of the node which `block`ed this node
-  | skipped(id :: Id)
+  | skipped(id :: Id, info :: Info)
 
-  | internal-error(err :: Error)
+  | internal-error(err :: Error, info :: Info)
 sharing:
   # id: id of the node which produced this outcome
   method handle-skip(self, id :: Id) -> Option<Id>:
@@ -62,8 +62,8 @@ sharing:
   end
 end
 
-fun valid-dag<BlockReason, RanResult, Error, Metadata>(
-  dag :: List<Node<BlockReason, RanResult, Error, Metadata>>
+fun valid-dag<BlockReason, RanResult, Error, Metadata, Info>(
+  dag :: List<Node<BlockReason, RanResult, Error, Metadata, Info>>
 ) -> Boolean block:
   ids = dag.map(_.id)
   no-dups = lam(): not(has-duplicates(ids)) end
@@ -83,21 +83,21 @@ fun valid-dag<BlockReason, RanResult, Error, Metadata>(
   no-dups() and all-deps-exist() and no-cycles()
 end
 
-type DAG<BlockReason, RanResult, Error, Metadata> =
-  List<Node<BlockReason, RanResult, Error, Metadata>>%(valid-dag)
+type DAG<BlockReason, RanResult, Error, Metadata, Info> =
+  List<Node<BlockReason, RanResult, Error, Metadata, Info>>%(valid-dag)
 
-fun topological-sort<BlockReason, RanResult, Error, Metadata>(
-  dag :: DAG<BlockReason, RanResult, Error, Metadata>
+fun topological-sort<BlockReason, RanResult, Error, Metadata, Info>(
+  dag :: DAG<BlockReason, RanResult, Error, Metadata, Info>
 ) -> DAG<BlockReason, RanResult, Error, Metadata>:
   doc: ```Return a new list whose order guarantees that every node appears only
           after all of its dependencies.```
 
   fun help(
-    remaining :: List<Node<BlockReason, RanResult, Error, Metadata>>,
-    sorted :: List<Node<BlockReason, RanResult, Error, Metadata>>,
+    remaining :: List<Node<BlockReason, RanResult, Error, Metadata, Info>>,
+    sorted :: List<Node<BlockReason, RanResult, Error, Metadata, Info>>,
     visited :: List<Id>
-  ) -> List<Node<BlockReason, RanResult, Error, Metadata>>:
-    cases (List<Node<BlockReason, RanResult, Error, Metadata>>) remaining:
+  ) -> List<Node<BlockReason, RanResult, Error, Metadata, Info>>:
+    cases (List<Node<BlockReason, RanResult, Error, Metadata, Info>>) remaining:
       | empty => sorted
       | else =>
         ready = remaining.filter(lam(n): n.deps.all(visited.member(_)) end)
@@ -109,7 +109,7 @@ fun topological-sort<BlockReason, RanResult, Error, Metadata>(
   help(dag, [list:], [list:])
 end
 
-fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: List<Id>) -> Option<Id>:
+fun should-skip<B, R, E, O>(results :: SD.StringDict<Outcome<B, R, E, O>>, deps :: List<Id>) -> Option<Id>:
   cases (List) deps:
     | empty => none
     | link(id, rst) =>
@@ -120,11 +120,11 @@ fun should-skip<B, R, E>(results :: SD.StringDict<Outcome<B, R, E>>, deps :: Lis
   end
 end
 
-fun execute<B, R, E, M>(dag :: DAG<B, R, E, M>) -> SD.StringDict<Outcome<B, R, E>>:
+fun execute<B, R, E, M, O>(dag :: DAG<B, R, E, M, O>) -> SD.StringDict<Outcome<B, R, E>>:
   doc: "executes the dag, propogating outcomes"
 
-  fun help(shadow dag :: List<Node<B, R, E, M>>, acc :: SD.StringDict<Outcome<B, R, E>>) -> SD.StringDict<Outcome<B, R, E>>:
-    cases (List<Node<B, R, E, M>>) dag:
+  fun help(shadow dag :: List<Node<B, R, E, M, O>>, acc :: SD.StringDict<Outcome<B, R, E, O>>) -> SD.StringDict<Outcome<B, R, E, O>>:
+    cases (List<Node<B, R, E, M, O>>) dag:
       | empty => acc
       | link(shadow node, rst) =>
         help(rst,
