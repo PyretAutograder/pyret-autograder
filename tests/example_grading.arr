@@ -16,23 +16,35 @@ functional-path = Path.join(proj-dir, "examples/gcd/functional.arr")
 graders =
   [list:
     node(
+      "gcd-self-test",
+      [list: "wf"],
+      self-test(student-path, "gcd"),
+      visible(1, lam(x): output-markdown("") end)
+    ),
+    node(
       "gcd-chaff-1",
-      [list:],
+      [list: "wf"],
       chaff(student-path, chaff-path, "gcd"),
       visible(1, lam(x): output-markdown("") end)
     ),
     node(
       "gcd-wheat-1",
-      [list:],
+      [list: "wf"],
       wheat(student-path, wheat-path, "gcd"),
       visible(1, lam(x): output-markdown("") end)
     ),
     node(
       "gcd-reference-tests",
-      [list:],
+      [list: "wf"],
       functional(student-path, functional-path, "gcd-reference-tests"),
       visible(1, lam(x): output-markdown("") end)
-    )
+    ),
+    node(
+      "wf",
+      [list:],
+      lam(): check-well-formed(student-path) end,
+      invisible
+    ),
   ]
 
 {grades; log} = grade(graders)

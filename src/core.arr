@@ -52,12 +52,12 @@ sharing:
   # id: id of the node which produced this outcome
   method handle-skip(self, id :: Id) -> Option<Id>:
     cases (Outcome) self:
-      | block(_) => some(id)
-      | proceed => none
-      | done(_) => none
-      | artifact(_) => none
-      | skipped(shadow id) => some(id)
-      | internal-error(_) => some(id)
+      | block(_, _) => some(id)
+      | proceed(_) => none
+      | done(_, _) => none
+      | artifact(_, _) => none
+      | skipped(shadow id, _) => some(id)
+      | internal-error(_, _) => some(id)
     end
   end
 end
@@ -135,6 +135,7 @@ fun execute<B, R, E, M, O>(dag :: DAG<B, R, E, M, O>) -> SD.StringDict<Outcome<B
     end
   end
 
-  help(topological-sort(dag), [SD.string-dict:])
+  sorted-dag = topological-sort(dag)
+  help(sorted-dag, [SD.string-dict:])
 end
 

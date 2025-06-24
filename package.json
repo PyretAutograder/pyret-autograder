@@ -1,6 +1,6 @@
 {
   "name": "pyret-autograder",
-  "version": "0.0.1-pre2",
+  "version": "0.0.1-pre3",
   "description": "Pyret autograder.",
   "author": "Owen Duckham <me@ironmoon.dev>",
   "license": "LGPL-3.0-or-later",

@@ -129,12 +129,12 @@ fun grading-outcome-explanation-to-string(
   outcome :: GradingOutcome
 ) -> Option<String>:
   cases (GradingOutcome) outcome:
-    | block(reason) => some(reason.to-string())
-    | internal-error(err) => some(err.to-string())
-    | proceed => none
-    | done(res) => none
-    | artifact(path) => none
-    | skipped(id) => none
+    | block(reason, _) => some(reason.to-string())
+    | internal-error(err, _) => some(err.to-string())
+    | proceed(_) => none
+    | done(res, _) => none
+    | artifact(path, _) => none
+    | skipped(id, _) => none
   end
 end
 
@@ -145,7 +145,7 @@ fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
   var log = ""
 
   node-results = for fold(acc :: List<{Id; AggregateResult;}> from [list:],
-                          key :: Id from outcomes.keys().to-list()) block:
+                          key :: Id from outcomes.keys-list()) block:
     metadata = meta-dict.get-value(key)
     outcome = outcomes.get-value(key)
 
