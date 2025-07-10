@@ -8,7 +8,7 @@ provide:
 end
 
 fun unique<T>(lst :: List<T>) -> List<T>:
-  fun helper(remaining :: List<T>, seen :: List<T>):
+  fun helper(remaining :: List<T>, seen :: List<T>) -> List<T>:
     cases (List<T>) remaining:
       | empty => seen
       | link(first, rest) =>
