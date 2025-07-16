@@ -5,7 +5,7 @@ import error as ERR
 
 provide:
   type Grader,
-  data GradingMetadata,
+  type GradingContext,
   data GradingInfo,
   type Graders,
   type GradingRunner,
@@ -17,6 +17,7 @@ provide:
   data GradingResult,
   data AggregateOutput,
   data AggregateResult,
+  data GradingVisibility,
   grade,
 end
 
@@ -46,21 +47,37 @@ data AggregateResult:
 end
 
 
-type Grader = Node<BlockReason, GradingResult, InternalError, GradingMetadata, GradingInfo>
-type Graders = DAG<BlockReason, GradingResult, InternalError, GradingMetadata, GradingInfo>
 type GradingRunner = Runner<BlockReason, GradingResult, InternalError, GradingInfo>
-type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError, GradingInfo>
+type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError>
 
-# FIXME: artifacts will need more metadata
-data GradingMetadata:
+type GradingOutcomeFormatter = (GradingResult -> AggregateOutput)
+
+type GradingContext = {
+  visibility :: GradingVisibility,
+  format-outcome :: GradingOutcomeFormatter,
+}
+
+type Grader = Node<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>
+# type Graders = DAG<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>
+type Graders = List<Node<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>>
+
+
+# FIXME: artifacts will need more 
+data GradingVisibility:
   | invisible
-  # FIXME: I really don't like this (format-outcome), it requires additional plumbing when constructing a node
-  | visible(max-score :: Number, format-outcome :: (GradingOutcome -> AggregateOutput))
+  | visible(max-score :: Number)
 sharing:
-  method is-visible(self):
-    cases (GradingMetadata) self:
+  method is-visible(self) -> Boolean:
+    cases (GradingVisibility) self:
       | invisible => false
-      | visible(_, _) => true
+      | visible(_) => true
+    end
+  end,
+
+  method get-max-score(self) -> Option<Number>:
+    cases (GradingVisibility) self:
+      | invisible => none
+      | visible(max-score) => some(max-score)
     end
   end
 end
@@ -115,8 +132,8 @@ data WrongDefReason:
   | wd-def-type(expected :: DefType, actual :: DefType)
 end
 
-fun is-normalized(val :: Any):
-  is-number(val) and (val >= 0) and (val <= 1)
+fun is-normalized(val :: Number):
+  (val >= 0) and (val <= 1)
 end
 
 type NormalizedNumber = Number%(is-normalized)
@@ -129,45 +146,48 @@ fun grading-outcome-explanation-to-string(
   outcome :: GradingOutcome
 ) -> Option<String>:
   cases (GradingOutcome) outcome:
-    | block(reason, _) => some(reason.to-string())
-    | internal-error(err, _) => some(err.to-string())
-    | proceed(_) => none
-    | done(res, _) => none
-    | artifact(path, _) => none
-    | skipped(id, _) => none
+    | block(reason) => some(reason.to-string())
+    | internal-error(err) => some(err.to-string())
+    | proceed => none
+    | done(res) => none
+    | artifact(path) => none
+    | skipped(id) => none
   end
 end
 
 fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
-  meta-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.metadata} end))
-  outcomes = execute(graders)
+  ctx-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.metadata} end))
+  outcomes = execute(graders, lam(id): {skipped(id); grade-info("")} end)
 
   var log = ""
 
   node-results = for fold(acc :: List<{Id; AggregateResult;}> from [list:],
                           key :: Id from outcomes.keys-list()) block:
-    metadata = meta-dict.get-value(key)
-    outcome = outcomes.get-value(key)
-
-
+    ctx = ctx-dict.get-value(key)
+    {outcome; info} = outcomes.get-value(key)
+    
     log := log + "### " + key + "\n" +
            cases (GradingOutcome) outcome:
-           | block(reason, info) => "blocked for reason" + reason
-           | proceed(info) => "proceed"
-           | done(res, info) => "graded with " + to-repr(res.earned) + "/1"
+           | block(reason) => "blocked for reason" + reason.to-string()
+           | proceed => "proceed"
+           | done(res) => "graded with " + to-repr(res.earned) + "/1"
            | artifact(path) => "produced an artifact at " + to-repr(path)
            | skipped(id) => "skipped because of " + id
            | internal-error(err) => "produced an internal error! report this to the staff team"
            end + "\n"
-
-    if metadata.is-visible():
+    
+    if ctx.visibility.is-visible():
+      max-score = cases (Option) ctx.visibility.get-max-score():
+        | some(x) => x
+        | none => raise("INTERNAL ERROR: visible test must have a max-score") 
+      end
+      
       acc-res = cases (GradingOutcome) outcome:
-      | block(reason, info) => none
-      | proceed(info) => none
-      | done(res, info) =>
-        output = metadata.format-outcome(res)
+      | block(reason) => none
+      | proceed => none
+      | done(res) =>
+        output = ctx.format-outcome(res)
         instr-output = info.to-aggregate-output() ^ some
-        max-score = metadata.max-score
         scaled-score = res.earned * max-score
         some(aggregate-test(key, output, instr-output, scaled-score, max-score))
       | artifact(path) => some(aggregate-artifact(key, path, none))
@@ -176,11 +196,11 @@ fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
           key,
           output-text(
             "test skipped because of " + id + ". Gave reason of " +
-            grading-outcome-explanation-to-string(outcomes.get-value(id))
+                grading-outcome-explanation-to-string(outcomes.get-value(id).{0})
               .or-else("<no reason>") + "."
           ),
           none,
-          metadata.max-score # FIXME: this is brittle
+          max-score
         ))
       | internal-error(err) =>
         some(aggregate-skipped(
@@ -190,7 +210,7 @@ fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
             err.to-string() + "."
           ),
           none,
-          metadata.max-score # FIXME: this is brittle
+          max-score
         ))
       end
 
