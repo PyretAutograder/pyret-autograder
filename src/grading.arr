@@ -5,9 +5,10 @@ import error as ERR
 
 provide:
   type Grader,
-  type GradingContext,
-  data GradingInfo,
   type Graders,
+  data GraderKind,
+  type GraderContext,
+  data GradingInfo,
   type GradingRunner,
   type GradingOutcome,
   data InternalError,
@@ -17,7 +18,6 @@ provide:
   data GradingResult,
   data AggregateOutput,
   data AggregateResult,
-  data GradingVisibility,
   grade,
 end
 
@@ -27,23 +27,27 @@ data AggregateOutput:
   | output-ansi(content :: String)
 end
 
+data TestOutcome:
+  | test-ok(score :: Number)
+  | test-skipped
+end
+
+data ArtifactOutcome:
+  | art-ok(path :: String, extra :: Option<Any>) # TODO: remove extra?
+  | art-skipped
+end
+
 data AggregateResult:
-  | aggregate-skipped(
+  | agg-test(
       name :: String,
-      student-output :: AggregateOutput,
-      instructor-output :: Option<AggregateOutput>,
-      max-score :: Number)
-  | aggregate-test(
+      general-output :: AggregateOutput,
+      staff-output :: Option<AggregateOutput>,
+      max-score :: Number,
+      outcome :: TestOutcome)
+  | agg-artifact(
       name :: String,
-      student-output :: AggregateOutput,
-      instructor-output :: Option<AggregateOutput>,
-      score :: Number,
-      max-score :: Number)
-  # FIXME: we need a way to indicate an artifact failure / skip
-  | aggregate-artifact(
-      name :: String,
-      path :: String,
-      extra-data :: Option<Any>)
+      description :: Option<AggregateOutput>,
+      outcome :: ArtifactOutcome)
 end
 
 
@@ -52,37 +56,39 @@ type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError>
 
 type GradingOutcomeFormatter = (GradingResult -> AggregateOutput)
 
-type GradingContext = {
-  visibility :: GradingVisibility,
+type GraderContext = {
+  name :: String,
+  kind :: GraderKind,
   format-outcome :: GradingOutcomeFormatter,
 }
 
-type Grader = Node<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>
+type Grader = Node<BlockReason, GradingResult, InternalError, GraderContext, GradingInfo>
 # type Graders = DAG<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>
-type Graders = List<Node<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>>
+type Graders = List<Node<BlockReason, GradingResult, InternalError, GraderContext, GradingInfo>>
 
-
-# FIXME: artifacts will need more 
-data GradingVisibility:
-  | invisible
-  | visible(max-score :: Number)
+data GraderKind:
+  | gk-passive
+  | gk-scorer(max-score :: Number)
+  | gk-artifact
 sharing:
-  method is-visible(self) -> Boolean:
-    cases (GradingVisibility) self:
-      | invisible => false
-      | visible(_) => true
+  method should-include(self) -> Boolean:
+    cases (GraderKind) self:
+      | gk-passive => false
+      | gk-scorer(_) => true
+      | gk-artifact => true
     end
   end,
 
   method get-max-score(self) -> Option<Number>:
-    cases (GradingVisibility) self:
-      | invisible => none
-      | visible(max-score) => some(max-score)
+    cases (GraderKind) self:
+      | gk-scorer(max-score) => some(max-score)
+      | else => none
     end
   end
 end
 
-# FIXME: this is a pretty bad abtractions
+# FIXME: this is a pretty bad abtractions; either use interface or nicer variants
+# TODO: this should eventually support recovering the exact tests run to isolate in a REPL
 data GradingInfo:
   | grade-info(msg :: String)
 sharing:
@@ -100,6 +106,7 @@ sharing:
   end
 end
 
+# TODO: this doesnt make sense to be centralized
 data BlockReason:
   # the following are both the result of well-formed
   | cannot-parse(error :: ERR.ParseError)
@@ -140,23 +147,102 @@ type NormalizedNumber = Number%(is-normalized)
 
 data GradingResult:
   | score(earned :: NormalizedNumber)
+  | artifact(path :: String)
 end
 
-fun grading-outcome-explanation-to-string(
+fun log-outcome(outcome :: GradingOutcome):
+  # TODO: add more general logging system, allowing more context for staff
+  cases (GradingOutcome) outcome:
+    | block(reason) => "blocked for reason" + reason.to-string()
+    | noop => "noop"
+    | emit(res) => "emitted with " +
+      cases (GradingResult) res:
+        | score(earned) => "a score of " + to-repr(earned) + " out of 1"
+        | artifact(path) => "an artifact at " + path
+      end
+    | skipped(id) => "skipped because of " + id
+    | internal-error(err) => "produced an internal error! report this to the staff team"
+  end
+end
+
+AGGREGATE-NO-PASSIVE = "disallowed passive grader in aggregate-outcome"
+SCORE-NEEDS-MAX = "grader emitting score must have max-score in ctx"
+
+fun raise-internal(reason :: String):
+  raise("Fatal Autograder Exception: " + reason)
+end
+
+fun grading-skipped-reason(
   outcome :: GradingOutcome
 ) -> Option<String>:
   cases (GradingOutcome) outcome:
     | block(reason) => some(reason.to-string())
     | internal-error(err) => some(err.to-string())
-    | proceed => none
-    | done(res) => none
-    | artifact(path) => none
+    | noop => none
+    | emit(res) => none
     | skipped(id) => none
   end
 end
 
+# invaraint: ctx kind must not be passive
+fun aggregate-outcome(
+  ctx :: GraderContext,
+  outcome :: GradingOutcome,
+  info :: GradingInfo,
+  all-outcomes :: SD.StringDict<{GradingOutcome; GradingInfo}>
+) -> Option<AggregateResult>:
+  name = ctx.name
+
+  fun not-run(explanation):
+    cases (GraderKind) ctx.kind:
+      | gk-passive =>
+        raise-internal(AGGREGATE-NO-PASSIVE)
+      | gk-scorer(max-score) =>
+        agg-test(name, explanation, none, max-score, test-skipped)
+      | gk-artifact =>
+        agg-artifact(name, some(explanation), art-skipped)
+    end
+  end
+
+  cases (GradingOutcome) outcome:
+    | block(reason) => none
+    | noop => none
+    | emit(res) =>
+      cases (GradingResult) res:
+        | score(earned) =>
+          max-score = cases (Option) ctx.kind.get-max-score():
+            | some(max-score) => max-score
+            | none => raise-internal(SCORE-NEEDS-MAX)
+          end
+
+          output = ctx.format-outcome(res)
+          instr-output = info.to-aggregate-output() ^ some
+          scaled-score = res.earned * max-score
+          agg-test(name, output, instr-output, max-score, test-ok(scaled-score))
+        | artifact(path) =>
+          # TODO: does it make sense for this to have info?
+          agg-artifact(name, none, art-ok(path, none))
+      end ^ some
+    | skipped(id) =>
+      reason = grading-skipped-reason(all-outcomes.get-value(id).{0})
+          .or-else("<no reason>")
+
+      explanation = output-text(
+        "test skipped because of " + id + ". Gave reason of " + reason + "."
+      )
+      some(not-run(explanation))
+    | internal-error(err) =>
+      explanation = output-text(
+        # TODO: details should probably not be shown to the student
+        "an internal error occured while running. Error: " +
+        err.to-string() + "."
+      )
+      some(not-run(explanation))
+  end
+end
+
 fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
-  ctx-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.metadata} end))
+  ctx-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.ctx} end))
   outcomes = execute(graders, lam(id): {skipped(id); grade-info("")} end)
 
   var log = ""
@@ -165,56 +251,12 @@ fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
                           key :: Id from outcomes.keys-list()) block:
     ctx = ctx-dict.get-value(key)
     {outcome; info} = outcomes.get-value(key)
-    
-    log := log + "### " + key + "\n" +
-           cases (GradingOutcome) outcome:
-           | block(reason) => "blocked for reason" + reason.to-string()
-           | proceed => "proceed"
-           | done(res) => "graded with " + to-repr(res.earned) + "/1"
-           | artifact(path) => "produced an artifact at " + to-repr(path)
-           | skipped(id) => "skipped because of " + id
-           | internal-error(err) => "produced an internal error! report this to the staff team"
-           end + "\n"
-    
-    if ctx.visibility.is-visible():
-      max-score = cases (Option) ctx.visibility.get-max-score():
-        | some(x) => x
-        | none => raise("INTERNAL ERROR: visible test must have a max-score") 
-      end
-      
-      acc-res = cases (GradingOutcome) outcome:
-      | block(reason) => none
-      | proceed => none
-      | done(res) =>
-        output = ctx.format-outcome(res)
-        instr-output = info.to-aggregate-output() ^ some
-        scaled-score = res.earned * max-score
-        some(aggregate-test(key, output, instr-output, scaled-score, max-score))
-      | artifact(path) => some(aggregate-artifact(key, path, none))
-      | skipped(id) =>
-        some(aggregate-skipped(
-          key,
-          output-text(
-            "test skipped because of " + id + ". Gave reason of " +
-                grading-outcome-explanation-to-string(outcomes.get-value(id).{0})
-              .or-else("<no reason>") + "."
-          ),
-          none,
-          max-score
-        ))
-      | internal-error(err) =>
-        some(aggregate-skipped(
-          key,
-          output-text(
-            "an internal error occured while running " + key + ". Error: " +
-            err.to-string() + "."
-          ),
-          none,
-          max-score
-        ))
-      end
 
-      cases (Option) acc-res:
+    log := log + "### " + key + "\n" + log-outcome(outcome) + "\n"
+
+    if ctx.kind.should-include():
+      agg-res = aggregate-outcome(ctx, outcome, info, outcomes)
+      cases (Option) agg-res:
         | some(res) => link({key; res;}, acc)
         | none => acc
       end

@@ -21,7 +21,7 @@ end
 type Id = String
 
 # TODO: still not convinced that info is the right approach
-type Runner<BlockReason, RanResult, Error, Info> = 
+type Runner<BlockReason, RanResult, Error, Info> =
   (-> {Outcome<BlockReason, RanResult, Error>; Info})
 
 data Node<BlockReason, RanResult, Error, Context, Info>:
@@ -37,27 +37,31 @@ data Node<BlockReason, RanResult, Error, Context, Info>:
 end
 
 data Outcome<BlockReason, RanResult, Error>:
+  # blocks further execution
   # reason: the reason for the block
   | block(reason :: BlockReason)
-  # node has no effect
-  | proceed
 
-  | done(res :: RanResult)
-  # path: the path of the artifacts
-  | artifact(path :: String)
+  # node has no effect on execution
+  | noop
 
+  # yields a result
+  # res: the result
+  | emit(res :: RanResult)
+
+  # node not run because of unmet dependency
   # id: the id of the node which `block`ed this node
   | skipped(id :: Id)
 
+  # an internal issue occured in a runner
+  # err: the error which occured
   | internal-error(err :: Error)
 sharing:
   # id: id of the node which produced this outcome
   method handle-skip(self, id :: Id) -> Option<Id>:
     cases (Outcome) self:
       | block(_) => some(id)
-      | proceed => none
-      | done(_) => none
-      | artifact(_) => none
+      | noop => none
+      | emit(_) => none
       | skipped(shadow id) => some(id)
       | internal-error(_) => some(id)
     end
@@ -89,7 +93,7 @@ type DAG<BlockReason, RanResult, Error, Context, Info> =
   List<Node<BlockReason, RanResult, Error, Context, Info>>%(valid-dag)
 
 fun topological-sort<B, R, E, C, I>(
-  # dag :: DAG<B, R, E, C, I>) 
+  # dag :: DAG<B, R, E, C, I>)
   dag :: List<Node<B, R, E, C, I>>
 # ) -> DAG<B, R, E, C, I>:
 ) -> List<Node<B, R, E, C, I>>:
@@ -114,7 +118,7 @@ fun topological-sort<B, R, E, C, I>(
 end
 
 fun should-skip<B, R, E, I>(
-  results :: SD.StringDict<{Outcome<B, R, E>; I}>, 
+  results :: SD.StringDict<{Outcome<B, R, E>; I}>,
   deps :: List<Id>
 ) -> Option<Id>:
   cases (List) deps:
@@ -129,13 +133,13 @@ end
 
 fun execute<B, R, E, C, I>(
   # dag :: DAG<B, R, E, C, I>,
-  dag :: List<Node<B, R, E, C, I>>, 
+  dag :: List<Node<B, R, E, C, I>>,
   skip :: (String -> {Outcome<B, R, E>; I})
 ) -> SD.StringDict<{Outcome<B, R, E>; I}>:
   doc: "executes the dag, propogating outcomes"
 
   fun help(
-    shadow dag :: List<Node<B, R, E, C, I>>, 
+    shadow dag :: List<Node<B, R, E, C, I>>,
     acc :: SD.StringDict<{Outcome<B, R, E>; I}>
   ) -> SD.StringDict<{Outcome<B, R, E>; I}>:
     cases (List<Node<B, R, E, C, I>>) dag:
