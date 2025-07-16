@@ -7,11 +7,12 @@ include file("./utils.arr")
 provide:
   data Node,
   data Outcome,
+  data NodeResult,
 
-  type DAG,
   type Id,
+  type DAG,
   type Runner,
-  type Outcome,
+  type RunnerOutput,
 
   execute,
   valid-dag as _valid-dag,
@@ -20,11 +21,13 @@ end
 
 type Id = String
 
-# TODO: still not convinced that info is the right approach
-type Runner<BlockReason, RanResult, Error, Info> =
-  (-> {Outcome<BlockReason, RanResult, Error>; Info})
+type RunnerOutput<BlockReason, RanResult, Error, Info> =
+  {Outcome<BlockReason, RanResult, Error>; Info}
 
-data Node<BlockReason, RanResult, Error, Context, Info>:
+type Runner<BlockReason, RanResult, Error, Info> =
+  (-> RunnerOutput<BlockReason, RanResult, Error, Info>)
+
+data Node<BlockReason, RanResult, Error, Info, Context>:
   # id: unique id of the node
   # deps: the dependencies of this node
   # run: the action that will be executed if dependencies are met
@@ -48,29 +51,52 @@ data Outcome<BlockReason, RanResult, Error>:
   # res: the result
   | emit(res :: RanResult)
 
-  # node not run because of unmet dependency
-  # id: the id of the node which `block`ed this node
-  | skipped(id :: Id)
-
   # an internal issue occured in a runner
   # err: the error which occured
   | internal-error(err :: Error)
+end
+
+data NodeResult<BlockReason, RanResult, Error, Info>:
+  # node was run
+  # outcome: the result of the runner
+  # info: additional information provided by the runner
+  | executed(outcome :: Outcome<BlockReason, RanResult, Error>, info :: Info)
+
+  # node wasn't run because of unmet dependency
+  # id: the id of the node which stopped further execution
+  | skipped(id :: Id)
 sharing:
-  # id: id of the node which produced this outcome
-  method handle-skip(self, id :: Id) -> Option<Id>:
-    cases (Outcome) self:
-      | block(_) => some(id)
-      | noop => none
-      | emit(_) => none
-      | skipped(shadow id) => some(id)
-      | internal-error(_) => some(id)
+  # id: id of
+  method determine-blocking-node(self, id :: Id) -> Option<Id>:
+    doc: ```
+      Given the `id` of the node which produced this result,
+      returns an Option which either:
+      - contains the id which should be blamed for blocking downstream execution
+      - contains nothing if execution should continue
+    ```
+
+    cases (NodeResult) self:
+      | executed(outcome, _) =>
+        cases (Outcome) outcome:
+          | block(_) => some(id)
+          | noop => none
+          | emit(_) => none
+          | internal-error(_) => some(id)
+        end
+      | skipped(orig-id) => some(orig-id)
     end
   end
 end
 
-fun valid-dag<B, R, E, M, I>(
-  dag :: List<Node<B, R, E, M, I>>
+fun valid-dag<B, R, E, I, C>(
+  dag :: List<Node<B, R, E, I, C>>
 ) -> Boolean block:
+  doc: ```
+    Determines if a list of nodes form a valid directed acylic graph (DAG)
+    meaning that:
+    - they don't form cylces
+    - each node has a unique id
+  ```
   ids = dag.map(_.id)
   no-dups = lam(): not(has-duplicates(ids)) end
   all-deps-exist = lam(): dag.all(lam(x): x.deps.all(ids.member(_)) end) end
@@ -89,23 +115,25 @@ fun valid-dag<B, R, E, M, I>(
   no-dups() and all-deps-exist() and no-cycles()
 end
 
-type DAG<BlockReason, RanResult, Error, Context, Info> =
-  List<Node<BlockReason, RanResult, Error, Context, Info>>%(valid-dag)
+type DAG<BlockReason, RanResult, Error, Info, Context> =
+  List<Node<BlockReason, RanResult, Error, Info, Context>>%(valid-dag)
 
-fun topological-sort<B, R, E, C, I>(
-  # dag :: DAG<B, R, E, C, I>)
-  dag :: List<Node<B, R, E, C, I>>
-# ) -> DAG<B, R, E, C, I>:
-) -> List<Node<B, R, E, C, I>>:
-  doc: ```Return a new list whose order guarantees that every node appears only
-          after all of its dependencies.```
+fun topological-sort<B, R, E, I, C>(
+  # dag :: DAG<B, R, E, I, C>)
+  dag :: List<Node<B, R, E, I, C>>
+# ) -> DAG<B, R, E, I, C>:
+) -> List<Node<B, R, E, I, C>>:
+  doc: ```
+    Sorts the directed acylic graph such that the ordering garantees that every
+    node appears only after all of its dependencies.
+  ```
 
   fun help(
-    remaining :: List<Node<B, R, E, C, I>>,
-    sorted :: List<Node<B, R, E, C, I>>,
+    remaining :: List<Node<B, R, E, I, C>>,
+    sorted :: List<Node<B, R, E, I, C>>,
     visited :: List<Id>
-  ) -> List<Node<B, R, E, C, I>>:
-    cases (List<Node<B, R, E, C, I>>) remaining:
+  ) -> List<Node<B, R, E, I, C>>:
+    cases (List<Node<B, R, E, I, C>>) remaining:
       | empty => sorted
       | else =>
         ready = remaining.filter(lam(n): n.deps.all(visited.member(_)) end)
@@ -117,39 +145,48 @@ fun topological-sort<B, R, E, C, I>(
   help(dag, [list:], [list:])
 end
 
-fun should-skip<B, R, E, I>(
-  results :: SD.StringDict<{Outcome<B, R, E>; I}>,
+fun check-dependencies<B, R, E, I>(
+  results :: SD.StringDict<NodeResult<B, R, E, I>>,
   deps :: List<Id>
 ) -> Option<Id>:
+  doc: ```
+    Given the dependencies, `deps`, of a topologically sorted DAG, and all the
+    result of all previously excecuted nodes, `results`, check to see that any
+    of the dependencies should block the execution of the given node.
+    Returns the ID of the node responsible for or none if all dependencies are
+    satisfied.
+  ```
   cases (List) deps:
     | empty => none
     | link(id, rst) =>
-      cases (Option) results.get-value(id).{0}.handle-skip(id):
-        | none => should-skip(results, rst)
+      cases (Option) results.get-value(id).determine-blocking-node(id):
+        | none => check-dependencies(results, rst)
         | some(responsible-id) => some(responsible-id)
       end
   end
 end
 
-fun execute<B, R, E, C, I>(
-  # dag :: DAG<B, R, E, C, I>,
-  dag :: List<Node<B, R, E, C, I>>,
-  skip :: (String -> {Outcome<B, R, E>; I})
-) -> SD.StringDict<{Outcome<B, R, E>; I}>:
+fun execute<B, R, E, I, C>(
+  # dag :: DAG<B, R, E, I, C>
+  dag :: List<Node<B, R, E, I, C>>
+) -> SD.StringDict<NodeResult<B, R, E, I>>:
   doc: "executes the dag, propogating outcomes"
 
   fun help(
-    shadow dag :: List<Node<B, R, E, C, I>>,
-    acc :: SD.StringDict<{Outcome<B, R, E>; I}>
-  ) -> SD.StringDict<{Outcome<B, R, E>; I}>:
-    cases (List<Node<B, R, E, C, I>>) dag:
+    shadow dag :: List<Node<B, R, E, I, C>>,
+    acc :: SD.StringDict<NodeResult<B, R, E, I>>
+  ) -> SD.StringDict<NodeResult<B, R, E, I>>:
+    cases (List<Node<B, R, E, I, C>>) dag:
       | empty => acc
       | link(shadow node, rst) =>
-        help(rst,
-          cases (Option) should-skip(acc, node.deps):
-            | none => acc.set(node.id, node.run())
-            | some(blocking-id) => acc.set(node.id, skip(blocking-id))
-          end)
+        cases (Option) check-dependencies(acc, node.deps):
+          | none =>
+            {outcome; info} = node.run()
+            acc.set(node.id, executed(outcome, info))
+          | some(blocking-id) =>
+            acc.set(node.id, skipped(blocking-id))
+        end
+        ^ help(rst, _)
     end
   end
 
