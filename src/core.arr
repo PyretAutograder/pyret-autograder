@@ -119,10 +119,8 @@ type DAG<BlockReason, RanResult, Error, Info, Context> =
   List<Node<BlockReason, RanResult, Error, Info, Context>>%(valid-dag)
 
 fun topological-sort<B, R, E, I, C>(
-  # dag :: DAG<B, R, E, I, C>)
-  dag :: List<Node<B, R, E, I, C>>
-# ) -> DAG<B, R, E, I, C>:
-) -> List<Node<B, R, E, I, C>>:
+  dag :: DAG<B, R, E, I, C>
+) -> DAG<B, R, E, I, C>:
   doc: ```
     Sorts the directed acylic graph such that the ordering garantees that every
     node appears only after all of its dependencies.
@@ -167,8 +165,7 @@ fun check-dependencies<B, R, E, I>(
 end
 
 fun execute<B, R, E, I, C>(
-  # dag :: DAG<B, R, E, I, C>
-  dag :: List<Node<B, R, E, I, C>>
+  dag :: DAG<B, R, E, I, C>
 ) -> SD.StringDict<NodeResult<B, R, E, I>>:
   doc: "executes the dag, propogating outcomes"
 

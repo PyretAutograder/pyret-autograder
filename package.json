@@ -6,7 +6,11 @@
   "license": "LGPL-3.0-or-later",
   "main": "src/main.arr",
   "dependencies": {
-    "pyret-lang": "github:brownplt/pyret-lang",
-    "pyret-npm": "^0.0.50"
+    "pyret-lang": "github:ironm00n/pyret-lang#fix/poly-fun-alias",
+    "pyret-npm": "github:ironm00n/pyret-npm#fix/poly-fun-alias"
+  },
+  "scripts": {
+    "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
+    "clean": "rm -rf -- ./pyret"
   }
 }

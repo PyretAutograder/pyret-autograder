@@ -20,7 +20,7 @@
 
           targetPkgs =
             pkgs: with pkgs; [
-              nodejs_22
+              nodejs_24
               git
               gnumake
               bash
@@ -35,7 +35,7 @@
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
           packages = with pkgs; [
-            nodejs_22
+            nodejs_24
             gnumake
           ];
         };

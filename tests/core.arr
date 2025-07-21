@@ -9,42 +9,59 @@ data ExBlockReason:
   | invalid
 end
 
+fun runner(val):
+  lam():
+    {val; none}
+  end
+end
+
+fun res(outcome):
+  executed(outcome, none)
+end
+
+fun skip(id):
+  skipped(id)
+end
+
+
 check "execute":
   execute(empty) is [SD.string-dict:]
 
-  single = [list: node("1", [list:], lam(): {emit(1); ""} end, true)]
-  execute(single) is [SD.string-dict: "1", {emit(1); ""}]
+  single = [list: node("1", [list:], runner(emit(1)), true)]
+  execute(single) is [SD.string-dict: "1", res(emit(1))]
 
-  simple_dep = [list: node("pass_guard", [list:], lam(): noop end, false),
-                      node("has_dep", [list: "pass_guard"], lam(): emit(1) end, true)]
-  execute(simple_dep) is [SD.string-dict: "pass_guard", noop, "has_dep", emit(1)]
+  simple_dep = [list: node("pass_guard", [list:], runner(noop), false),
+                      node("has_dep", [list: "pass_guard"], runner(emit(1)), true)]
+  execute(simple_dep) is [SD.string-dict: "pass_guard", res(noop), "has_dep", res(emit(1))]
 
-  blocking_simple_dep = [list: node("block_guard", [list:], lam(): block(invalid) end, false),
-                               node("has_dep", [list: "block_guard"], lam(): emit(1) end, true)]
-  execute(blocking_simple_dep) is [SD.string-dict: "block_guard", block(invalid), "has_dep", skipped("block_guard")]
+  blocking_simple_dep = [list: node("block_guard", [list:], runner(block(invalid)), false),
+                               node("has_dep", [list: "block_guard"], runner(emit(1)), true)]
+  execute(blocking_simple_dep) is [SD.string-dict: "block_guard", res(block(invalid)), 
+                                                   "has_dep", skip("block_guard")]
 
-  internal_failure = [list: node("failing", [list:], lam(): internal-error("catastrophic error") end, false),
-                            node("has_dep", [list: "failing"], lam(): emit(1) end, true)]
+  internal_failure = [list: node("failing", [list:], runner(internal-error("catastrophic error")), false),
+                            node("has_dep", [list: "failing"], runner(emit(1)), true)]
 
-  execute(internal_failure) is [SD.string-dict: "failing", internal-error("catastrophic error"), "has_dep", skipped("failing")]
+  execute(internal_failure) is [SD.string-dict: "failing", res(internal-error("catastrophic error")), 
+                                                "has_dep", skip("failing")]
 
-  blocking_dep = [list: node("block_guard", [list:], lam(): block(invalid) end, false),
-                        node("has_dep1", [list: "block_guard"], lam(): emit(1) end, true),
-                        node("has_dep2", [list: "has_dep1"], lam(): emit(2) end, true)]
-  execute(blocking_dep) is [SD.string-dict: "block_guard", block(invalid),
-                                            "has_dep1", skipped("block_guard"),
-                                            "has_dep2", skipped("block_guard")]
-  dep = [list: node("pass_guard", [list:], lam(): noop end, false),
-               node("has_dep1", [list: "pass_guard"], lam(): emit(1) end, true),
-               node("has_dep2", [list: "has_dep1"], lam(): emit(2) end, true)]
-  execute(dep) is [SD.string-dict: "pass_guard", noop,
-                                   "has_dep1", emit(1),
-                                   "has_dep2", emit(2)]
+  blocking_dep = [list: node("block_guard", [list:], runner(block(invalid)), false),
+                        node("has_dep1", [list: "block_guard"], runner(emit(1)), true),
+                        node("has_dep2", [list: "has_dep1"], runner(emit(2)), true)]
+  execute(blocking_dep) is [SD.string-dict: "block_guard", res(block(invalid)),
+                                            "has_dep1", skip("block_guard"),
+                                            "has_dep2", skip("block_guard")]
+  dep = [list: node("pass_guard", [list:], runner(noop), false),
+               node("has_dep1", [list: "pass_guard"], runner(emit(1)), true),
+               node("has_dep2", [list: "has_dep1"], runner(emit(2)), true)]
+  execute(dep) is [SD.string-dict: "pass_guard", res(noop),
+                                   "has_dep1", res(emit(1)),
+                                   "has_dep2", res(emit(2))]
 end
 
 check "valid-dag":
   valid-dag = _valid-dag
-  run = lam(): emit(1) end
+  run = runner(emit(1))
   valid-dag(
     [list:
       node("a", [list:], run, none),
@@ -53,9 +70,9 @@ check "valid-dag":
     is true
   valid-dag(
     [list:
-      node("block_guard", [list:], lam(): block("block reason") end, none),
-      node("has_dep1", [list: "block_guard"], lam(): emit(1) end, none),
-      node("has_dep2", [list: "has_dep1"], lam(): emit(2) end, none)])
+      node("block_guard", [list:], runner(block("block reason")), none),
+      node("has_dep1", [list: "block_guard"], runner(emit(1)), none),
+      node("has_dep2", [list: "has_dep1"], runner(emit(2)), none)])
     is true
   valid-dag(
     [list:
@@ -76,8 +93,10 @@ end
 
 check "topological-sort":
   topological-sort = _topological-sort
-  run = lam(): noop end
-  ids = lam(dag): dag.map(_.id) end
+  run = runner(noop)
+  ids = lam<B, R, E, I, C>(dag :: DAG<B, R, E, I, C>) -> List<String>: 
+    dag.map(_.id) 
+  end
 
   ids(topological-sort([list:])) is [list:]
 
