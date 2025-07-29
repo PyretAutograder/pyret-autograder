@@ -1,5 +1,3 @@
-# pyret tests/example_grading.arr --compiled-dir .pyret/tests -o tests/example_grading.jarr
-
 include file("../src/grading.arr")
 include file("../src/runners/main.arr")
 include file("../src/core.arr")
@@ -13,37 +11,44 @@ chaff-path = Path.join(proj-dir, "examples/gcd/chaff.arr")
 wheat-path = Path.join(proj-dir, "examples/gcd/wheat.arr")
 functional-path = Path.join(proj-dir, "examples/gcd/functional.arr")
 
+fun mk-ctx(vis):
+  {
+    visibility: vis,
+    fmt-outcome: lam(x): output-markdown("") end
+  }
+end
+
 graders =
   [list:
     node(
       "gcd-self-test",
       [list: "wf"],
       self-test(student-path, "gcd"),
-      visible(1, lam(x): output-markdown("") end)
+      visible(1) ^ mk-ctx
     ),
     node(
       "gcd-chaff-1",
       [list: "wf"],
       chaff(student-path, chaff-path, "gcd"),
-      visible(1, lam(x): output-markdown("") end)
+      visible(1) ^ mk-ctx
     ),
     node(
       "gcd-wheat-1",
       [list: "wf"],
       wheat(student-path, wheat-path, "gcd"),
-      visible(1, lam(x): output-markdown("") end)
+      visible(1) ^ mk-ctx
     ),
     node(
       "gcd-reference-tests",
       [list: "wf"],
       functional(student-path, functional-path, "gcd-reference-tests"),
-      visible(1, lam(x): output-markdown("") end)
+      visible(1) ^ mk-ctx
     ),
     node(
       "wf",
       [list:],
       lam(): check-well-formed(student-path) end,
-      invisible
+      invisible ^ mk-ctx
     ),
   ]
 

@@ -1,23 +1,25 @@
 include file("./core.arr")
 include file("./utils.arr")
+include js-file("./utils") # HACK: remove once/if typesystem supports existentials
 import string-dict as SD
 import error as ERR
 
 provide:
-  type Grader,
-  type Graders,
-  data GraderKind,
-  type GraderContext,
-  data GradingInfo,
-  type GradingRunner,
-  type GradingOutcome,
-  data InternalError,
-  data BlockReason,
-  data DefType,
-  data WrongDefReason,
-  data GradingResult,
   data AggregateOutput,
+  data TestOutcome,
+  data ArtifactOutcome,
+  data GuardOutcome,
   data AggregateResult,
+  type GraderOutput,
+  type GraderResult,
+  type GradingAggregator,
+  type GradingRunner,
+  type Grader,
+  type NormalizedNumber,
+  data GradingResult,
+  type TraceEntry,
+  type ExecutionTrace,
+  type GradingOutput,
   grade,
 end
 
@@ -29,15 +31,24 @@ end
 
 data TestOutcome:
   | test-ok(score :: Number)
-  | test-skipped
+  | test-skipped(id :: Id)
 end
 
 data ArtifactOutcome:
   | art-ok(path :: String, extra :: Option<Any>) # TODO: remove extra?
-  | art-skipped
+  | art-skipped(id :: Id)
+end
+
+data GuardOutcome:
+  | guard-passed
+  | guard-failed(reason :: AggregateOutput)
+  | guard-skipped(id :: Id)
 end
 
 data AggregateResult:
+  | agg-guard( # TODO: this needs more
+      name :: String,
+      outcome :: GuardOutcome)
   | agg-test(
       name :: String,
       general-output :: AggregateOutput,
@@ -50,54 +61,31 @@ data AggregateResult:
       outcome :: ArtifactOutcome)
 end
 
+type GraderOutput<B, I> = RunnerOutput<B, GradingResult, InternalError, I>
+type GraderResult<B, I, C> = NodeResult<B, GradingResult, InternalError, I, C>
 
-type GradingRunner = Runner<BlockReason, GradingResult, InternalError, GradingInfo>
-type GradingOutcome = Outcome<BlockReason, GradingResult, InternalError>
+type GradingAggregator<B, I, C> =
+  (GraderResult<B, I, C> -> Option<AggregateResult>)
+type GradingRunner<B, I> = (-> GraderOutput<B, I>)
 
-type GradingOutcomeFormatter = (GradingResult -> AggregateOutput)
+# trait Grader {
+#   type BlockReason
+#   type Info
+#
+#   fn id(): Id;
+#   fn deps(): List<Id>;
+#   fn run(): GraderOutput<BlockReason, Info>;
+#   fn to_aggregate<C>(result: GradingResult<BlockReason, Info, C>): Option<AggregateResult>
+# }
 
-type GraderContext = {
-  name :: String,
-  kind :: GraderKind,
-  format-outcome :: GradingOutcomeFormatter,
+# FIXME: this needs existentials
+type Grader<B, I, C> = {
+  id :: Id,
+  deps :: List<Id>,
+  run :: GradingRunner<B, I>,
+  to-aggregate :: GradingAggregator<B, I, C>
+  # TODO: to-repl
 }
-
-type Grader = Node<BlockReason, GradingResult, InternalError, GraderContext, GradingInfo>
-# type Graders = DAG<BlockReason, GradingResult, InternalError, GradingContext, GradingInfo>
-type Graders = List<Node<BlockReason, GradingResult, InternalError, GraderContext, GradingInfo>>
-
-data GraderKind:
-  | gk-passive
-  | gk-scorer(max-score :: Number)
-  | gk-artifact
-sharing:
-  method should-include(self) -> Boolean:
-    cases (GraderKind) self:
-      | gk-passive => false
-      | gk-scorer(_) => true
-      | gk-artifact => true
-    end
-  end,
-
-  method get-max-score(self) -> Option<Number>:
-    cases (GraderKind) self:
-      | gk-scorer(max-score) => some(max-score)
-      | else => none
-    end
-  end
-end
-
-# FIXME: this is a pretty bad abtractions; either use interface or nicer variants
-# TODO: this should eventually support recovering the exact tests run to isolate in a REPL
-data GradingInfo:
-  | grade-info(msg :: String)
-sharing:
-  method to-aggregate-output(self) -> AggregateOutput:
-    cases (GradingInfo) self:
-      | grade-info(msg) => output-markdown(msg)
-    end
-  end
-end
 
 data InternalError:
 sharing:
@@ -106,165 +94,63 @@ sharing:
   end
 end
 
-# TODO: this doesnt make sense to be centralized
-data BlockReason:
-  # the following are both the result of well-formed
-  | cannot-parse(error :: ERR.ParseError)
-  | not-wf(message :: String)
-
-  | br-missing-def(typ :: DefType, name :: String)
-  | br-wrong-def(reason :: WrongDefReason, name :: String)
-
-  # todo: remove
-  | invalid
-sharing:
-  method to-string(self):
-    "something caused block :("
-  end
-end
-
-data DefType:
-  | dt-const
-  | dt-fun
-  | dt-data
-end
-
-data WrongDefReason:
-  | wd-fun-arity(expected :: Number, actual :: Number)
-  | wd-fun-contract(expected :: String, actual :: String)
-  | wd-data-variant-missing(variant-name :: String)
-  | wd-data-variant-arity(expected :: Number, actual :: Number)
-  | wd-data-variant-constract(expected :: String, actual :: String)
-  | wd-data-unexpected-variant(name :: String)
-  | wd-def-type(expected :: DefType, actual :: DefType)
-end
-
 fun is-normalized(val :: Number):
   (val >= 0) and (val <= 1)
 end
 
 type NormalizedNumber = Number%(is-normalized)
 
+# TODO: this could be parameterized too, but not worth it rn
 data GradingResult:
   | score(earned :: NormalizedNumber)
-  | artifact(path :: String)
+  | artifact(path :: String) # TODO: might make more sense to make this an image object
 end
 
-fun log-outcome(outcome :: GradingOutcome):
-  # TODO: add more general logging system, allowing more context for staff
-  cases (GradingOutcome) outcome:
-    | block(reason) => "blocked for reason" + reason.to-string()
-    | noop => "noop"
-    | emit(res) => "emitted with " +
-      cases (GradingResult) res:
-        | score(earned) => "a score of " + to-repr(earned) + " out of 1"
-        | artifact(path) => "an artifact at " + path
-      end
-    | skipped(id) => "skipped because of " + id
-    | internal-error(err) => "produced an internal error! report this to the staff team"
+type TraceEntry<B, I, C> = {
+  id :: Id,
+  result :: GraderResult<B, I, C>
+}
+
+type ExecutionTrace<B, I, C> = List<TraceEntry<B, I, C>>
+
+type GradingOutput<B, I, C> = {
+  aggregated :: List<AggregateResult>,
+  trace :: ExecutionTrace<B, I, C>
+}
+
+# HACK: these should be existentials, not `Any`
+fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any>:
+  dag = for map(grader from graders):
+    ctx = {
+      to-aggregate: grader.to-aggregate
+    }
+    node(grader.id, grader.deps, grader.run, ctx)
   end
-end
+  results = execute(dag)
 
-AGGREGATE-NO-PASSIVE = "disallowed passive grader in aggregate-outcome"
-SCORE-NEEDS-MAX = "grader emitting score must have max-score in ctx"
+  {aggregated; trace} = for fold(
+    acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>} from {[list:]; [list:]},
+    key :: Id from results.keys-list()
+  ):
+    {aggregated; trace} = acc
+    result = results.get-value(key)
 
-fun raise-internal(reason :: String):
-  raise("Fatal Autograder Exception: " + reason)
-end
+    # FIXME: upcast not needed if existentials are modeled correctly
+    new-trace = link(upcast({ id: key, result: result }), trace)
 
-fun grading-skipped-reason(
-  outcome :: GradingOutcome
-) -> Option<String>:
-  cases (GradingOutcome) outcome:
-    | block(reason) => some(reason.to-string())
-    | internal-error(err) => some(err.to-string())
-    | noop => none
-    | emit(res) => none
-    | skipped(id) => none
-  end
-end
-
-# invaraint: ctx kind must not be passive
-fun aggregate-outcome(
-  ctx :: GraderContext,
-  outcome :: GradingOutcome,
-  info :: GradingInfo,
-  all-outcomes :: SD.StringDict<{GradingOutcome; GradingInfo}>
-) -> Option<AggregateResult>:
-  name = ctx.name
-
-  fun not-run(explanation):
-    cases (GraderKind) ctx.kind:
-      | gk-passive =>
-        raise-internal(AGGREGATE-NO-PASSIVE)
-      | gk-scorer(max-score) =>
-        agg-test(name, explanation, none, max-score, test-skipped)
-      | gk-artifact =>
-        agg-artifact(name, some(explanation), art-skipped)
+    # TODO: might need to thread trace for combining nodes into single score
+    new-aggregated = cases (Option) result.ctx.to-aggregate(result):
+      | some(agg) => link(agg, aggregated)
+      | none => aggregated
     end
+
+    {new-aggregated; new-trace}
   end
 
-  cases (GradingOutcome) outcome:
-    | block(reason) => none
-    | noop => none
-    | emit(res) =>
-      cases (GradingResult) res:
-        | score(earned) =>
-          max-score = cases (Option) ctx.kind.get-max-score():
-            | some(max-score) => max-score
-            | none => raise-internal(SCORE-NEEDS-MAX)
-          end
-
-          output = ctx.format-outcome(res)
-          instr-output = info.to-aggregate-output() ^ some
-          scaled-score = res.earned * max-score
-          agg-test(name, output, instr-output, max-score, test-ok(scaled-score))
-        | artifact(path) =>
-          # TODO: does it make sense for this to have info?
-          agg-artifact(name, none, art-ok(path, none))
-      end ^ some
-    | skipped(id) =>
-      reason = grading-skipped-reason(all-outcomes.get-value(id).{0})
-          .or-else("<no reason>")
-
-      explanation = output-text(
-        "test skipped because of " + id + ". Gave reason of " + reason + "."
-      )
-      some(not-run(explanation))
-    | internal-error(err) =>
-      explanation = output-text(
-        # TODO: details should probably not be shown to the student
-        "an internal error occured while running. Error: " +
-        err.to-string() + "."
-      )
-      some(not-run(explanation))
-  end
-end
-
-fun grade(graders :: Graders) -> {List<{Id; AggregateResult;}>; String} block:
-  ctx-dict = list-to-stringdict(graders.map(lam(n): {n.id; n.ctx} end))
-  outcomes = execute(graders, lam(id): {skipped(id); grade-info("")} end)
-
-  var log = ""
-
-  node-results = for fold(acc :: List<{Id; AggregateResult;}> from [list:],
-                          key :: Id from outcomes.keys-list()) block:
-    ctx = ctx-dict.get-value(key)
-    {outcome; info} = outcomes.get-value(key)
-
-    log := log + "### " + key + "\n" + log-outcome(outcome) + "\n"
-
-    if ctx.kind.should-include():
-      agg-res = aggregate-outcome(ctx, outcome, info, outcomes)
-      cases (Option) agg-res:
-        | some(res) => link({key; res;}, acc)
-        | none => acc
-      end
-    else:
-      acc
-    end
-  end
-
-  {node-results.reverse(); log}
+  # FIXME: giant hack, once again need existentials
+  dangerously-escape-typesystem({
+    aggregated: aggregated.reverse(), # reversed because of link
+    trace: trace.reverse(),
+  })
 end
 

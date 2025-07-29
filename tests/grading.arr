@@ -20,6 +20,6 @@ check "grading: simple":
 end
 
 check "grading: must use metadata":
-  grade([list: node("test", [list:], lam(): done(score(1)) end, invisible)]) is [list:]
+  grade([list: node("test", [list:], lam(): done(score(10, 10)) end, invisible)]) is [list:]
 end
 

@@ -5,6 +5,7 @@ provide:
   unique,
   has-duplicates,
   list-to-stringdict,
+  upcast
 end
 
 fun unique<T>(lst :: List<T>) -> List<T>:
@@ -40,5 +41,9 @@ fun list-to-stringdict<T>(l :: List<{String; T;}>) -> SD.StringDict<T>:
   for fold(base from [SD.string-dict:], {key; val;} from l):
     base.set(key, val)
   end
+end
+
+fun upcast<T>(x :: T) -> Any:
+  x
 end
 

@@ -56,17 +56,21 @@ data Outcome<BlockReason, RanResult, Error>:
   | internal-error(err :: Error)
 end
 
-data NodeResult<BlockReason, RanResult, Error, Info>:
+data NodeResult<BlockReason, RanResult, Error, Info, Context>:
   # node was run
   # outcome: the result of the runner
   # info: additional information provided by the runner
-  | executed(outcome :: Outcome<BlockReason, RanResult, Error>, info :: Info)
+  # ctx: additional context associated with the Node
+  | executed(
+      outcome :: Outcome<BlockReason, RanResult, Error>,
+      info :: Info,
+      ctx :: Context)
 
   # node wasn't run because of unmet dependency
   # id: the id of the node which stopped further execution
-  | skipped(id :: Id)
+  # ctx: additional context associated with the Node
+  | skipped(id :: Id, ctx :: Context)
 sharing:
-  # id: id of
   method determine-blocking-node(self, id :: Id) -> Option<Id>:
     doc: ```
       Given the `id` of the node which produced this result,
@@ -76,14 +80,14 @@ sharing:
     ```
 
     cases (NodeResult) self:
-      | executed(outcome, _) =>
+      | executed(outcome, _, _) =>
         cases (Outcome) outcome:
           | block(_) => some(id)
           | noop => none
           | emit(_) => none
           | internal-error(_) => some(id)
         end
-      | skipped(orig-id) => some(orig-id)
+      | skipped(orig-id, _) => some(orig-id)
     end
   end
 end
@@ -143,8 +147,8 @@ fun topological-sort<B, R, E, I, C>(
   help(dag, [list:], [list:])
 end
 
-fun check-dependencies<B, R, E, I>(
-  results :: SD.StringDict<NodeResult<B, R, E, I>>,
+fun check-dependencies<B, R, E, I, C>(
+  results :: SD.StringDict<NodeResult<B, R, E, I, C>>,
   deps :: List<Id>
 ) -> Option<Id>:
   doc: ```
@@ -166,22 +170,22 @@ end
 
 fun execute<B, R, E, I, C>(
   dag :: DAG<B, R, E, I, C>
-) -> SD.StringDict<NodeResult<B, R, E, I>>:
+) -> SD.StringDict<NodeResult<B, R, E, I, C>>:
   doc: "executes the dag, propogating outcomes"
 
   fun help(
     shadow dag :: List<Node<B, R, E, I, C>>,
-    acc :: SD.StringDict<NodeResult<B, R, E, I>>
-  ) -> SD.StringDict<NodeResult<B, R, E, I>>:
+    acc :: SD.StringDict<NodeResult<B, R, E, I, C>>
+  ) -> SD.StringDict<NodeResult<B, R, E, I, C>>:
     cases (List<Node<B, R, E, I, C>>) dag:
       | empty => acc
       | link(shadow node, rst) =>
         cases (Option) check-dependencies(acc, node.deps):
           | none =>
             {outcome; info} = node.run()
-            acc.set(node.id, executed(outcome, info))
+            acc.set(node.id, executed(outcome, info, node.ctx))
           | some(blocking-id) =>
-            acc.set(node.id, skipped(blocking-id))
+            acc.set(node.id, skipped(blocking-id, node.ctx))
         end
         ^ help(rst, _)
     end

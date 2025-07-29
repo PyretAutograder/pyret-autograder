@@ -4,7 +4,8 @@
   provides: {
     values: {
       "get-proj-dir": ["arrow", [], "String"],
-      "pretty-print-json": ["arrow", ["String"], "Nothing"]
+      "pretty-print-json": ["arrow", ["String"], "Nothing"],
+      "dangerously-escape-typesystem": ["forall", ["A", "B"], ["arrow", [["tid", "A"]], ["tid", "B"]]]
     },
   },
   nativeRequires: ["path"],
@@ -23,10 +24,19 @@
       return runtime.nothing;
     }
 
+    function dangerouslyEscapeTypesystem(x) {
+      runtime.checkArity(1, arguments, false);
+      return x;
+    }
+
     return runtime.makeModuleReturn(
       {
         "get-proj-dir": runtime.makeFunction(getProjDir, "get-proj-dir"),
-        "pretty-print-json": runtime.makeFunction(prettyPrintJSON, "pretty-print-json")
+        "pretty-print-json": runtime.makeFunction(prettyPrintJSON, "pretty-print-json"),
+        "dangerously-escape-typesystem": runtime.makeFunction(
+          dangerouslyEscapeTypesystem,
+          "dangerously-escape-typesystem"
+        )
       },
       {},
     );
