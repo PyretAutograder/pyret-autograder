@@ -1,4 +1,11 @@
-provide *
+provide:
+  make-fun-splicer,
+  shadow-visitor,
+  make-fun-extractor,
+  make-check-extractor,
+  make-check-filter,
+  make-program-appender
+end
 
 import ast as A
 

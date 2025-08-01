@@ -7,6 +7,7 @@ provide:
   parse-path
 end
 
+# FIXME: file library not typed correctly
 fun parse-path(path :: String) -> E.Either<A.Program>:
   content = F.file-to-string(path)
   PP.maybe-surface-parse(content, path)

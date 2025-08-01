@@ -5,7 +5,8 @@ provide:
   unique,
   has-duplicates,
   list-to-stringdict,
-  upcast
+  upcast,
+  safe-divide
 end
 
 fun unique<T>(lst :: List<T>) -> List<T>:
@@ -27,7 +28,7 @@ end
 
 fun has-duplicates<T>(lst :: List<T>) -> Boolean:
   doc: "Determines if the list contains any duplicate elements."
-  
+
   L.length(lst) > L.length(unique(lst))
 end
 
@@ -45,5 +46,14 @@ end
 
 fun upcast<T>(x :: T) -> Any:
   x
+end
+
+fun safe-divide(a :: Number, b :: Number, default :: Number) -> Number:
+  doc: "Divide the numbers if b != 0, otherwise return default"
+  if b == 0:
+    default
+  else:
+    a / b
+  end
 end
 

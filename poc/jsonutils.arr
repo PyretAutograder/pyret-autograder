@@ -17,38 +17,43 @@ data PJSON:
     method get(self, key :: String):
       op = "get(" + key + ")"
       self.chain(op, lam(j):
-          cases(J.JSON) j:
-            | j-obj(d) =>
-              cases(Option) d.get(key):
-                | none => mk(none, link(E.left(op + " missing, keys are " + (d.keys() ^ to-repr)), self.ops))
-                | some(val) => mk(some(val), link(E.right(op), self.ops))
-              end
-            | else => mk(none, link(E.left(op + " not an object"), self.ops))
-          end
-        end)
+        cases(J.JSON) j:
+          | j-obj(d) =>
+            cases(Option) d.get(key):
+              | none => mk(none, link(E.left(op + " missing, keys are " + (d.keys() ^ to-repr)), self.ops))
+              | some(val) => mk(some(val), link(E.right(op), self.ops))
+            end
+          | else => mk(none, link(E.left(op + " not an object"), self.ops))
+        end
+      end)
     end,
     method find-match(self, key :: String, val :: String):
       op = "find-match(" + key + " = " + val + ")"
-      self.chain(op, lam(j):
-          cases(J.JSON) j:
-            |j-arr(l) =>
-              cases(Option) L.find(
-                    lam(o): cases(J.JSON) o:
-                        | j-obj(d) => d.get(key) == some(J.j-str(val))
-                        | else => false
-                      end
-                    end, l):
-                | none => mk(none, link(E.left(op + " matches nothing against object summaries: " +
-                        torepr(l.map(lam(o): cases(J.JSON) o:
-                                | j-obj(d) => d.keys()
-                                | else => "nonobj"
-                              end
-                            end))), self.ops))
-                | some(v) => mk(some(v), link(E.right(op), self.ops))
+      lam(j):
+        cases(J.JSON) j:
+          | j-arr(l) =>
+            maybe-found = L.find(lam(o):
+              cases(J.JSON) o:
+                | j-obj(d) => d.get(key) == some(J.j-str(val))
+                | else => false
               end
+            end, l)
+            cases(Option) maybe-found:
+              | none =>
+                summaries = torepr(l.map(lam(o): cases(J.JSON) o:
+                    | j-obj(d) => d.keys()
+                    | else => "nonobj"
+                  end
+                end))
+                mk(none,
+                  link(E.left(op + " matches nothing against object summaries: " + summaries),
+                  self.ops))
+              | some(v) => mk(some(v), link(E.right(op), self.ops))
+            end
             | else => mk(none, link(E.left(op + " not an array"), self.ops))
-          end
-        end)
+        end
+      end
+      ^ self.chain(op, _)
     end,
     method n(self):
       cases(Option) self.v:
