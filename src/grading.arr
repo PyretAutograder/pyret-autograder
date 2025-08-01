@@ -54,13 +54,16 @@ end
 # TODO: this whole structure needs some work, its not very aggregate anymore
 data AggregateResult:
   | agg-guard( # TODO: this needs more
+      id :: Id,
       name :: String,
       outcome :: GuardOutcome)
   | agg-test(
+      id :: Id,
       name :: String,
       max-score :: Number,
       outcome :: TestOutcome)
   | agg-artifact(
+      id :: Id,
       name :: String,
       description :: Option<AggregateOutput>,
       outcome :: ArtifactOutcome)

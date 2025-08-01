@@ -33,7 +33,7 @@ end
 
 check "grading: control flow":
   fun dummy-agg(info :: String):
-    agg-test("", 0, test-ok(0, output-text(info), none))
+    agg-test("", "", 0, test-ok(0, output-text(info), none))
   end
 
   fun simple-aggregator(node-result :: NodeResult):
@@ -132,11 +132,11 @@ check "grading: aggregators":
             end
           | internal-error(err) => ...
         end
-      | skipped(id, ctx) => ...
+      | skipped(skip-id, ctx) => ...
     end
   end
 
-  fun guard-aggregator(node-result):
+  fun guard-aggregator(id, node-result):
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         cases (Outcome) outcome:
@@ -145,13 +145,13 @@ check "grading: aggregators":
           | noop => guard-passed
           | else => raise("invalid")
         end
-      | skipped(id, ctx) => guard-skipped(id)
+      | skipped(skip-id, ctx) => guard-skipped(skip-id)
     end
-    ^ agg-guard("Guard", _)
+    ^ agg-guard(id, "Guard", _)
     ^ some
   end
 
-  fun test-aggregator(node-result):
+  fun test-aggregator(id, node-result):
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         cases (Outcome) outcome:
@@ -163,13 +163,13 @@ check "grading: aggregators":
             end
           | else => raise("invalid")
         end
-      | skipped(id, ctx) => test-skipped(id)
+      | skipped(skip-id, ctx) => test-skipped(skip-id)
     end
-    ^ agg-test("Test", 1, _)
+    ^ agg-test(id, "Test", 1, _)
     ^ some
   end
 
-  fun artifact-aggregator(node-result):
+  fun artifact-aggregator(id, node-result):
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         cases (Outcome) outcome:
@@ -180,9 +180,9 @@ check "grading: aggregators":
             end
           | else => raise("invalid")
         end
-      | skipped(id, ctx) => art-skipped(id)
+      | skipped(skip-id, ctx) => art-skipped(skip-id)
     end
-    ^ agg-artifact("Artifact", none, _)
+    ^ agg-artifact(id, "Artifact", none, _)
     ^ some
   end
 
@@ -190,66 +190,66 @@ check "grading: aggregators":
     id: "guard",
     deps: [list:],
     run: {(): {noop; "passing info"}},
-    to-aggregate: guard-aggregator
+    to-aggregate: guard-aggregator("guard", _)
   }
 
   failing-guard-grader = {
     id: "guard",
     deps: [list:],
     run: {(): {block(blocker1); "block info"}},
-    to-aggregate: guard-aggregator
+    to-aggregate: guard-aggregator("guard", _)
   }
 
   dependent-guard = {
     id: "dep-guard",
     deps: [list: "guard"],
     run: {(): {noop; nothing}},
-    to-aggregate: guard-aggregator
+    to-aggregate: guard-aggregator("dep-guard", _)
   }
 
   scorer = {
     id: "scorer",
     deps: [list: "guard"],
     run: {(): {emit(score(1)); "score info"}},
-    to-aggregate: test-aggregator
+    to-aggregate: test-aggregator("scorer", _)
   }
 
   artist = {
     id: "artist",
     deps: [list: "guard"],
     run: {(): {emit(artifact("/path/to/file")); "artifact info"}},
-    to-aggregate: artifact-aggregator
+    to-aggregate: artifact-aggregator("artist", _)
   }
 
   grade([list: passing-guard-grader, dependent-guard]).aggregated
   is
-  [list: agg-guard("Guard", guard-passed),
-         agg-guard("Guard", guard-passed)]
+  [list: agg-guard("guard", "Guard", guard-passed),
+         agg-guard("dep-guard", "Guard", guard-passed)]
 
   grade([list: failing-guard-grader, dependent-guard]).aggregated
   is
-  [list: agg-guard("Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
-         agg-guard("Guard", guard-skipped("guard"))]
+  [list: agg-guard("guard", "Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
+         agg-guard("dep-guard", "Guard", guard-skipped("guard"))]
 
   grade([list: passing-guard-grader, scorer]).aggregated
   is
-  [list: agg-guard("Guard", guard-passed),
-         agg-test("Test", 1, test-ok(1, output-text("got score"), some(output-text("score info"))))]
+  [list: agg-guard("guard", "Guard", guard-passed),
+         agg-test("scorer", "Test", 1, test-ok(1, output-text("got score"), some(output-text("score info"))))]
 
   grade([list: failing-guard-grader, scorer]).aggregated
   is
-  [list: agg-guard("Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
-         agg-test("Test", 1, test-skipped("guard"))]
+  [list: agg-guard("guard", "Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
+         agg-test("scorer", "Test", 1, test-skipped("guard"))]
 
   grade([list: passing-guard-grader, artist]).aggregated
   is
-  [list: agg-guard("Guard", guard-passed),
-         agg-artifact("Artifact", none, art-ok("/path/to/file", some("artifact info")))]
+  [list: agg-guard("guard", "Guard", guard-passed),
+         agg-artifact("artist", "Artifact", none, art-ok("/path/to/file", some("artifact info")))]
 
   grade([list: failing-guard-grader, artist]).aggregated
   is
-  [list: agg-guard("Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
-         agg-artifact("Artifact", none, art-skipped("guard"))]
+  [list: agg-guard("guard", "Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
+         agg-artifact("artist", "Artifact", none, art-skipped("guard"))]
 
 end
 

@@ -43,14 +43,16 @@ fun mk-guard<BlockReason, C>(
       cases (NodeResult) result:
         | executed(outcome, _, _) =>
           cases (Outcome) outcome:
-            | noop => agg-guard(name, guard-passed)
+            | noop => guard-passed
             | block(reason) =>
               {general; staff} = format(reason)
-              agg-guard(name, guard-blocked(general, staff))
+              guard-blocked(general, staff)
             | else => raise("INVARIANT VIOLATED: unexpected outcome")
           end
-        | skipped(skip-id, _) => agg-guard(id, guard-skipped(skip-id))
-      end ^ some
+        | skipped(skip-id, _) => guard-skipped(skip-id)
+      end
+      ^ agg-guard(id, name, _)
+      ^ some
     end
   }
 end
@@ -104,7 +106,7 @@ fun mk-scorer<Info, C>(
           end
         | skipped(skip-id, _) => test-skipped(skip-id)
       end
-      ^ agg-test(name, max-score, _)
+      ^ agg-test(id, name, max-score, _)
       ^ some
     end
     # TODO: to-repl
