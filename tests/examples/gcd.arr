@@ -13,11 +13,11 @@ fun gcd-prop(x :: Natural, y :: Natural) -> True:
   fun common-divisor(a, b, d):
     divides(d, a) and divides(d, b)
   end
-  
+
   potential-larger-common-divisors = range(maybe-gcd + 1, num-max(x, y) + 1)
-  
+
   ((y == 0) and (x == 0) and (maybe-gcd == 0))
-  or 
+  or
   (common-divisor(x, y, maybe-gcd) and
     potential-larger-common-divisors.all(lam(d): not(common-divisor(x,y,d)) end))
 where:
@@ -26,7 +26,7 @@ where:
 end
 
 fun gcd(x :: Natural, y :: Natural) -> Natural:
-  ask: 
+  ask:
     | y == 0 then: x
     | otherwise: gcd(y, num-modulo(x,y))
   end

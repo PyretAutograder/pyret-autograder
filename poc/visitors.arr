@@ -84,6 +84,6 @@ fun make-program-appender(expr):
         | else => raise("make-program-appender: found a non-s-block inside s-program")
       end
       A.s-program(l, self.option(_use), _provide.visit(self), provided-types.visit(self), provides.map(_.visit(self)), imports.map(_.visit(self)), new-body.visit(self))
-  end
+    end
   }
 end

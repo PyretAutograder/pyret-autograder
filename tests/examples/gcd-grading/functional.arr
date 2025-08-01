@@ -23,7 +23,7 @@ check "gcd-prop-reference-tests":
       | otherwise: gcd(y, num-modulo(x, y))
     end
   end
-  
+
   gcd-prop(8, 4) is true
   gcd-prop(1, 1) is true
   gcd-prop(0, 16) is true
@@ -45,7 +45,7 @@ check "gcd-prop-non-trivial":
   fun gcd(x,y):
     y
   end
-  
+
   gcd-prop(8, 4) is true
   gcd-prop(1, 1) is true
   gcd-prop(0, 16) is true

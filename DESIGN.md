@@ -17,7 +17,7 @@ At a high level we need to support the following testing:
   don't overfit our abstractions to just these two cases)
 
 Additionally we should support reasonable weighting as well as zero point tests
-and hidden tests (even if pedagogically questionable, can be useful for 
+and hidden tests (even if pedagogically questionable, can be useful for
 diagnostics).
 
 ### Feedback
@@ -140,7 +140,7 @@ end
   - why is `lint` separate
 - Line annotations from autograders
 <!-- - what does `part` mean? -->
-- instructor only output 
+- instructor only output
   - all output should be able to have granularity
 - toggle instructor visibility
 - contract violations: yes they should be able to see them...
@@ -148,10 +148,10 @@ end
 - error visibility maybe should be an option??? guard blocks don't give away much
 - multiple files: ex buggy implementations
 - CI to check that main autograder refers to valid things
-  - have reference "good" and "bad" sample references which run via CI   
+  - have reference "good" and "bad" sample references which run via CI
 - what is `extra_data`?
 
 ## Jon Meeting
 
 - Api for providing automated feedback
--  
+-
