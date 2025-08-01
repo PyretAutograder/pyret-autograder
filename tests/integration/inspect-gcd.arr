@@ -1,13 +1,10 @@
 include file("../../src/main.arr")
-include js-file("../../src/utils")
+import file("../meta/path-utils.arr") as P
 
-import pathlib as Path
-
-proj-dir = get-proj-dir()
-student-path = Path.join(proj-dir, "tests/examples/gcd.arr")
-chaff-path = Path.join(proj-dir, "tests/examples/gcd-grading/chaff.arr")
-wheat-path = Path.join(proj-dir, "tests/examples/gcd-grading/wheat.arr")
-functional-path = Path.join(proj-dir, "tests/examples/gcd-grading/functional.arr")
+student-path = P.example("gcd.arr")
+chaff-path = P.example("gcd-grading/chaff.arr")
+wheat-path = P.example("gcd-grading/wheat.arr")
+functional-path = P.example("gcd-grading/functional.arr")
 
 graders =
   [list:

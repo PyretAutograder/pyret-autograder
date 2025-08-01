@@ -1,6 +1,6 @@
 include file("./core.arr")
 include file("./utils.arr")
-include js-file("./utils") # HACK: remove once/if typesystem supports existentials
+include js-file("./escape-hatch") # HACK: remove once/if typesystem supports existentials
 import string-dict as SD
 import error as ERR
 
@@ -151,7 +151,7 @@ fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any
   end
 
   # FIXME: giant hack, once again need existentials
-  dangerously-escape-typesystem({
+  escape-typesystem({
     aggregated: aggregated.reverse(), # reversed because of link
     trace: trace.reverse(),
   })

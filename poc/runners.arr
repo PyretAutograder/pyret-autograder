@@ -18,20 +18,18 @@ import npm("pyret-lang", "../../src/arr/compiler/compile-lib.arr") as CL
 import runtime-lib as RT
 import load-lib as LL
 import require-util as RU
-include js-file("../src/utils")
 
 import file("./visitors.arr") as V
 import file("./jsonutils.arr") as JU
 
-project-root = get-proj-dir()
-
+# FIXME: which paths should these use?
 context = {
-  current-load-path: Path.resolve(project-root),
+  current-load-path: Path.resolve("."),
   cache-base-dir: Path.resolve("./.pyret/compiled"),
 
   compiled-read-only-dirs: [list: Path.join(
     # HACK: see if a `main` can be added to pyret-npm instead
-    RU.resolve("pyret-lang", project-root),
+    RU.resolve("pyret-lang", "."),
     "../../../../pyret-npm/pyret-lang/build/phaseA/lib-compiled")],
   url-file-mode: CS.all-remote
 }
