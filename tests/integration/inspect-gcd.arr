@@ -1,5 +1,6 @@
 include file("../../src/main.arr")
 import file("../meta/path-utils.arr") as P
+include file("../meta/pp.arr")
 
 student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
@@ -36,11 +37,12 @@ graders =
 
 result = grade(graders)
 
-for each(a from result.aggregated):
-  print(to-repr(a) + "\n")
-end
+print("===================Aggregated===================\n")
 
-{student-logs; staff-logs} = summarize-execution-traces(result.trace)
+pretty-aggregate = pretty-print-aggregate-results(result.aggregated, 100)
+print(pretty-aggregate + "\n")
+
+{student-logs; staff-logs} = grading-helpers.summarize-execution-traces(result.trace)
 
 print("==================Student Logs==================\n")
 print(student-logs.content + "\n")
