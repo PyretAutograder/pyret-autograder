@@ -29,7 +29,7 @@ fun check-well-formed(filepath :: String) -> Option<WFBlock>:
   else:
     maybe-parsed = CA.parse-path(filepath)
     cases (Either) maybe-parsed:
-      | left(err) => cannot-parse(err.exn)
+      | left(err) => some(cannot-parse(err.exn))
       | right(ast) =>
         ast-ended = AU.append-nothing-if-necessary(ast)
         wf-check-res = WF.check-well-formed(ast-ended)
