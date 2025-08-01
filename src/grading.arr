@@ -118,7 +118,7 @@ type ExecutionTrace<B, I, C> = List<TraceEntry<B, I, C>>
 
 type GradingOutput<B, I, C> = {
   aggregated :: List<AggregateResult>,
-  trace :: List<ExecutionTrace<B, I, C>>
+  trace :: ExecutionTrace<B, I, C>
 }
 
 # HACK: these should be existentials, not `Any`

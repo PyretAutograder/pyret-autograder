@@ -47,7 +47,7 @@ fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
     | invalid-filepath(filepath) => "Cannot find a file to grade at " + filepath
     | connot-parse(_) => "TODO: cannot parse"
     | not-wf(_) => "TODO: not wf"
-  end
+  end ^ G.output-text
   staff = none
   {student; staff}
 end
