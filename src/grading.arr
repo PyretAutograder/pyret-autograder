@@ -15,6 +15,7 @@ provide:
   type GradingAggregator,
   type GradingRunner,
   type Grader,
+  type InternalError,
   type NormalizedNumber,
   data GradingResult,
   type TraceEntry,
@@ -30,7 +31,10 @@ data AggregateOutput:
 end
 
 data TestOutcome:
-  | test-ok(score :: Number)
+  | test-ok( # "ok" is a bad name, its just not skipped
+      score :: Number,
+      general-output :: AggregateOutput,
+      staff-output :: Option<AggregateOutput>)
   | test-skipped(id :: Id)
 end
 
@@ -41,18 +45,19 @@ end
 
 data GuardOutcome:
   | guard-passed
-  | guard-failed(reason :: AggregateOutput)
+  | guard-failed(
+      general-output :: AggregateOutput,
+      staff-output :: Option<AggregateOutput>)
   | guard-skipped(id :: Id)
 end
 
+# TODO: this whole structure needs some work, its not very aggregate anymore
 data AggregateResult:
   | agg-guard( # TODO: this needs more
       name :: String,
       outcome :: GuardOutcome)
   | agg-test(
       name :: String,
-      general-output :: AggregateOutput,
-      staff-output :: Option<AggregateOutput>,
       max-score :: Number,
       outcome :: TestOutcome)
   | agg-artifact(
@@ -60,6 +65,10 @@ data AggregateResult:
       description :: Option<AggregateOutput>,
       outcome :: ArtifactOutcome)
 end
+
+type InternalError = {
+  to-string :: (-> String)
+}
 
 type GraderOutput<B, I> = RunnerOutput<B, GradingResult, InternalError, I>
 type GraderResult<B, I, C> = NodeResult<B, GradingResult, InternalError, I, C>
@@ -87,12 +96,6 @@ type Grader<B, I, C> = {
   # TODO: to-repl
 }
 
-data InternalError:
-sharing:
-  method to-string(self):
-    "something went wrong :("
-  end
-end
 
 fun is-normalized(val :: Number):
   (val >= 0) and (val <= 1)
