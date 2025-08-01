@@ -1,62 +1,52 @@
-include file("../src/grading.arr")
-include file("../src/runners/main.arr")
-include file("../src/core.arr")
-include js-file("../src/utils")
+include file("../../src/main.arr")
+include js-file("../../src/utils")
 
 import pathlib as Path
 
 proj-dir = get-proj-dir()
-student-path = Path.join(proj-dir, "examples/gcd.arr")
-chaff-path = Path.join(proj-dir, "examples/gcd/chaff.arr")
-wheat-path = Path.join(proj-dir, "examples/gcd/wheat.arr")
-functional-path = Path.join(proj-dir, "examples/gcd/functional.arr")
-
-fun mk-ctx(vis):
-  {
-    visibility: vis,
-    fmt-outcome: lam(x): output-markdown("") end
-  }
-end
+student-path = Path.join(proj-dir, "tests/examples/gcd.arr")
+chaff-path = Path.join(proj-dir, "tests/examples/gcd-grading/chaff.arr")
+wheat-path = Path.join(proj-dir, "tests/examples/gcd-grading/wheat.arr")
+functional-path = Path.join(proj-dir, "tests/examples/gcd-grading/functional.arr")
 
 graders =
   [list:
-    node(
+    mk-self-test(
       "gcd-self-test",
       [list: "wf"],
-      self-test(student-path, "gcd"),
-      visible(1) ^ mk-ctx
+      student-path, "gcd",
+      1
     ),
-    node(
+    mk-chaff(
       "gcd-chaff-1",
       [list: "wf"],
-      chaff(student-path, chaff-path, "gcd"),
-      visible(1) ^ mk-ctx
+      student-path, chaff-path, "gcd",
+      1
     ),
-    node(
+    mk-wheat(
       "gcd-wheat-1",
       [list: "wf"],
-      wheat(student-path, wheat-path, "gcd"),
-      visible(1) ^ mk-ctx
+      student-path, wheat-path, "gcd",
+      1
     ),
-    node(
-      "gcd-reference-tests",
-      [list: "wf"],
-      functional(student-path, functional-path, "gcd-reference-tests"),
-      visible(1) ^ mk-ctx
+    mk-functional(
+      "gcd-reference-tests", [list: "wf"],
+      student-path, functional-path, "gcd-reference-tests",
+      1
     ),
-    node(
-      "wf",
-      [list:],
-      lam(): check-well-formed(student-path) end,
-      invisible ^ mk-ctx
-    ),
+    mk-well-formed("wf", [list:], student-path),
   ]
 
-{grades; log} = grade(graders)
+result = grade(graders)
 
-for each(g from grades):
-  print(to-repr(g) + "\n")
+for each(a from result.aggregated):
+  print(to-repr(a) + "\n")
 end
 
-print(log)
+{student-logs; staff-logs} = summarize-execution-traces(result.trace)
 
+print("==================Student Logs==================\n")
+print(student-logs.content + "\n")
+
+print("===================Staff Logs===================\n")
+print(staff-logs.content + "\n")
