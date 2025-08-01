@@ -40,13 +40,13 @@ check "execute":
 
   blocking_simple_dep = [list: mk-node("block_guard", [list:], runner(block(invalid))),
                                mk-node("has_dep", [list: "block_guard"], runner(emit(1)))]
-  execute(blocking_simple_dep) is [SD.string-dict: "block_guard", res(block(invalid)), 
+  execute(blocking_simple_dep) is [SD.string-dict: "block_guard", res(block(invalid)),
                                                    "has_dep", skip("block_guard")]
 
   internal_failure = [list: mk-node("failing", [list:], runner(internal-error("catastrophic error"))),
                             mk-node("has_dep", [list: "failing"], runner(emit(1)))]
 
-  execute(internal_failure) is [SD.string-dict: "failing", res(internal-error("catastrophic error")), 
+  execute(internal_failure) is [SD.string-dict: "failing", res(internal-error("catastrophic error")),
                                                 "has_dep", skip("failing")]
 
   blocking_dep = [list: mk-node("block_guard", [list:], runner(block(invalid))),
@@ -98,8 +98,8 @@ end
 check "topological-sort":
   topological-sort = _topological-sort
   run = runner(noop)
-  ids = lam<B, R, E, I, C>(dag :: DAG<B, R, E, I, C>) -> List<String>: 
-    dag.map(_.id) 
+  ids = lam<B, R, E, I, C>(dag :: DAG<B, R, E, I, C>) -> List<String>:
+    dag.map(_.id)
   end
 
   ids(topological-sort([list:])) is [list:]

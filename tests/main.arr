@@ -1,5 +1,5 @@
-include file("utils.arr")
-include file("grading.arr")
-include file("core.arr")
-include file("runners/well-formed.arr")
+import file("./utils.arr") as _
+import file("./core.arr") as _
+import file("./grading.arr") as _
+import file("./graders/main.arr") as _
 

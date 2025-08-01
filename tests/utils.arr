@@ -18,3 +18,8 @@ check "list-to-stringdict":
   list-to-stringdict([list:]) is [SD.string-dict:]
   list-to-stringdict([list: {"key1"; 1}, {"key2"; 2}]) is [SD.string-dict: "key1", 1, "key2", 2]
 end
+
+check "save-divide":
+  safe-divide(1, 1, 0) is 1
+  safe-divide(0, 0, 42) is 42
+end
