@@ -13,10 +13,11 @@ end
 provide from grading-builders:
   *, type *, data *
 end
-provide from grading-helpers:
-  *, type *, data *
-end
 provide from graders:
   *, type *, data *
+end
+
+provide:
+  module grading-helpers
 end
 
