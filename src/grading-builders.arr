@@ -16,7 +16,7 @@ provide:
 end
 
 # first element in the tuple represents general output
-# second element allows optionally specifiying more information to course staff
+# second element allows optionally specifying more information to course staff
 #   only
 type ComboAggregate = {AggregateOutput; Option<AggregateOutput>}
 

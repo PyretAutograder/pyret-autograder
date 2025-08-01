@@ -96,9 +96,9 @@ fun valid-dag<B, R, E, I, C>(
   dag :: List<Node<B, R, E, I, C>>
 ) -> Boolean block:
   doc: ```
-    Determines if a list of nodes form a valid directed acylic graph (DAG)
+    Determines if a list of nodes form a valid directed acyclic graph (DAG)
     meaning that:
-    - they don't form cylces
+    - they don't form cycles
     - each node has a unique id
   ```
   ids = dag.map(_.id)
@@ -126,8 +126,8 @@ fun topological-sort<B, R, E, I, C>(
   dag :: DAG<B, R, E, I, C>
 ) -> DAG<B, R, E, I, C>:
   doc: ```
-    Sorts the directed acylic graph such that the ordering garantees that every
-    node appears only after all of its dependencies.
+    Sorts the directed acyclic graph such that the ordering guarantees that
+    every node appears only after all of its dependencies.
   ```
 
   fun help(
@@ -153,7 +153,7 @@ fun check-dependencies<B, R, E, I, C>(
 ) -> Option<Id>:
   doc: ```
     Given the dependencies, `deps`, of a topologically sorted DAG, and all the
-    result of all previously excecuted nodes, `results`, check to see that any
+    result of all previously executed nodes, `results`, check to see that any
     of the dependencies should block the execution of the given node.
     Returns the ID of the node responsible for or none if all dependencies are
     satisfied.
@@ -171,7 +171,7 @@ end
 fun execute<B, R, E, I, C>(
   dag :: DAG<B, R, E, I, C>
 ) -> SD.StringDict<NodeResult<B, R, E, I, C>>:
-  doc: "executes the dag, propogating outcomes"
+  doc: "executes the dag, propagating outcomes"
 
   fun help(
     shadow dag :: List<Node<B, R, E, I, C>>,

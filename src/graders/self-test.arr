@@ -22,8 +22,8 @@ end
 fun fmt-self-test(score :: G.NormalizedNumber, info):
   doc: ```
     Displays individual test failure *to the student*. Clearly the student can
-    run their own tests locally, this is meant primaryily as a diagnostic for
-    enviroment setup and context for TAs when grading a student's test cases.
+    run their own tests locally, this is meant primarily as a diagnostic for
+    environment setup and context for TAs when grading a student's test cases.
   ```
 
   # TODO: show number of test passed, format failing test cases nicely
