@@ -30,6 +30,14 @@ data AggregateOutput:
   | output-ansi(content :: String)
 end
 
+data GuardOutcome:
+  | guard-passed
+  | guard-blocked(
+      general-output :: AggregateOutput,
+      staff-output :: Option<AggregateOutput>)
+  | guard-skipped(id :: Id)
+end
+
 data TestOutcome:
   | test-ok( # "ok" is a bad name, its just not skipped
       score :: Number,
@@ -41,14 +49,6 @@ end
 data ArtifactOutcome:
   | art-ok(path :: String, extra :: Option<Any>) # TODO: remove extra?
   | art-skipped(id :: Id)
-end
-
-data GuardOutcome:
-  | guard-passed
-  | guard-failed(
-      general-output :: AggregateOutput,
-      staff-output :: Option<AggregateOutput>)
-  | guard-skipped(id :: Id)
 end
 
 # TODO: this whole structure needs some work, its not very aggregate anymore
@@ -118,7 +118,7 @@ type ExecutionTrace<B, I, C> = List<TraceEntry<B, I, C>>
 
 type GradingOutput<B, I, C> = {
   aggregated :: List<AggregateResult>,
-  trace :: ExecutionTrace<B, I, C>
+  trace :: List<ExecutionTrace<B, I, C>>
 }
 
 # HACK: these should be existentials, not `Any`

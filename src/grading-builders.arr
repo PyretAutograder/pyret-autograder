@@ -46,7 +46,7 @@ fun mk-guard<BlockReason, C>(
             | noop => agg-guard(name, guard-passed)
             | block(reason) =>
               {general; staff} = format(reason)
-              agg-guard(name, guard-failed(general, staff))
+              agg-guard(name, guard-blocked(general, staff))
             | else => raise("INVARIANT VIOLATED: unexpected outcome")
           end
         | skipped(skip-id, _) => agg-guard(id, guard-skipped(skip-id))
