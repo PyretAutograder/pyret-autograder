@@ -21,6 +21,7 @@ import require-util as RU
 
 import file("./visitors.arr") as V
 import file("./jsonutils.arr") as JU
+include js-file("../src/common/runtime-dirname")
 
 # FIXME: which paths should these use?
 context = {
@@ -29,7 +30,7 @@ context = {
 
   compiled-read-only-dirs: [list: Path.join(
     # HACK: see if a `main` can be added to pyret-npm instead
-    RU.resolve("pyret-lang", "."),
+    RU.resolve("pyret-lang", runtime-dirname()),
     "../../../../pyret-npm/pyret-lang/build/phaseA/lib-compiled")],
   url-file-mode: CS.all-remote
 }
