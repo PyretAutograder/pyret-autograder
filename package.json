@@ -1,13 +1,13 @@
 {
   "name": "pyret-autograder",
-  "version": "0.0.1-pre8",
+  "version": "0.0.1-pre11",
   "description": "Pyret autograder.",
   "author": "Owen Duckham <me@ironmoon.dev>",
   "license": "LGPL-3.0-or-later",
   "main": "src/main.arr",
   "dependencies": {
-    "pyret-lang": "github:ironm00n/pyret-lang#fix/poly-fun-alias",
-    "pyret-npm": "github:ironm00n/pyret-npm#fix/poly-fun-alias"
+    "pyret-lang": "npm:@ironm00n/pyret-lang",
+    "pyret-npm": "npm:@ironm00n/pyret-npm"
   },
   "scripts": {
     "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
