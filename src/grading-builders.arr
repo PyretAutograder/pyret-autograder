@@ -57,7 +57,7 @@ fun mk-guard<BlockReason, C>(
   }
 end
 
-type ScorerRunner<Info> = (-> Either<{NormalizedNumber; Info}, InternalError>)
+type ScorerRunner<Info> = (-> Either<InternalError, {NormalizedNumber; Info}>)
 type ScorerFormat<Info> = (NormalizedNumber, Info -> ComboAggregate)
 type ScorerWeight = (NormalizedNumber, Number -> Number)
 
@@ -77,8 +77,8 @@ fun mk-scorer<Info, C>(
     deps: deps,
     run: lam():
       cases (Either) scorer():
-        | left({num; info}) => {emit(score(num)); some(info)}
-        | right(err) => {internal-error(err); none}
+        | left(err) => {internal-error(err); none}
+        | right({num; info}) => {emit(score(num)); some(info)}
       end
     end,
     to-aggregate: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<AggregateResult>:

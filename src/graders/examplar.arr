@@ -22,7 +22,7 @@ fun score-examplar(
   decider :: Decider
 ):
   {score; total; info} = AAAA.tmp-run-with-alternate-impl(student-path, alt-impl-path, fun-name)
-  left({if decider(score, total): 1 else: 0 end; info})
+  right({if decider(score, total): 1 else: 0 end; info})
 end
 
 fun fmt-examplar-test(score :: G.NormalizedNumber, info :: Info, adjective :: String):

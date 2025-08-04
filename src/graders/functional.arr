@@ -18,7 +18,7 @@ fun score-functional-test(
   student-path :: String, ref-path :: String, check-name :: String
 ):
   {score; total; info} = AAAA.tmp-run-extra-check(student-path, ref-path, check-name)
-  left({safe-divide(score, total, 0); info})
+  right({safe-divide(score, total, 0); info})
 end
 
 fun fmt-functional-test(score :: G.NormalizedNumber, info):

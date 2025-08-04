@@ -16,7 +16,7 @@ type Info = String
 
 fun score-self-test(path :: String, fun-name :: String):
   {score; total; info} = AAAA.tmp-run-with-alternate-impl(path, path, fun-name)
-  left({safe-divide(score, total, 0); info})
+  right({safe-divide(score, total, 0); info})
 end
 
 fun fmt-self-test(score :: G.NormalizedNumber, info):
