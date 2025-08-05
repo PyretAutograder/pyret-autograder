@@ -5,8 +5,11 @@ import file("../common/ast.arr") as CA
 import file("../grading-builders.arr") as GB
 import file("../grading.arr") as G
 import file("../core.arr") as C
+import file("../common/markdown.arr") as MD
+import render-error-display as RED
 import error as ERR
-import file as F
+import filesystem as FS
+import filelib as FL
 include either
 include from C: type Id end
 
@@ -18,36 +21,73 @@ provide:
 end
 
 data WFBlock:
-  | invalid-filepath(filepath :: String)
-  | cannot-parse(x :: Any)
+  | path-doesnt-exist(path :: String)
+  | path-isnt-file(path :: String)
+  | cannot-parse(inner :: CA.InternalParseError, content :: String)
   | not-wf(x :: Any)
 end
 
 fun check-well-formed(filepath :: String) -> Option<WFBlock>:
-  if not(F.file-exists(filepath)):
-    some(invalid-filepath(filepath))
+  cases (Either) CA.parse-path(filepath):
+    | left(err) =>
+      cases (CA.ParsePathErr) err:
+        | path-doesnt-exist(path) => some(path-doesnt-exist(path))
+        | path-isnt-file(path) => some(path-isnt-file(path))
+        | cannot-parse(inner, content) => some(cannot-parse(inner, content))
+      end
+    | right(ast) =>
+      ast-ended = AU.append-nothing-if-necessary(ast)
+      wf-check-res = WF.check-well-formed(ast-ended)
+      cases (CS.CompileResult) wf-check-res:
+        | err(problems) => some(not-wf(problems))
+        | ok(_) => none # TODO: also check for other compilation error
+      end
+  end
+end
+
+fun list-files(path :: String) -> Option<List<String>>:
+  dirname = FS.dirname(path)
+  if FS.exists(dirname):
+    some(FL.list-files(dirname))
   else:
-    maybe-parsed = CA.parse-path(filepath)
-    cases (Either) maybe-parsed:
-      | left(err) => some(cannot-parse(err.exn))
-      | right(ast) =>
-        ast-ended = AU.append-nothing-if-necessary(ast)
-        wf-check-res = WF.check-well-formed(ast-ended)
-        cases (CS.CompileResult) wf-check-res:
-          | err(problems) => some(problems)
-          | ok(_) => none # TODO: also check for other compilation error
-        end
-    end
+    none
   end
 end
 
 fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
   # TODO: finish formatting
   student = cases (WFBlock) reason block:
-    | invalid-filepath(filepath) => "Cannot find a file to grade at " + filepath
-    | connot-parse(_) => "TODO: cannot parse"
+    | path-doesnt-exist(path) =>
+      "Cannot find a submission to grade; expected to find a file at " +
+      "`" + MD.escape-inline-code(path) + "`, but didn't find anything there." +
+      cases (Option) list-files(path):
+        | some(files) =>
+          "\n\n" +
+          "The autograder can see the following files in the same directly, " +
+          "perhaps you have misnamed your file:\n" +
+          "```\n" +
+          files.join-str("\n") + # TODO: escape
+          "\n```"
+        | none => ""
+      end
+    | path-isnt-file(path) =>
+      "Cannot find a submission to grade; expected to find a file at " +
+      "`" + MD.escape-inline-code(path) + "`, but found somthing else. Make " +
+      "sure you submit a file, not a directory."
+    | cannot-parse(inner, content) =>
+      src-available = lam(x):
+        false # would be nice to embed with src-available
+      end
+      exn = inner.exn
+      msg = inner.message
+      "The submitted file cannot be parsed by pyret. Please make sure that " +
+      "your file can run. Pyret reports the following issue:\n\n" +
+      "```" +
+      RED.display-to-string(exn.render-fancy-reason(src-available), to-repr, empty) # TODO: escape
+      + "\n\n" + msg + "\n```"
+
     | not-wf(_) => "TODO: not wf"
-  end ^ G.output-text
+  end ^ G.output-markdown
   staff = none
   {student; staff}
 end
