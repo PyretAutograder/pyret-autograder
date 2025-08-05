@@ -1,0 +1,12 @@
+{
+  "include": ["src/**/*.js", "tests/**/*.js", "src/**/*.d.ts"],
+  "exclude": ["playground/**/*", ".pyret/**/*", "node_modules"],
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "module": "nodenext",
+    "target": "esnext",
+    "noEmit": true
+  }
+}

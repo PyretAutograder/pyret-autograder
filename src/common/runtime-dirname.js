@@ -1,4 +1,4 @@
-// prettier-ignore
+/** @satisfies {PyretModule} */
 ({
   requires: [],
   provides: {
@@ -7,9 +7,9 @@
     },
   },
   nativeRequires: [],
-  theModule: function (runtime, _, _) {
+  theModule: function (runtime, _namespace, _uri) {
     function runtimeDirname() {
-      runtime.checkArity(0, arguments, false);
+      runtime.checkArity(0, arguments, "runtime-dirname", false);
       return runtime.makeString(__dirname);
     }
 

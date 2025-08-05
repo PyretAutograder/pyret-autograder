@@ -1,4 +1,4 @@
-// prettier-ignore
+/** @satisfies {PyretModule} */
 ({
   requires: [],
   provides: {
@@ -7,9 +7,9 @@
     },
   },
   nativeRequires: [],
-  theModule: function (runtime, _, _) {
-    function escapeTypesystem(x) {
-      runtime.checkArity(1, arguments, false);
+  theModule: function (runtime, _namespace, _uri) {
+    function escapeTypesystem(/** @type {any} */ x) {
+      runtime.checkArity(1, arguments, "escape-typesystem", false);
       return x;
     }
 

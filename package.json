@@ -12,5 +12,8 @@
   "scripts": {
     "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
     "clean": "rm -rf -- ./pyret"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0"
   }
 }

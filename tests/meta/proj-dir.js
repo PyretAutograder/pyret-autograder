@@ -1,4 +1,4 @@
-// prettier-ignore
+/** @satisfies {PyretModule} */
 ({
   requires: [],
   provides: {
@@ -7,9 +7,9 @@
     },
   },
   nativeRequires: ["path"],
-  theModule: (runtime, _, uri, path) => {
+  theModule: (runtime, _, uri, /** @type {import('node:path')} */ path) => {
     function getProjDir() {
-      runtime.checkArity(0, arguments, false);
+      runtime.checkArity(0, arguments, "get-proj-dir", false);
       const stripped = uri.replace("jsfile://", "");
       const proj = path.join(path.dirname(stripped), "../..");
       const resolved = path.resolve(proj);
