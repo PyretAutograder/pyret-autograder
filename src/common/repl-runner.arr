@@ -187,13 +187,13 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
         val
         # ^ identity-print-raw
         ^ lam(x) block:
-            print-module-result(x)
+            # print-module-result(x)
             x
           end
         ^ LL.render-check-results(_)
-        ^ identity-spy
+        # ^ identity-spy
         ^ _.message
-        ^ identity-print-json
+        # ^ identity-print-json
         ^ J.read-json  
         # ^ _.native()
         ^ right
@@ -203,5 +203,5 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
         ^ left
       end
   end
-  ^ identity-spy
+  # ^ identity-spy
 end
