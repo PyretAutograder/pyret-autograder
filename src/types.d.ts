@@ -12,6 +12,7 @@ interface PyretRuntime {
   stdout: typeof process.stdout;
   stderr: typeof process.stderr;
   stdin: typeof process.stdin;
+  console: typeof console;
 
   makeString: (s: string) => val;
   makeNumber: (n: number) => val;
@@ -54,6 +55,10 @@ interface PyretRuntime {
   getListLength: (l: val) => number;
   getListElements: (l: val) => val[];
   getFunctionArity: (f: val) => number;
+
+  nothing: val,
+
+  toRepr: (v: val) => val,
 
   makeModuleReturn: (
     values: Record<string, unknown>,

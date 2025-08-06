@@ -50,7 +50,7 @@ data PJSON:
                   self.ops))
               | some(v) => mk(some(v), link(E.right(op), self.ops))
             end
-            | else => mk(none, link(E.left(op + " not an array"), self.ops))
+          | else => mk(none, link(E.left(op + " not an array"), self.ops))
         end
       end
       ^ self.chain(op, _)

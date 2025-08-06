@@ -1,6 +1,7 @@
-include file("../../src/main.arr")
 import file("../meta/path-utils.arr") as P
-include file("../meta/pp.arr")
+include file("../meta/inspect-grade.arr")
+include file("../../src/main.arr")
+include js-file("../../src/utils/debug-utils")
 
 student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
@@ -35,17 +36,7 @@ graders =
     mk-well-formed("wf", [list:], student-path),
   ]
 
-result = grade(graders)
+# wait-for-debugger()
 
-print("===================Aggregated===================\n")
+inspect-grade(graders)
 
-pretty-aggregate = pretty-print-aggregate-results(result.aggregated, 100)
-print(pretty-aggregate + "\n")
-
-{student-logs; staff-logs} = grading-helpers.summarize-execution-traces(result.trace)
-
-print("==================Student Logs==================\n")
-print(student-logs.content + "\n")
-
-print("===================Staff Logs===================\n")
-print(staff-logs.content + "\n")

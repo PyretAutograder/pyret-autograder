@@ -56,7 +56,7 @@ fun make-check-extractor(target-name :: String) block:
   }
 end
 
-fun make-check-filter(pred):
+fun make-check-filter(pred :: (String -> Boolean)):
   A.default-map-visitor.{
     method s-check(self, l, name, body, keyword-check):
       if pred(name):
@@ -81,6 +81,7 @@ fun make-program-appender(expr):
     method s-program(self, l, _use, _provide, provided-types, provides, imports, body) block:
       new-body = cases(A.Expr) body:
         | s-block(shadow l, stmts) => A.s-block(l, stmts.append([list: expr]))
+        # TODO: is it ok to throw here? is this a true invariant?
         | else => raise("make-program-appender: found a non-s-block inside s-program")
       end
       A.s-program(l, self.option(_use), _provide.visit(self), provided-types.visit(self), provides.map(_.visit(self)), imports.map(_.visit(self)), new-body.visit(self))

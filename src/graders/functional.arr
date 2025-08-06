@@ -17,7 +17,7 @@ type Info = String
 fun score-functional-test(
   student-path :: String, ref-path :: String, check-name :: String
 ):
-  {score; total; info} = AAAA.tmp-run-extra-check(student-path, ref-path, check-name)
+  {score; total; info} = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
   right({safe-divide(score, total, 0); info})
 end
 
