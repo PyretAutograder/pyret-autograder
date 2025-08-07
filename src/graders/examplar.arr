@@ -25,10 +25,14 @@ fun score-examplar(
   right({if decider(score, total): 1 else: 0 end; info})
 end
 
-fun fmt-examplar-test(score :: G.NormalizedNumber, info :: Info, adjective :: String):
+fun fmt-examplar-test(
+  score :: G.NormalizedNumber, info :: Info, fun-name :: String,
+  adjective :: String
+):
   # TODO: improve output, should it mention function again? Maybe explain
   # success and failure for each?
-  general = ("Ran your implementations of ??? against our " + adjective + "implementation.") ^ output-text
+  general = output-text("Ran your tests for `" + fun-name + "` against our " +
+              adjective + " implementation.")
   # TODO: need to improve output for chaffs where failure is required
   staff = output-text(info) ^ some
 
@@ -43,7 +47,7 @@ fun mk-examplar(
   scorer = lam():
     score-examplar(student-path, alt-impl-path, fun-name, decider)
   end
-  fmter = fmt-examplar-test(_, _, adjective)
+  fmter = fmt-examplar-test(_, _, fun-name, adjective)
   GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
 end
 
@@ -68,6 +72,6 @@ fun mk-chaff(
   decider = _ <> _
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
-    "correct"
+    "incorrect"
   )
 end
