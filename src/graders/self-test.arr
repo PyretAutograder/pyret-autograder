@@ -42,6 +42,3 @@ fun mk-self-test(
   GB.mk-simple-scorer(id, deps, scorer, name, points, fmt-self-test)
 end
 
-
-
-

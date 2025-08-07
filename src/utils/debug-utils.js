@@ -22,7 +22,7 @@
 
     function printRaw(/** @type {any} */ val) {
       runtime.checkArity(1, arguments, "print-raw", false);
-      runtime.console.dir(val, { depth: 2 }); 
+      runtime.console.dir(val, { depth: 2 });
       // debugger;
       return runtime.nothing;
     }
@@ -44,7 +44,7 @@
     function printPotentiallyPyret(console, base, obj, execRt) {
       for (const [key, val] of Object.entries(obj.dict)) {
         console.log(base + key);
-        debugger;
+        // debugger;
         console.dir({
           isNumber: execRt.isNumber(val),
           isBoolean: execRt.isBoolean(val),
@@ -60,9 +60,12 @@
           val
         }, { depth: 1 });
         if (execRt.isObject(val)) {
-          printModuleResult(console, base + key + ".", val, execRt);
+          console.dir([base + key, val], { depth: 1 });
+          // printModuleResult(console, base + key + ".", val, execRt);
         } else if (execRt.isPyretVal(val)) {
           console.dir([base + key, execRt.toRepr(val)]);
+        } else if (runtime.isPyretVal(val)) {
+          console.dir([base + key + "[rt]", runtime.toRepr(val)]);
         } else {
           console.dir([base + key, val], { depth: 1 });
         }
@@ -79,9 +82,11 @@
       const result = mr.val.result;
       const stats = result.stats;
       // runtime.console.dir({ stats, result: execRt.toRepr(result.result) });
-      runtime.console.dir({ stats, });
-  
-      printPotentiallyPyret(runtime.console, "", result.result, execRt);
+      runtime.console.dir({ stats,result: result.result });
+
+      // printPotentiallyPyret(runtime.console, "", result.result, execRt);
+      runtime.console.dir(execRt.toRepr(result.result.dict.checks))
+
 
       return runtime.nothing;
     }
