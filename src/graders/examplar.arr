@@ -31,8 +31,9 @@ fun fmt-examplar-test(
 ):
   # TODO: improve output, should it mention function again? Maybe explain
   # success and failure for each?
-  general = output-text("Ran your tests for `" + fun-name + "` against our " +
-              adjective + " implementation.")
+  general = output-markdown(
+    "Ran your tests for `" + fun-name + "` against our " + adjective + " implementation."
+  )
   # TODO: need to improve output for chaffs where failure is required
   staff = output-text(info) ^ some
 

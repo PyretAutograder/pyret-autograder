@@ -3,6 +3,7 @@ import file("./grading.arr") as grading
 import file("./grading-builders.arr") as grading-builders
 import file("./grading-helpers.arr") as grading-helpers
 import file("./graders/main.arr") as graders
+import file("./tools/main.arr") as tools
 
 provide from core:
   *, type *, data *
@@ -18,6 +19,7 @@ provide from graders:
 end
 
 provide:
-  module grading-helpers
+  module grading-helpers,
+  module tools,
 end
 

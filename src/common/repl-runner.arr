@@ -15,7 +15,7 @@ import file("./ast.arr") as CA
 include js-file("./runtime-dirname")
 include either
 
-include js-file("../utils/debug-utils")
+include js-file("../tools/debugging")
 
 provide:
   data *,

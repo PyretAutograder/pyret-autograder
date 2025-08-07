@@ -1,7 +1,7 @@
 import file("../meta/path-utils.arr") as P
 include file("../meta/inspect-grade.arr")
 include file("../../src/main.arr")
-include js-file("../../src/utils/debug-utils")
+include file("../../src/tools/main.arr")
 
 student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
@@ -36,7 +36,8 @@ graders =
     mk-well-formed("wf", [list:], student-path),
   ]
 
-# wait-for-debugger()
+# FIXME: nested modules not working
+# debugging.wait-for-debugger()
 
 inspect-grade(graders)
 
