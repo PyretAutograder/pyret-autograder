@@ -11,4 +11,3 @@ fun foldr<A, B>(lst :: List<A>, f :: (B, A -> B), acc :: B) -> B:
     | link(first, rest) => f(foldr(rest, f, acc), first)
   end
 end
-

@@ -6,7 +6,11 @@ provide:
   has-duplicates,
   list-to-stringdict,
   upcast,
-  safe-divide
+  safe-divide,
+  min,
+  max,
+  safe-inclusive-substring,
+  filter_n
 end
 
 fun unique<T>(lst :: List<T>) -> List<T>:
@@ -57,3 +61,48 @@ fun safe-divide(a :: Number, b :: Number, default :: Number) -> Number:
   end
 end
 
+fun min(a :: Number, b :: Number) -> Number:
+  doc: "Returns the smaller of the provided numbers."
+  if a > b:
+    b
+  else:
+    a
+  end
+end
+
+fun max(a :: Number, b :: Number) -> Number:
+  doc: "Returns the larger of the provided numbers."
+  if a > b:
+    a
+  else:
+    b
+  end
+end
+
+fun safe-inclusive-substring(
+  str :: String, start-index :: NumNonNegative, end-index :: Number
+) -> String:
+  doc: ```
+    Takes the substring of a number in the range [start, end] where both indexes
+    are inclusive. If the start index is larger than what the string contains,
+    an empty string will be returned.
+  ```
+  len = string-length(str)
+  ask:
+    | start-index > end-index then: ""
+    | start-index >= len then: ""
+    | otherwise: string-substring(str, start-index, min(end-index + 1, len))
+  end
+end
+
+fun filter_n<T>(
+  f :: (Number, T -> Boolean), start :: Number, lst :: List<T>
+) -> List<T>:
+  for L.fold_n(n from start, acc from [list:], elem from lst):
+    if f(n, elem):
+      link(elem, acc)
+    else:
+      acc
+    end
+  end.reverse()
+end

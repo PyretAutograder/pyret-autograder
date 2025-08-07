@@ -23,3 +23,22 @@ check "save-divide":
   safe-divide(1, 1, 0) is 1
   safe-divide(0, 0, 42) is 42
 end
+
+check "min":
+  min(0, 0) is 0
+  min(1, 2) is 1
+  min(1, -1) is -1
+end
+
+check "max":
+  max(0, 0) is 0
+  max(1, 2) is 2
+  max(1, -1) is 1
+end
+
+check "safe-inclusive-substring":
+  substr = safe-inclusive-substring
+  substr("01234", 1, 3) is "123"
+  substr("", 0, 0) is ""
+end
+
