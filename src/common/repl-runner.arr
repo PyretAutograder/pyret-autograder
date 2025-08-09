@@ -12,7 +12,7 @@ import load-lib as LL
 import require-util as RU
 import file("./visitors.arr") as V
 import file("./ast.arr") as CA
-include js-file("./runtime-dirname")
+include js-file("./runtime")
 include either
 
 include js-file("../tools/debugging")
@@ -32,15 +32,34 @@ end
 # }
 type RunChecksResult = J.JSON
 
+pyret-lang-compiled = cases(Option) get-env("PA_PYRET_LANG_COMPILED_PATH"):
+  | some(path) => path
+  | none =>
+    Path.join(
+      # HACK: see if a `main` can be added to pyret-npm instead
+      RU.resolve("pyret-lang", runtime-dirname()),
+      "../../../../pyret-npm/pyret-lang/build/phaseA/lib-compiled"
+    )
+end
+
+current-load-path = cases(Option) get-env("PA_CURRENT_LOAD_PATH"):
+  | some(path) => path
+  | none => Path.resolve(".")
+end
+
+cache-base-dir = cases(Option) get-env("PA_CACHE_BASE_DIR"):
+  | some(path) => path
+  | none => Path.resolve("./.pyret/compiled")
+end
+
 context = {
   # FIXME: this likely won't work for multi-file support
-  current-load-path: Path.resolve("."),
-  cache-base-dir: Path.resolve("./.pyret/compiled"),
+  current-load-path: current-load-path,
+  cache-base-dir: cache-base-dir,
 
-  compiled-read-only-dirs: [list: Path.join(
-    # HACK: see if a `main` can be added to pyret-npm instead
-    RU.resolve("pyret-lang", runtime-dirname()),
-    "../../../../pyret-npm/pyret-lang/build/phaseA/lib-compiled")],
+  compiled-read-only-dirs: [list:
+    pyret-lang-compiled,
+  ],
   url-file-mode: CS.all-remote
 }
 repl = R.make-repl(
@@ -164,11 +183,10 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
     end
   }
   compile-options = CS.default-compile-options.{checks-format: "json"}
-  
 
-  identity-spy = lam(x): 
+  identity-spy = lam(x):
     spy: x end
-    x 
+    x
   end
   mk-eff-identity = lam(f): lam(x) block:
     f(x)
@@ -194,7 +212,7 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
         # ^ identity-spy
         ^ _.message
         # ^ identity-print-json
-        ^ J.read-json  
+        ^ J.read-json
         # ^ _.native()
         ^ right
       else:

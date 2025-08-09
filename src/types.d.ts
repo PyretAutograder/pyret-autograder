@@ -7,12 +7,19 @@ type val = typeof __pyret_value;
 declare const __pyret_type: unique symbol;
 type typ = typeof __pyret_type;
 
+interface PyretFFI {
+  makeSome: (val: val) => val;
+  makeNone: () => val;
+}
+
 // NOTE: this is far from complete
 interface PyretRuntime {
   stdout: typeof process.stdout;
   stderr: typeof process.stderr;
   stdin: typeof process.stdin;
   console: typeof console;
+
+  ffi: PyretFFI;
 
   makeString: (s: string) => val;
   makeNumber: (n: number) => val;
@@ -56,9 +63,9 @@ interface PyretRuntime {
   getListElements: (l: val) => val[];
   getFunctionArity: (f: val) => number;
 
-  nothing: val,
+  nothing: val;
 
-  toRepr: (v: val) => val,
+  toRepr: (v: val) => val;
 
   makeModuleReturn: (
     values: Record<string, unknown>,
@@ -78,7 +85,21 @@ type PrimType =
 type TypeId = ["tid", string];
 type Arrow = ["arrow", InteropSignature[], InteropSignature];
 type ForAll = ["forall", string[], InteropSignature];
-type InteropSignature = ForAll | Arrow | TypeId | PrimType;
+type ListOf = ["List", InteropSignature];
+type ArrayOf = ["Array", InteropSignature];
+type RawArrayOf = ["RawArray", InteropSignature];
+type OptionOf = ["Option", InteropSignature];
+type Maker = ["Maker", InteropSignature];
+type InteropSignature =
+  | ForAll
+  | Arrow
+  | TypeId
+  | PrimType
+  | ListOf
+  | ArrayOf
+  | RawArrayOf
+  | OptionOf
+  | Maker;
 
 interface PyretModule {
   requires: string[];
