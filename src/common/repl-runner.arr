@@ -33,13 +33,13 @@ end
 type RunChecksResult = J.JSON
 
 pyret-lang-compiled = cases(Option) get-env("PA_PYRET_LANG_COMPILED_PATH"):
-  | some(path) => path
+  | some(path) => string-split-all(path, ":")
   | none =>
-    Path.join(
+    [list: Path.join(
       # HACK: see if a `main` can be added to pyret-npm instead
       RU.resolve("pyret-lang", runtime-dirname()),
       "../../../../pyret-npm/pyret-lang/build/phaseA/lib-compiled"
-    )
+    )]
 end
 
 current-load-path = cases(Option) get-env("PA_CURRENT_LOAD_PATH"):
@@ -53,13 +53,10 @@ cache-base-dir = cases(Option) get-env("PA_CACHE_BASE_DIR"):
 end
 
 context = {
-  # FIXME: this likely won't work for multi-file support
   current-load-path: current-load-path,
   cache-base-dir: cache-base-dir,
 
-  compiled-read-only-dirs: [list:
-    pyret-lang-compiled,
-  ],
+  compiled-read-only-dirs: pyret-lang-compiled,
   url-file-mode: CS.all-remote
 }
 repl = R.make-repl(
