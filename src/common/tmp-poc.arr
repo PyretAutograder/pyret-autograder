@@ -11,49 +11,39 @@ provide:
   tmp-run-with-alternate-checks
 end
 
-fun tmp-run-with-alternate-impl(
-  student-path :: String, alt-impl-path :: String, fun-name :: String
-) -> { Number; Number; String }:
-  res = R.run-with-alternate-impl(student-path, alt-impl-path, fun-name)
-  cases(Either) res:
-  | left(err) => {0; 0; to-repr(err)}
+fun handle(res, path, name):
+  cases (Either) res:
+  | left(err) => left(to-repr(err))
   | right(json) =>
-    tests = JU.pson(json).get(student-path).find-match("name", fun-name)
+    tests = JU.pson(json).get(path).find-match("name", name)
     passed = tests.get("passed").n()
     total = tests.get("total").n()
 
     if is-left(passed) or is-left(total):
-      { 0; 0; "cannot find json: " + to-repr(tests) }
+      left("cannot find json: " + to-repr(tests))
     else:
       results = tests
         .get("results").v
         .and-then(lam(x): x.native().map(_.get-value("message")).join-str("\n") end)
         .or-else("")
-      { passed.v; total.v; results }
+      right({ passed.v; total.v; results })
     end
   end
+end
+
+
+fun tmp-run-with-alternate-impl(
+  student-path :: String, alt-impl-path :: String, fun-name :: String
+) -> Either<String, { Number; Number; String }>:
+  res = R.run-with-alternate-impl(student-path, alt-impl-path, fun-name)
+  handle(res, student-path, fun-name)
 end
 
 fun tmp-run-with-alternate-checks(
   student-path :: String, check-path :: String, check-name :: String
-) -> { Number; Number; String }:
+) -> Either<String, { Number; Number; String }>:
   res = R.run-with-alternate-checks(student-path, check-path, check-name)
-  cases (Either) res:
-  | left(err) => {0; 0; to-repr(err)}
-  | right(json) =>
-    tests = JU.pson(json).get(check-path).find-match("name", check-name)
-    passed = tests.get("passed").n()
-    total = tests.get("total").n()
+  handle(res, check-path, check-name)
+ end
 
-    if is-left(passed) or is-left(total):
-      { 0; 0; "cannot find json: " + to-repr(tests) }
-    else:
-      results = tests
-        .get("results").v
-        .and-then(lam(x): x.native().map(_.get-value("message")).join-str("\n") end)
-        .or-else("")
-      { passed.v; total.v; results }
-    end
-  end
-end
 

@@ -17,15 +17,32 @@ type Info = String
 fun score-functional-test(
   student-path :: String, ref-path :: String, check-name :: String
 ):
-  {score; total; info} = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
-  right({safe-divide(score, total, 0); info})
+  res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
+  cases(Either) res:
+    | left(_) => right({0; res})
+    | right({score; total; _}) =>
+      right({safe-divide(score, total, 0); res})
+  end
 end
 
-fun fmt-functional-test(score :: G.NormalizedNumber, info):
+fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info):
   # TODO: improve both staff and student output
-  general = "Ran ??? of our tests against your implementation. ??? of ??? passed."
-            ^ output-text
-  staff = output-text(info) ^ some
+  general = output-markdown(cases(Either) info:
+    | left(_) =>
+      "An error occured while trying to run our tests against your " +
+      " implementation of `" + check-name + "`." +
+      "Make sure your function is defined"
+    | right({passed; total; _}) =>
+      "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
+      "succeeded againt your own implementation of `" + check-name + "`."
+  end)
+  # TODO: format nicely
+  staff = output-text(cases(Either) info:
+    | left(err) =>
+      to-repr(err)
+    | right({_; _; shadow info}) =>
+      info
+  end) ^ some
 
   {general; staff}
 end
@@ -36,6 +53,7 @@ fun mk-functional(
 ):
   name = "Functional Test for " + check-name
   scorer = lam(): score-functional-test(student-path, ref-path, check-name) end
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmt-functional-test)
+  fmter = fmt-functional-test(check-name, _, _)
+  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
 end
 

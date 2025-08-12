@@ -13,7 +13,7 @@ provide:
 end
 
 # TODO: this should be more descriptive
-type Info = String
+type Info = Any
 
 type Decider = (Number, Number -> Boolean)
 
@@ -21,21 +21,34 @@ fun score-examplar(
   student-path :: String, alt-impl-path :: String, fun-name :: String,
   decider :: Decider
 ):
-  {score; total; info} = AAAA.tmp-run-with-alternate-impl(student-path, alt-impl-path, fun-name)
-  right({if decider(score, total): 1 else: 0 end; info})
+  res = AAAA.tmp-run-with-alternate-impl(student-path, alt-impl-path, fun-name)
+  cases(Either) res:
+    | left(_) => right({0; res})
+    | right({score; total; _}) =>
+      right({if decider(score, total): 1 else: 0 end; res})
+  end
 end
 
 fun fmt-examplar-test(
   score :: G.NormalizedNumber, info :: Info, fun-name :: String,
-  adjective :: String
+  adjective :: String, good-str :: String, bad-str :: String
 ):
-  # TODO: improve output, should it mention function again? Maybe explain
-  # success and failure for each?
-  general = output-markdown(
-    "Ran your tests for `" + fun-name + "` against our " + adjective + " implementation."
-  )
+  desc = "your tests for `" + fun-name + "` against our " + adjective + " implementation"
+  general = output-markdown(cases(Either) info:
+    | left(_) =>
+      "Somthing went wrong while trying to run " + desc + ".\n\n" +
+      "Make sure that your function is defined and has tests using a `with` block." # TODO remove after we have guards
+    | right(_) =>
+      "Ran " + desc + "; " + ask:
+        | score == 0 then: bad-str
+        | score == 1 then: good-str
+      end
+  end)
   # TODO: need to improve output for chaffs where failure is required
-  staff = output-text(info) ^ some
+  staff = output-text(cases(Either) info:
+  | left(err) => "An error occured while running:\n" + to-repr(err)
+  | right({_; _; shadow info}) => info
+  end) ^ some
 
   {general; staff}
 end
@@ -43,12 +56,12 @@ end
 fun mk-examplar(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number, name :: String, decider :: Decider,
-  adjective :: String
+  adjective :: String, good-str :: String, bad-str :: String
 ):
   scorer = lam():
     score-examplar(student-path, alt-impl-path, fun-name, decider)
   end
-  fmter = fmt-examplar-test(_, _, fun-name, adjective)
+  fmter = fmt-examplar-test(_, _, fun-name, adjective, good-str, bad-str)
   GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
 end
 
@@ -59,9 +72,11 @@ fun mk-wheat(
 ):
   name = "Wheat for " + fun-name
   decider = _ == _
+  good-str = "none of your tests incorrectly failed."
+  bad-str = "at least one of your tests failed."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
-    "correct"
+    "correct", good-str, bad-str
   )
 end
 
@@ -71,8 +86,10 @@ fun mk-chaff(
 ):
   name = "Chaff for " + fun-name
   decider = _ <> _
+  good-str = "at least one of your tests caught our bad implementation."
+  bad-str = "none of your tests caught it."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
-    "incorrect"
+    "incorrect", good-str, bad-str
   )
 end
