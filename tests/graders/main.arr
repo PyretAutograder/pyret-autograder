@@ -17,3 +17,4 @@
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
 import file("./well-formed.arr") as _
+import file("./fn-def-guard.arr") as _
