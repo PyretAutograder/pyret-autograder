@@ -37,7 +37,7 @@
           packages = with pkgs; [
             nodejs_24
             gnumake
-          ];
+          ] ++ lib.optionals stdenv.isDarwin [ git ];
         };
       });
     };
