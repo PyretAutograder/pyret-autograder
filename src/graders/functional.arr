@@ -30,11 +30,11 @@ fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info)
   general = output-markdown(cases(Either) info:
     | left(_) =>
       "An error occured while trying to run our tests against your " +
-      " implementation of `" + check-name + "`." +
-      "Make sure your function is defined"
+      " implementation in `" + check-name + "`." +
+      " Make sure your function is defined"
     | right({passed; total; _}) =>
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
-      "succeeded againt your own implementation of `" + check-name + "`."
+      "succeeded againt your own implementation in `" + check-name + "`."
   end)
   # TODO: format nicely
   staff = output-text(cases(Either) info:
