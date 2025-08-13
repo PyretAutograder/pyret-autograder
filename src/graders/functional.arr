@@ -34,7 +34,7 @@ fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info)
       " Make sure your function is defined"
     | right({passed; total; _}) =>
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
-      "succeeded againt your own implementation in `" + check-name + "`."
+      "succeeded against your own implementation in `" + check-name + "`."
   end)
   # TODO: format nicely
   staff = output-text(cases(Either) info:

@@ -37,7 +37,7 @@ fun fmt-self-test(fun-name :: String, score :: G.NormalizedNumber, info):
       "The following errors were reported\n" + to-repr(err) # TODO: format nicely
     | right({passed; total; shadow info}) =>
       "**" + to-repr(passed) + "** of your **" + to-repr(total) + "** checks " +
-      "succeeded againt your own implementation of `" + fun-name + "`.\n\n" +
+      "succeeded against your own implementation of `" + fun-name + "`.\n\n" +
       info # TODO: format nicely
   end)
   staff = none
