@@ -4,6 +4,10 @@
   "description": "Pyret autograder.",
   "author": "Owen Duckham <me@ironmoon.dev>",
   "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PyretAutograder/pyret-autograder"
+  },
   "main": "src/main.arr",
   "dependencies": {
     "pyret-lang": "npm:@ironm00n/pyret-lang",
