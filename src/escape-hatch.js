@@ -8,6 +8,7 @@
   },
   nativeRequires: [],
   theModule: function (runtime, _namespace, _uri) {
+    "use strict";
     function escapeTypesystem(/** @type {any} */ x) {
       runtime.checkArity(1, arguments, "escape-typesystem", false);
       return x;

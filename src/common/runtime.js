@@ -9,6 +9,7 @@
   },
   nativeRequires: [],
   theModule: function (runtime, _namespace, _uri) {
+    "use strict";
     function runtimeDirname() {
       runtime.checkArity(0, arguments, "runtime-dirname", false);
       return runtime.makeString(__dirname);

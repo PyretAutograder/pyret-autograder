@@ -8,6 +8,7 @@
   },
   nativeRequires: ["path"],
   theModule: (runtime, _, uri, /** @type {import('node:path')} */ path) => {
+    "use strict";
     function getProjDir() {
       runtime.checkArity(0, arguments, "get-proj-dir", false);
       const stripped = uri.replace("jsfile://", "");

@@ -22,6 +22,7 @@
   },
   nativeRequires: [],
   theModule: (runtime, _namespace, _uri) => {
+    "use strict";
     /**
      * The options that affect what will be escaped.
      * @typedef {Object} EscapeMarkdownOptions
