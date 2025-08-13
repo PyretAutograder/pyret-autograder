@@ -53,7 +53,7 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<FlatAggregateRes
           | test-skipped(skip-id) =>
             cases (Option) L.find({(x): x.id == skip-id}, reasons) block:
               | none =>
-                print(to-repr(reasons) + "\n")
+                spy: results, outs, reasons, r end
                 raise("No guard reason found for id: " + skip-id)
               # TODO: better indcate that this was skipped
               | some(p) => flat-agg-test(name, max, 0, p.gen, p.staff)
