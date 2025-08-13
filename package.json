@@ -10,7 +10,7 @@
     "pyret-npm": "npm:@ironm00n/pyret-npm"
   },
   "scripts": {
-    "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
+    "test": "npx pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
     "clean": "rm -rf -- ./pyret"
   },
   "devDependencies": {
