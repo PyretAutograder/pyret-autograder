@@ -66,8 +66,7 @@
 
       return runtime.await((async () => {
         const line = s.endsWith("\n") ? s : s + "\n";
-        // @ts-ignore: type definitions are wrong
-        await fs.writeFile(fd, line);
+        await fs.writeFile(`/dev/fd/${fd}`, line);
         return runtime.nothing;
       })());
     }
