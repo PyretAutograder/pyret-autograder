@@ -25,9 +25,9 @@
       "send-final": ["arrow", ["String"], "Nothing"],
     },
   },
-  nativeRequires: ["fs/promises"],
+  nativeRequires: ["fs"],
   /**
-   * @param {import('fs/promises')} fs
+   * @param {import('fs')} fs
    */
   theModule: function (runtime, _namespace, _url, fs) {
     "use strict"
@@ -63,12 +63,15 @@
         const v = process.env.PA_RESULT_FD;
         return (v != null && /^\d+$/.test(v)) ? Number(v) : 3;
       })();
+      const stream = fs.createWriteStream('', { fd });
 
-      return runtime.await((async () => {
+      return runtime.pauseStack((restarter) => {
         const line = s.endsWith("\n") ? s : s + "\n";
-        await fs.writeFile(`/dev/fd/${fd}`, line);
-        return runtime.nothing;
-      })());
+
+        stream.end(line, () => {
+          restarter.resume(runtime.nothing);
+        });
+      });
     }
 
     return runtime.makeModuleReturn({
