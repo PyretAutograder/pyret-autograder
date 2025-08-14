@@ -1,3 +1,21 @@
+#|
+  Copyright (C) 2025 ironmoon <me@ironmoon.dev>
+
+  This file is part of pyret-autograder.
+
+  pyret-autograder is free software: you can redistribute it and/or modify it
+  under the terms of the GNU Lesser General Public License as published by the
+  Free Software Foundation, either version 3 of the License, or (at your option)
+  any later version.
+
+  pyret-autograder is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+  for more details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
+|#
 import npm("pyret-lang", "../../src/arr/compiler/well-formed.arr") as WF
 import npm("pyret-lang", "../../src/arr/compiler/compile-structs.arr") as CS
 import npm("pyret-lang", "../../src/arr/compiler/ast-util.arr") as AU
@@ -14,23 +32,23 @@ include from C:
 end
 
 provide:
-  mk-def-guard,
-  data DefGuardBlock,
-  check-fun-defined as _check-fun-defined,
-  fmt-fun-def as _fmt-fun-def
+  mk-fn-def-guard,
+  data FnDefGuardBlock,
+  check-fn-defined as _check-fn-defined,
+  fmt-fn-def as _fmt-fn-def
 end
 
-data DefGuardBlock:
+data FnDefGuardBlock:
   | parser-error(err :: CA.ParsePathErr) # this should've been caught by wf
   | fn-not-defined(name :: String, arity :: Number)
   | wrong-arity(name :: String, expected :: Number, actual :: Number)
 end
 
-fun check-fun-defined(
+fun check-fn-defined(
   path :: String,
   name :: String,
   arity :: Number
-) -> Option<DefGuardBlock>:
+) -> Option<FnDefGuardBlock>:
   cases (Either) CA.parse-path(path):
     | left(err) => some(parser-error(err))
     | right(ast) =>
@@ -49,7 +67,7 @@ fun find-def(
   stmts :: List<A.Expr>,
   expected-name :: String,
   expected-arity :: Number
-) -> Option<DefGuardBlock>:
+) -> Option<FnDefGuardBlock>:
   cases (List) stmts:
     | empty => some(fn-not-defined(expected-name, expected-arity))
     | link(st, rest) =>
@@ -70,18 +88,17 @@ fun find-def(
   end
 end
 
-fun fmt-fun-def(reason :: DefGuardBlock) -> GB.ComboAggregate:
-  student = cases (DefGuardBlock) reason:
+fun fmt-fn-def(reason :: FnDefGuardBlock) -> GB.ComboAggregate:
+  student = cases (FnDefGuardBlock) reason:
     | parser-error(_) =>
-      # assuming we depend on wf, wes should never see this case
-      # so hopefully it's fine to have a bad error here
+      # should never see this case if depends on wf
       "Cannot find your function definition because we cannot parse your file."
     | fn-not-defined(name, arity) =>
       "Cannot find a function definiton named " + MD.escape-inline-code(name) +
       ". We expect a function " + MD.escape-inline-code(name) + " taking " +
       num-to-string(arity) + " arguments. Perhaps you mistyped the function name."
     | wrong-arity(name, expected, actual) =>
-      "The definition for function " + MD.escape-inline-code(name) + 
+      "The definition for function " + MD.escape-inline-code(name) +
       " should have " + num-to-string(expected) + " arguments, but seems to have " +
       num-to-string(actual) + " arguments instead. Make sure your function is " +
       "defined correctly."
@@ -90,8 +107,8 @@ fun fmt-fun-def(reason :: DefGuardBlock) -> GB.ComboAggregate:
   {student; staff}
 end
 
-fun mk-def-guard(id :: Id, deps :: List<Id>, path :: String, fn-name :: String, arity :: Number):
+fun mk-fn-def-guard(id :: Id, deps :: List<Id>, path :: String, fn-name :: String, arity :: Number):
   name = "Find function " + fn-name + " with " + num-to-string(arity) + " arguments"
-  checker = lam(): check-fun-defined(path, fn-name, arity) end
-  GB.mk-guard(id, deps, checker, name, fmt-fun-def)
+  checker = lam(): check-fn-defined(path, fn-name, arity) end
+  GB.mk-guard(id, deps, checker, name, fmt-fn-def)
 end
