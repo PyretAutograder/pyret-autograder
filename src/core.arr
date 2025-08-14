@@ -166,7 +166,7 @@ fun topological-sort<B, R, E, I, C>(
 end
 
 fun check-dependencies<B, R, E, I, C>(
-  results :: SD.StringDict<NodeResult<B, R, E, I, C>>,
+  results :: SD.StringDict<{NodeResult<B, R, E, I, C>; Number}>,
   deps :: List<Id>
 ) -> Option<Id>:
   doc: ```
@@ -179,7 +179,7 @@ fun check-dependencies<B, R, E, I, C>(
   cases (List) deps:
     | empty => none
     | link(id, rst) =>
-      cases (Option) results.get-value(id).determine-blocking-node(id):
+      cases (Option) results.get-value(id).{0}.determine-blocking-node(id):
         | none => check-dependencies(results, rst)
         | some(responsible-id) => some(responsible-id)
       end
@@ -188,34 +188,43 @@ end
 
 fun execute<B, R, E, I, C>(
   dag :: DAG<B, R, E, I, C>
-) -> SD.StringDict<NodeResult<B, R, E, I, C>>:
-  doc: "executes the dag, propagating outcomes"
-
-  fun help(
-    shadow dag :: List<Node<B, R, E, I, C>>,
-    acc :: SD.StringDict<NodeResult<B, R, E, I, C>>
-  ) -> SD.StringDict<NodeResult<B, R, E, I, C>>:
-    cases (List<Node<B, R, E, I, C>>) dag:
-      | empty => acc
-      | link(shadow node, rst) =>
-        cases (Option) check-dependencies(acc, node.deps) block:
-          | none =>
-            print("executing " + node.id + "...\n")
-            {outcome; info} = node.run()
-            acc.set(node.id, executed(outcome, info, node.ctx))
-          | some(blocking-id) =>
-            print(
-              "skipping " + node.id + " because of unmet dependency " +
-              blocking-id + "."
-            )
-            acc.set(node.id, skipped(blocking-id, node.ctx))
-        end
-        ^ help(rst, _)
-    end
-  end
+) -> List<NodeResult<B, R, E, I, C>>:
+  doc: ```
+    Given a valid DAG, topologically sorts it. Returns the results in execution
+    order.
+  ```
 
   sorted-dag = topological-sort(dag)
-  spy: dag, sorted-dag end
-  help(sorted-dag, [SD.string-dict:])
+
+  {results; _} = for fold(
+    {acc; idx} from {[SD.string-dict:]; 0},
+    shadow node from sorted-dag
+  ):
+    res = cases(Option) check-dependencies(acc, node.deps) block:
+      | none =>
+        print("executing " + node.id + "...\n")
+        {outcome; info} = node.run()
+        executed(outcome, info, node.ctx)
+      | some(blocking-id) =>
+        print(
+          "skipping " + node.id + " because of unmet dependency " +
+          blocking-id + ".\n"
+        )
+        skipped(blocking-id, node.ctx)
+    end
+
+    {acc.set(node.id, {res; idx}); idx + 1}
+  end
+
+  ret = for SD.map-keys(id from results):
+    {res; idx} = results.get-value(id)
+    {idx; id; res}
+  end
+    .sort-by(lam(a, b): a.{0} < b.{0} end, lam(a, b): a.{0} == b.{0} end)
+    .map(lam({_; id; result}): {id; result} end)
+
+  spy: dag, sorted-dag, results, ret end
+
+  ret
 end
 

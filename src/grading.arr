@@ -154,14 +154,13 @@ fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any
 
   {aggregated; trace} = for fold(
     acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>} from {[list:]; [list:]},
-    key :: Id from results.keys-list()
+    {id; result} from results
   ) block:
-    print("grade: " + key + "\n")
+    print("grade: " + id + "\n")
     {aggregated; trace} = acc
-    result = results.get-value(key)
 
     # FIXME: upcast not needed if existentials are modeled correctly
-    new-trace = link(upcast({ id: key, result: result }), trace)
+    new-trace = link(upcast({ id: id, result: result }), trace)
 
     # TODO: might need to thread trace for combining nodes into single score
     new-aggregated = cases (Option) result.ctx.to-aggregate(result):

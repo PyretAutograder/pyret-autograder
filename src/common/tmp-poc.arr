@@ -83,7 +83,6 @@ fun tmp-fmt-runtime-err(err :: R.RunChecksErr) -> String:
 end
 
 fun tmp-fmt-ai-err(err) -> String:
-  spy: err end
   cases(R.RunAltImplErr) err:
     | ai-cannot-parse-student(shadow err) =>
       "Cannot parse student's file:\n" + to-repr(err)

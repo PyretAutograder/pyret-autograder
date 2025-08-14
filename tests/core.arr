@@ -45,40 +45,40 @@ fun skip(id):
   skipped(id, none)
 end
 
-
 check "execute":
-  execute(empty) is [SD.string-dict:]
+  execute(empty) is [list:]
 
   single = [list: mk-node("1", [list:], runner(emit(1)))]
-  execute(single) is [SD.string-dict: "1", res(emit(1))]
+  execute(single) is [list: {"1"; res(emit(1))}]
 
   simple_dep = [list: mk-node("pass_guard", [list:], runner(noop)),
                       mk-node("has_dep", [list: "pass_guard"], runner(emit(1)))]
-  execute(simple_dep) is [SD.string-dict: "pass_guard", res(noop), "has_dep", res(emit(1))]
+  execute(simple_dep) is [list: {"pass_guard"; res(noop)},
+                                {"has_dep"; res(emit(1))}]
 
   blocking_simple_dep = [list: mk-node("block_guard", [list:], runner(block(invalid))),
                                mk-node("has_dep", [list: "block_guard"], runner(emit(1)))]
-  execute(blocking_simple_dep) is [SD.string-dict: "block_guard", res(block(invalid)),
-                                                   "has_dep", skip("block_guard")]
+  execute(blocking_simple_dep) is [list: {"block_guard"; res(block(invalid))},
+                                         {"has_dep"; skip("block_guard")}]
 
   internal_failure = [list: mk-node("failing", [list:], runner(internal-error("catastrophic error"))),
                             mk-node("has_dep", [list: "failing"], runner(emit(1)))]
 
-  execute(internal_failure) is [SD.string-dict: "failing", res(internal-error("catastrophic error")),
-                                                "has_dep", skip("failing")]
+  execute(internal_failure) is [list: {"failing"; res(internal-error("catastrophic error"))},
+                                      {"has_dep"; skip("failing")}]
 
   blocking_dep = [list: mk-node("block_guard", [list:], runner(block(invalid))),
                         mk-node("has_dep1", [list: "block_guard"], runner(emit(1))),
                         mk-node("has_dep2", [list: "has_dep1"], runner(emit(2)))]
-  execute(blocking_dep) is [SD.string-dict: "block_guard", res(block(invalid)),
-                                            "has_dep1", skip("block_guard"),
-                                            "has_dep2", skip("block_guard")]
+  execute(blocking_dep) is [list: {"block_guard"; res(block(invalid))},
+                                  {"has_dep1"; skip("block_guard")},
+                                  {"has_dep2"; skip("block_guard")}]
   dep = [list: mk-node("pass_guard", [list:], runner(noop)),
                mk-node("has_dep1", [list: "pass_guard"], runner(emit(1))),
                mk-node("has_dep2", [list: "has_dep1"], runner(emit(2)))]
-  execute(dep) is [SD.string-dict: "pass_guard", res(noop),
-                                   "has_dep1", res(emit(1)),
-                                   "has_dep2", res(emit(2))]
+  execute(dep) is [list: {"pass_guard"; res(noop)},
+                         {"has_dep1"; res(emit(1))},
+                         {"has_dep2"; res(emit(2))}]
 end
 
 check "valid-dag":
