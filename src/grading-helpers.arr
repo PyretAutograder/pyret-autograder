@@ -16,6 +16,7 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
+include file("./core.arr")
 include file("./grading.arr")
 import lists as L
 
@@ -23,6 +24,43 @@ provide:
   summarize-execution-traces,
   data FlatAggregateResult,
   aggregate-to-flat
+end
+
+fun summarize-outcome(outcome :: Outcome, is-staff :: Boolean) -> String:
+  cases(Outcome) outcome:
+    | block(reason) =>
+      "blocking further execution due to `" + to-repr(reason) + "`"
+    | noop =>
+      "no action"
+    | emit(res) =>
+      "emitting a result of a " +
+      cases(GradingResult) res:
+        | score(earned) => "score of `" + to-repr(earned) + "`"
+        | artifact(path) => "an artifact at `" + path + "`"
+      end
+    | internal-error(err) =>
+      if is-staff:
+        "**an internal error**:\n```\n" + err.to-string() + "\n```"
+      else:
+        "**an internal error (please report this to course staff)**"
+      end
+  end
+end
+
+fun summarize-result(id :: String, result :: NodeResult, is-staff :: Boolean) -> String:
+  "### " + id + "\n" +
+  cases(NodeResult) result:
+    | executed(outcome, info, ctx) =>
+      "was run resulting in: " + summarize-outcome(outcome, is-staff) +
+      if is-staff and (info <> nothing):
+        "\n\nAdditionally it produced the following info:\n" +
+        "```\n" + to-repr(info) + "\n```"
+      else:
+        ""
+      end
+    | skipped(skip-id, ctx) =>
+      "skipped because of " + skip-id + "\n"
+  end + "\n\n"
 end
 
 fun summarize-execution-traces(
@@ -35,9 +73,12 @@ fun summarize-execution-traces(
       including full error information
   ```
 
-  # TODO: implement
+  {student; staff} = for fold({student; staff} from {""; ""}, entry from trace):
+    summarize = summarize-result(entry.id, entry.result, _)
+    {student + summarize(false); staff + summarize(true)}
+  end
 
-  {output-markdown(""); output-markdown("")}
+  {output-markdown(student); output-markdown(staff)}
 end
 
 data FlatAggregateResult:

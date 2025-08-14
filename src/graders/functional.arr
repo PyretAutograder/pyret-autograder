@@ -54,10 +54,9 @@ fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info)
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
       "succeeded against your own implementation in `" + check-name + "`."
   end)
-  # TODO: format nicely
-  staff = output-text(cases(Either) info:
+  staff = output-markdown(cases(Either) info:
     | left(err) =>
-      to-repr(err)
+      AAAA.tmp-fmt-ac-err(err)
     | right({_; _; shadow info}) =>
       info
   end) ^ some

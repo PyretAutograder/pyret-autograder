@@ -94,7 +94,7 @@ end
 
 #---------------------------run-with-alternate-impl---------------------------#
 
-data RunAltImpleErr:
+data RunAltImplErr:
   | ai-cannot-parse-student(err :: CA.ParsePathErr)
   | ai-cannot-parse-alt-impl(err :: CA.ParsePathErr)
   | ai-missing-replacement-fun(fun-name :: String)
@@ -103,7 +103,7 @@ end
 
 fun run-with-alternate-impl(
   student-path :: String, alt-impl-path :: String, fun-name :: String
-) -> Either<RunAltImpleErr, RunChecksResult> block:
+) -> Either<RunAltImplErr, RunChecksResult> block:
   cases(Either) CA.parse-path(student-path):
   | left(err) => left(ai-cannot-parse-student(err))
   | right(student) =>
@@ -125,7 +125,7 @@ end
 
 fun replace-fun(
   base :: A.Program, replacement :: A.Program, fun-name :: String
-) -> Either<RunAltImpleErr, A.Program> block:
+) -> Either<RunAltImplErr, A.Program> block:
   fun-extractor = V.make-fun-extractor(fun-name)
   replacement.visit(fun-extractor)
   cases(Option) fun-extractor.get-target():

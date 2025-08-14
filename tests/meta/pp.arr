@@ -142,21 +142,24 @@ fun pp-aggregate-result(result :: AggregateResult):
     Pretty-prints an AggregateResult value, handling guards, tests, and
     artifacts with appropriate formatting and labeled fields.
   ```
-  cases (AggregateResult) result: #TODO: add `id`
+  cases (AggregateResult) result:
     | agg-guard(id, name, outcome) =>
       group(
-        concat(str("agg-guard("),
-          concat(dquote(str(name)),
-            concat(str(","),
-              concat(sbreak(1),
-                concat(pp-guard-outcome(outcome),
-                  str(")")))))))
+        soft-surround(2, 1,
+          str("agg-guard("),
+          separate(comma-sep,
+            [list:
+              concat(str("id: "), str(tostring(id))),
+              concat(str("name: "), dquote(str(name))),
+              concat(str("outcome: "), pp-guard-outcome(outcome))]),
+          str(")")))
     | agg-test(id, name, max-score, outcome) =>
       group(
         soft-surround(2, 1,
           str("agg-test("),
           separate(comma-sep,
             [list:
+              concat(str("id: "), str(tostring(id))),
               concat(str("name: "), dquote(str(name))),
               concat(str("max-score: "), number(max-score)),
               concat(str("outcome: "), pp-test-outcome(outcome))]),
@@ -167,6 +170,7 @@ fun pp-aggregate-result(result :: AggregateResult):
           str("agg-artifact("),
           separate(comma-sep,
             [list:
+              concat(str("id: "), str(tostring(id))),
               concat(str("name: "), dquote(str(name))),
               concat(str("description: "),
                 cases (Option) description:

@@ -198,11 +198,16 @@ fun execute<B, R, E, I, C>(
     cases (List<Node<B, R, E, I, C>>) dag:
       | empty => acc
       | link(shadow node, rst) =>
-        cases (Option) check-dependencies(acc, node.deps):
+        cases (Option) check-dependencies(acc, node.deps) block:
           | none =>
+            print("executing " + node.id + "...\n")
             {outcome; info} = node.run()
             acc.set(node.id, executed(outcome, info, node.ctx))
           | some(blocking-id) =>
+            print(
+              "skipping " + node.id + " because of unmet dependency " +
+              blocking-id + "."
+            )
             acc.set(node.id, skipped(blocking-id, node.ctx))
         end
         ^ help(rst, _)
@@ -210,6 +215,7 @@ fun execute<B, R, E, I, C>(
   end
 
   sorted-dag = topological-sort(dag)
+  spy: dag, sorted-dag end
   help(sorted-dag, [SD.string-dict:])
 end
 

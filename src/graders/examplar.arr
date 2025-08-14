@@ -63,8 +63,10 @@ fun fmt-examplar-test(
       end
   end)
   # TODO: need to improve output for chaffs where failure is required
-  staff = output-text(cases(Either) info:
-  | left(err) => "An error occured while running:\n" + to-repr(err)
+  staff = output-markdown(cases(Either) info:
+  | left(err) =>
+    "An error occured while running:\n" +
+    AAAA.tmp-fmt-ai-err(err)
   | right({_; _; shadow info}) => info
   end) ^ some
 

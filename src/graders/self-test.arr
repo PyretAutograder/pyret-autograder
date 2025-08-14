@@ -51,8 +51,9 @@ fun fmt-self-test(fun-name :: String, score :: G.NormalizedNumber, info):
   general = output-markdown(cases(Either) info:
     | left(err) =>
       "An error occured while trying to run your own tests against your " +
-      " implementation of `" + fun-name + "`.\n\n" +
-      "The following errors were reported\n" + to-repr(err) # TODO: format nicely
+      "implementation of `" + fun-name + "`.\n\n" +
+      "The following errors were reported\n" +
+      AAAA.tmp-fmt-ai-err(err)
     | right({passed; total; shadow info}) =>
       "**" + to-repr(passed) + "** of your **" + to-repr(total) + "** checks " +
       "succeeded against your own implementation of `" + fun-name + "`.\n\n" +

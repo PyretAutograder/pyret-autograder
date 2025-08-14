@@ -155,7 +155,8 @@ fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any
   {aggregated; trace} = for fold(
     acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>} from {[list:]; [list:]},
     key :: Id from results.keys-list()
-  ):
+  ) block:
+    print("grade: " + key + "\n")
     {aggregated; trace} = acc
     result = results.get-value(key)
 
