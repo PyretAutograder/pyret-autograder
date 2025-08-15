@@ -29,10 +29,10 @@ check "aggregate-to-flat":
     agg-test("gcd-reference-tests", "Functional Test for gcd-reference-tests", 5, test-skipped("wf"), none)]
 
   flat-expected = [list:
-    flat-agg-test("Self-Test on gcd", 2, 0, output-markdown("WF BLOCK REASON"), none),
-    flat-agg-test("Chaff for gcd", 1, 0, output-markdown("WF BLOCK REASON"), none),
-    flat-agg-test("Wheat for gcd", 2, 0, output-markdown("WF BLOCK REASON"), none),
-    flat-agg-test("Functional Test for gcd-reference-tests", 5, 0, output-markdown("WF BLOCK REASON"), none)]
+    flat-agg-test("Self-Test on gcd", 2, 0, output-markdown("WF BLOCK REASON"), none, none),
+    flat-agg-test("Chaff for gcd", 1, 0, output-markdown("WF BLOCK REASON"), none, none),
+    flat-agg-test("Wheat for gcd", 2, 0, output-markdown("WF BLOCK REASON"), none, none),
+    flat-agg-test("Functional Test for gcd-reference-tests", 5, 0, output-markdown("WF BLOCK REASON"), none, none)]
   aggregate-to-flat(aggregated) is flat-expected
 end
 

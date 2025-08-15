@@ -87,7 +87,8 @@ data FlatAggregateResult:
     max-score :: Number,
     score :: Number,
     general-output :: AggregateOutput,
-    staff-output :: Option<AggregateOutput>)
+    staff-output :: Option<AggregateOutput>,
+    part :: Option<String>)
 | flat-agg-art( # TODO: this needs more thought
     name :: String,
     description :: String,
@@ -108,14 +109,14 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<FlatAggregateRes
       | agg-test(id, name, max, outcome, part) =>
         new-outs = cases (TestOutcome) outcome:
           | test-ok(points, general, staff) =>
-            flat-agg-test(name, max, points, general, staff)
+            flat-agg-test(name, max, points, general, staff, part)
           | test-skipped(skip-id) =>
             cases (Option) L.find({(x): x.id == skip-id}, reasons) block:
               | none =>
                 spy: results, outs, reasons, r end
                 raise("No guard reason found for id: " + skip-id)
               # TODO: better indcate that this was skipped
-              | some(p) => flat-agg-test(name, max, 0, p.gen, p.staff)
+              | some(p) => flat-agg-test(name, max, 0, p.gen, p.staff, part)
             end
         end
         ^ link(_, outs)
