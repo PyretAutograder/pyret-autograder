@@ -1,3 +1,4 @@
+
 #|
   Copyright (C) 2025 ironmoon <me@ironmoon.dev>
 
@@ -16,44 +17,50 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
+
+
+# based off https://course.ccs.neu.edu/cs2500accelf23/Homeworks/ps3b.html
+
 import file("../meta/path-utils.arr") as P
 include file("../meta/inspect-grade.arr")
 include file("../../src/main.arr")
 include file("../../src/tools/main.arr")
 
-student-path = P.example("gcd.arr")
-chaff-path = P.example("gcd-grading/chaff.arr")
-wheat-path = P.example("gcd-grading/wheat.arr")
-functional-path = P.example("gcd-grading/functional.arr")
+path = P.example("tower-soln.arr")
 
 graders =
   [list:
-    mk-fn-def-guard("gcd-exists", [list: "wf"], student-path, "gcd", 2),
+    mk-well-formed("wf", [list:], path)
+    mk-fn-def-guard("num-rooms-def", [list: "wf"], path, "num-rooms", 1),
     mk-self-test(
-      "gcd-self-test",
-      [list: "gcd-exists"],
-      student-path, "gcd",
+      "num-rooms-self-test",
+      [list: "num-rooms-def"],
+      student-path, "num-rooms",
+      1
+    ),
+    mk-functional(
+      "num-rooms-functional",
+      [list: "num-rooms-def"],
+      student-path, functional-path, "num-rooms-functional",
+      4
+    ),
+    mk-wheat(
+      "gcd-wheat-1",
+      [list: "num-rooms-def"],
+      student-path, wheat-path, "num-rooms",
       1
     ),
     mk-chaff(
       "gcd-chaff-1",
-      [list: "gcd-exists"],
-      student-path, chaff-path, "gcd",
+      [list: "num-rooms-def"],
+      student-path, chaff-path, "num-rooms",
       1
     ),
-    mk-wheat(
-      "gcd-wheat-1",
-      [list: "gcd-exists"],
-      student-path, wheat-path, "gcd",
-      1
-    ),
-    mk-functional(
-      "gcd-reference-tests",
-      [list: "gcd-exists"],
-      student-path, functional-path, "gcd-reference-tests",
-      1
-    ),
-    mk-well-formed("wf", [list:], student-path),
+
+    mk-fn-def-guard("max-rooms-def", [list: "wf"], path, "max-rooms", 1),
+    mk-fn-def-guard("first-floor-def", [list: "wf"], path, "first-floor", 1),
+    mk-fn-def-guard("is-unbalanced-def", [list: "wf"], path, "is-unbalanced", 1),
+
   ]
 
 # FIXME: nested modules not working
