@@ -95,7 +95,7 @@ data FlatAggregateResult:
     path :: String)
 end
 
-fun aggregate-to-flat(results :: List<AggregateResult>) -> List<FlatAggregateResult>:
+fun aggregate-to-flat(results :: List<AggregateResult>) -> List<{Id; FlatAggregateResult}>:
   {outs; reasons} = for fold(acc from {[list:]; [list:]}, r from results):
     {outs; reasons} = acc
     cases (AggregateResult) r:
@@ -119,14 +119,14 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<FlatAggregateRes
               | some(p) => flat-agg-test(name, max, 0, p.gen, p.staff, part)
             end
         end
-        ^ link(_, outs)
+        ^ {(x): link({id; x}, outs)}
 
         {new-outs; reasons}
       | agg-artifact(id, name, desc, outcome) =>
         cases (ArtifactOutcome) outcome:
           | art-ok(path, _) =>
             new-desc = desc.then(_.content).or-else("")
-            new-outs = link(flat-agg-art(name, desc, path), outs)
+            new-outs = link({id; flat-agg-art(name, desc, path)}, outs)
             {new-outs; reasons}
           | art-skipped(_) =>
             # TODO: is this really what we want?

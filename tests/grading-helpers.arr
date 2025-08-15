@@ -33,7 +33,7 @@ check "aggregate-to-flat":
     flat-agg-test("Chaff for gcd", 1, 0, output-markdown("WF BLOCK REASON"), none, none),
     flat-agg-test("Wheat for gcd", 2, 0, output-markdown("WF BLOCK REASON"), none, none),
     flat-agg-test("Functional Test for gcd-reference-tests", 5, 0, output-markdown("WF BLOCK REASON"), none, none)]
-  aggregate-to-flat(aggregated) is flat-expected
+  aggregate-to-flat(aggregated).map(lam({_;x}): x end) is flat-expected
 end
 
 
