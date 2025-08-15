@@ -38,7 +38,7 @@ fun score-functional-test(
   res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
   cases(Either) res:
     | left(_) => right({0; res})
-    | right({score; total; _}) =>
+    | right({score; total; _; _}) =>
       right({safe-divide(score, total, 0); res})
   end
 end
@@ -50,14 +50,14 @@ fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info)
       "An error occured while trying to run our tests against your " +
       " implementation in `" + check-name + "`." +
       " Make sure your function is defined"
-    | right({passed; total; _}) =>
+    | right({passed; total; _; _}) =>
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
       "succeeded against your own implementation in `" + check-name + "`."
   end)
   staff = output-markdown(cases(Either) info:
     | left(err) =>
       AAAA.tmp-fmt-ac-err(err)
-    | right({_; _; shadow info}) =>
+    | right({_; _; shadow info; _}) =>
       info
   end) ^ some
 

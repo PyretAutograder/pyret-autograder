@@ -36,7 +36,7 @@ fun score-self-test(path :: String, fun-name :: String):
   res = AAAA.tmp-run-with-alternate-impl(path, path, fun-name)
   cases(Either) res:
     | left(_) => right({0; res})
-    | right({score; total; _}) =>
+    | right({score; total; _; _}) =>
       right({safe-divide(score, total, 0); res})
   end
 end
@@ -54,7 +54,7 @@ fun fmt-self-test(fun-name :: String, score :: G.NormalizedNumber, info):
       "implementation of `" + fun-name + "`.\n\n" +
       "The following errors were reported\n" +
       AAAA.tmp-fmt-ai-err(err)
-    | right({passed; total; shadow info}) =>
+    | right({passed; total; shadow info; _}) =>
       "**" + to-repr(passed) + "** of your **" + to-repr(total) + "** checks " +
       "succeeded against your own implementation of `" + fun-name + "`.\n\n" +
       info # TODO: format nicely

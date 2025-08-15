@@ -20,10 +20,11 @@ import file("../core.arr") as C
 import file("../grading.arr") as G
 import file("../grading-builders.arr") as GB
 import file("../common/tmp-poc.arr") as AAAA # TODO: proper implementation
+import file("../common/ast.arr") as A
 import safe-divide from file("../utils.arr")
 include either
 include from C: type Id end
-include from G: data AggregateOutput end
+include from G: data AggregateOutput, data ProgramRun end
 
 provide:
   mk-wheat,
@@ -42,7 +43,7 @@ fun score-examplar(
   res = AAAA.tmp-run-with-alternate-impl(student-path, alt-impl-path, fun-name)
   cases(Either) res:
     | left(_) => right({0; res})
-    | right({score; total; _}) =>
+    | right({score; total; _; _}) =>
       right({if decider(score, total): 1 else: 0 end; res})
   end
 end
@@ -54,7 +55,7 @@ fun fmt-examplar-test(
   desc = "your tests for `" + fun-name + "` against our " + adjective + " implementation"
   general = output-markdown(cases(Either) info:
     | left(_) =>
-      "Somthing went wrong while trying to run " + desc + ".\n\n" +
+      "Something went wrong while trying to run " + desc + ".\n\n" +
       "Make sure that your function is defined and has tests using a `with` block." # TODO remove after we have guards
     | right(_) =>
       "Ran " + desc + "; " + ask:
@@ -65,9 +66,9 @@ fun fmt-examplar-test(
   # TODO: need to improve output for chaffs where failure is required
   staff = output-markdown(cases(Either) info:
   | left(err) =>
-    "An error occured while running:\n" +
+    "An error occurred while running:\n" +
     AAAA.tmp-fmt-ai-err(err)
-  | right({_; _; shadow info}) => info
+  | right({_; _; shadow info; _}) => info
   end) ^ some
 
   {general; staff}
@@ -82,7 +83,13 @@ fun mk-examplar(
     score-examplar(student-path, alt-impl-path, fun-name, decider)
   end
   fmter = fmt-examplar-test(_, _, fun-name, adjective, good-str, bad-str)
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
+  program-runner = lam(info :: Info) -> Option<ProgramRun>:
+    cases(Either) info:
+      | left(_) => none
+      | right({_; _; _; program}) => some(pr-staff(program()))
+    end
+  end
+  GB.mk-repl-scorer(id, deps, scorer, name, points, lam(val, max): val * max end, fmter, program-runner)
 end
 
 # TODO: maybe these should take in a list of implementations

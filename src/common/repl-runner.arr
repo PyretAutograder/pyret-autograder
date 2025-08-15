@@ -48,7 +48,7 @@ end
 #   passed :: Number,
 #   total :: Number,
 # }
-type RunChecksResult = J.JSON
+type RunChecksResult = {J.JSON; A.Program}
 
 pyret-lang-compiled = cases(Option) get-env("PA_PYRET_LANG_COMPILED_PATH"):
   | some(path) => string-split-all(path, ":")
@@ -187,8 +187,8 @@ end
 #----------------------------------run-checks----------------------------------#
 
 data RunChecksErr:
-  | compile-error(x :: Any) # TODO: whats in here?
-  | runtime-error(x :: Any)
+  | compile-error(x :: Any, program :: A.Program) # TODO: whats in here?
+  | runtime-error(x :: Any, program :: A.Program)
 end
 
 fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
@@ -213,7 +213,7 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   cases(Either) repl.restart-interactions(locator, compile-options):
     | left(err) =>
       err
-      ^ compile-error
+      ^ compile-error(_, program)
       ^ left
     | right(val) =>
       if LL.is-success-result(val):
@@ -229,10 +229,10 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
         # ^ identity-print-json
         ^ J.read-json
         # ^ _.native()
-        ^ right
+        ^ {(x): right({x; program})}
       else:
         LL.render-error-message(val)
-        ^ runtime-error
+        ^ runtime-error(_, program)
         ^ left
       end
   end

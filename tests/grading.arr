@@ -19,6 +19,7 @@
 include file("../src/core.arr")
 include file("../src/utils.arr")
 include file("../src/grading.arr")
+import string-dict as SD
 
 data MockBlock:
   | blocker1
@@ -35,17 +36,20 @@ fun strip-ctx<A, B, C>(output :: GradingOutput<A, B, C>) -> GradingOutput<A, B, 
           | executed(outcome, info, ctx) => executed(outcome, info, nothing)
           | skipped(id, ctx) => skipped(id, nothing)
         end }}
-      ^ output.trace.map
+      ^ output.trace.map,
+    repl-programs: output.repl-programs
   }
 where:
   strip-ctx({
     aggregated: [list:],
     trace: [list: {id: "foo1", result: executed(emit(score(0.5)), nothing, {(x): x})},
-                  {id: "foo2", result: skipped("bar", {(x): x + 1})}]
+                  {id: "foo2", result: skipped("bar", {(x): x + 1})}],
+    repl-programs: [SD.string-dict:]
   }) is {
     aggregated: [list:],
     trace: [list: {id: "foo1", result: executed(emit(score(0.5)), nothing, nothing)},
-                  {id: "foo2", result: skipped("bar", nothing)}]
+                  {id: "foo2", result: skipped("bar", nothing)}],
+    repl-programs: [SD.string-dict:]
   }
 end
 
@@ -83,7 +87,10 @@ check "grading: control flow":
       run: lam():
         {runner(); nothing}
       end,
-      to-aggregate: simple-aggregator
+      to-aggregate: simple-aggregator,
+      to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+        none
+      end
     }
   end
 
@@ -100,7 +107,8 @@ check "grading: control flow":
                        "(skipped guard_1)"].map(dummy-agg),
     trace: [list: {id: "guard_1", result: executed(block(blocker1), nothing, nothing)},
                   {id: "guard_2", result: skipped("guard_1", nothing)},
-                  {id: "test_1", result: skipped("guard_1", nothing)}]
+                  {id: "test_1", result: skipped("guard_1", nothing)}],
+    repl-programs: [SD.string-dict:]
   }
 
   grade(
@@ -116,7 +124,8 @@ check "grading: control flow":
                        "(skipped guard_2)"].map(dummy-agg),
     trace: [list: {id: "guard_1", result: executed(noop, nothing, nothing)},
                   {id: "guard_2", result: executed(block(blocker2), nothing, nothing)},
-                  {id: "test_1", result: skipped("guard_2", nothing)}]
+                  {id: "test_1", result: skipped("guard_2", nothing)}],
+    repl-programs: [SD.string-dict:]
   }
 
   grade(
@@ -132,7 +141,8 @@ check "grading: control flow":
                        "(executed (info nothing) (outcome (emit (score 1))))"].map(dummy-agg),
     trace: [list: {id: "guard_1", result: executed(noop, nothing, nothing)},
                   {id: "guard_2", result: executed(noop, nothing, nothing)},
-                  {id: "test_1", result: executed(emit(score(1)), nothing, nothing)}]
+                  {id: "test_1", result: executed(emit(score(1)), nothing, nothing)}],
+    repl-programs: [SD.string-dict:]
   }
 end
 
@@ -208,35 +218,50 @@ check "grading: aggregators":
     id: "guard",
     deps: [list:],
     run: {(): {noop; "passing info"}},
-    to-aggregate: guard-aggregator("guard", _)
+    to-aggregate: guard-aggregator("guard", _),
+    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      none
+    end
   }
 
   failing-guard-grader = {
     id: "guard",
     deps: [list:],
     run: {(): {block(blocker1); "block info"}},
-    to-aggregate: guard-aggregator("guard", _)
+    to-aggregate: guard-aggregator("guard", _),
+    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      none
+    end
   }
 
   dependent-guard = {
     id: "dep-guard",
     deps: [list: "guard"],
     run: {(): {noop; nothing}},
-    to-aggregate: guard-aggregator("dep-guard", _)
+    to-aggregate: guard-aggregator("dep-guard", _),
+    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      none
+    end
   }
 
   scorer = {
     id: "scorer",
     deps: [list: "guard"],
     run: {(): {emit(score(1)); "score info"}},
-    to-aggregate: test-aggregator("scorer", _)
+    to-aggregate: test-aggregator("scorer", _),
+    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      none
+    end
   }
 
   artist = {
     id: "artist",
     deps: [list: "guard"],
     run: {(): {emit(artifact("/path/to/file")); "artifact info"}},
-    to-aggregate: artifact-aggregator("artist", _)
+    to-aggregate: artifact-aggregator("artist", _),
+    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      none
+    end
   }
 
   grade([list: passing-guard-grader, dependent-guard]).aggregated

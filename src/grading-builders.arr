@@ -30,7 +30,8 @@ provide:
   type ScorerFormat,
   type ScorerWeight,
   mk-scorer,
-  mk-simple-scorer
+  mk-simple-scorer,
+  mk-repl-scorer,
 end
 
 # first element in the tuple represents general output
@@ -71,6 +72,9 @@ fun mk-guard<BlockReason, C>(
       end
       ^ agg-guard(id, name, _)
       ^ some
+    end,
+    to-repl: lam(result :: GraderResult<BlockReason, Nothing, C>) -> Option<ProgramRun>:
+      none
     end
   }
 end
@@ -126,8 +130,10 @@ fun mk-scorer<Info, C>(
       end
       ^ agg-test(id, name, max-score, _)
       ^ some
+    end,
+    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
+      none
     end
-    # TODO: to-repl
   }
 end
 
@@ -144,6 +150,35 @@ fun mk-simple-scorer<Info, C>(
   end
   mk-scorer(id, deps, scorer, name, max-score, calculator, format)
 end
+
+fun mk-repl-scorer<Info, C>(
+  id :: Id,
+  deps :: List<Id>,
+  scorer :: ScorerRunner<Info>,
+  name :: String,
+  max-score :: Number,
+  calc-score :: ScorerWeight,
+  format :: ScorerFormat<Info>,
+  program-runner :: (Info -> Option<ProgramRun>)
+) -> Grader<Nothing, Option<Info>, C>:
+  mk-scorer(id, deps, scorer, name, max-score, calc-score, format).{
+    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
+      cases (NodeResult) result:
+        | executed(outcome, info, _) =>
+          cases (Outcome) outcome:
+            | emit(_) =>
+              cases (Option) info:
+                | some(shadow info) => program-runner(info)
+                | none => none
+              end
+            | else => none
+          end
+        | skipped(_, _) => none
+      end
+    end
+  }
+end
+
 
 fun make-artist<Info, C>(id :: Id, deps :: List<Id>) -> Nothing:
   nothing

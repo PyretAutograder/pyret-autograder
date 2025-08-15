@@ -19,6 +19,7 @@
 include file("./core.arr")
 include file("./utils.arr")
 include js-file("./escape-hatch") # HACK: remove once/if typesystem supports existentials
+import ast as A
 import string-dict as SD
 import error as ERR
 
@@ -39,6 +40,7 @@ provide:
   type TraceEntry,
   type ExecutionTrace,
   type GradingOutput,
+  data ProgramRun,
   grade,
 end
 
@@ -46,6 +48,11 @@ data AggregateOutput:
   | output-text(content :: String)
   | output-markdown(content :: String)
   | output-ansi(content :: String)
+end
+
+data ProgramRun:
+  | pr-general(program :: A.Program)
+  | pr-staff(program :: A.Program)
 end
 
 data GuardOutcome:
@@ -113,8 +120,8 @@ type Grader<B, I, C> = {
   id :: Id,
   deps :: List<Id>,
   run :: GradingRunner<B, I>,
-  to-aggregate :: GradingAggregator<B, I, C>
-  # TODO: to-repl
+  to-aggregate :: GradingAggregator<B, I, C>,
+  to-repl :: (GraderResult<B, I, C> -> Option<ProgramRun>)
 }
 
 
@@ -139,25 +146,27 @@ type ExecutionTrace<B, I, C> = List<TraceEntry<B, I, C>>
 
 type GradingOutput<B, I, C> = {
   aggregated :: List<AggregateResult>,
-  trace :: ExecutionTrace<B, I, C>
+  trace :: ExecutionTrace<B, I, C>,
+  repl-programs :: SD.StringDict<ProgramRun>
 }
 
 # HACK: these should be existentials, not `Any`
 fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any>:
   dag = for map(grader from graders):
     ctx = {
-      to-aggregate: grader.to-aggregate
+      to-aggregate: grader.to-aggregate,
+      to-repl: grader.to-repl
     }
     node(grader.id, grader.deps, grader.run, ctx)
   end
   results = execute(dag)
 
-  {aggregated; trace} = for fold(
-    acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>} from {[list:]; [list:]},
+  {aggregated; trace; repl-programs} = for fold(
+    acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>; SD.StringDict<ProgramRun>} from {[list:]; [list:]; [SD.string-dict:]},
     {id; result} from results
   ) block:
     print("grade: " + id + "\n")
-    {aggregated; trace} = acc
+    {aggregated; trace; repl-programs} = acc
 
     # FIXME: upcast not needed if existentials are modeled correctly
     new-trace = link(upcast({ id: id, result: result }), trace)
@@ -168,13 +177,19 @@ fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any
       | none => aggregated
     end
 
-    {new-aggregated; new-trace}
+    new-repl-programs = cases (Option) result.ctx.to-repl(result):
+      | some(program-run) => repl-programs.set(id, program-run)
+      | none => repl-programs
+    end
+
+    {new-aggregated; new-trace; new-repl-programs}
   end
 
   # FIXME: giant hack, once again need existentials
   escape-typesystem({
     aggregated: aggregated.reverse(), # reversed because of link
     trace: trace.reverse(),
+    repl-programs: repl-programs
   })
 end
 
