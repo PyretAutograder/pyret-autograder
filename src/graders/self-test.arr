@@ -71,6 +71,6 @@ fun mk-self-test(
   name = "Self-Test on " + fun-name
   scorer = lam(): score-self-test(path, fun-name) end
   fmter = fmt-self-test(fun-name, _, _)
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
+  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter, some(fun-name))
 end
 

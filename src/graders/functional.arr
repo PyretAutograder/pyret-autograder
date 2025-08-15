@@ -33,7 +33,7 @@ end
 type Info = String
 
 fun score-functional-test(
-  student-path :: String, ref-path :: String, check-name :: String
+  student-path :: String, ref-path :: String, check-name :: String, fun-name :: String
 ):
   res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
   cases(Either) res:
@@ -43,13 +43,16 @@ fun score-functional-test(
   end
 end
 
-fun fmt-functional-test(check-name :: String, score :: G.NormalizedNumber, info):
+fun fmt-functional-test(check-name :: String, fun-name :: Option<String>, score :: G.NormalizedNumber, info):
   # TODO: improve both staff and student output
   general = output-markdown(cases(Either) info:
     | left(_) =>
+      error-msg = cases(Option) fun-name:
+        | none => "implementation in `" + check-name + "`"
+        | some(fn) => "function `" + fn + "`"
+      end
       "An error occured while trying to run our tests against your " +
-      " implementation in `" + check-name + "`." +
-      " Make sure your function is defined"
+      error-msg + ". Make sure your function is defined"
     | right({passed; total; _; _}) =>
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
       "succeeded against your own implementation in `" + check-name + "`."
@@ -66,11 +69,15 @@ end
 
 fun mk-functional(
   id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
-  check-name :: String, points :: Number
+  check-name :: String, points :: Number, fun-name :: Option<String>
 ):
   name = "Functional Test for " + check-name
-  scorer = lam(): score-functional-test(student-path, ref-path, check-name) end
-  fmter = fmt-functional-test(check-name, _, _)
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter)
+  scorer = lam(): score-functional-test(student-path, ref-path, check-name, fun-name.or-else(check-name)) end
+  fmter = fmt-functional-test(check-name, fun-name, _, _)
+  part = cases(Option) fun-name:
+    | none => some(check-name)
+    | some(fn) => some(fn)
+  end
+  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter, part)
 end
 

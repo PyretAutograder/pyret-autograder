@@ -86,7 +86,8 @@ data AggregateResult:
       id :: Id,
       name :: String,
       max-score :: Number,
-      outcome :: TestOutcome)
+      outcome :: TestOutcome,
+      part :: Option<String>)
   | agg-artifact(
       id :: Id,
       name :: String,

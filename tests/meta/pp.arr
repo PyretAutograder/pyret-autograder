@@ -77,6 +77,21 @@ fun pp-option(opt :: Option<AggregateOutput>):
   end
 end
 
+fun pp-option-string(opt :: Option<String>):
+  doc: ```
+    Pretty-prints an Option<String>, displaying 'none' or 'some(...)'
+    with proper formatting.
+  ```
+  cases (Option) opt:
+    | none => str("none")
+    | some(v) =>
+      group(
+        concat(str("some("),
+          concat(nest(2, concat(sbreak(0), dquote(str(v)))),
+            concat(sbreak(0), str(")")))))
+  end
+end
+
 fun pp-guard-outcome(outcome :: GuardOutcome):
   doc: ```
     Pretty-prints a GuardOutcome value with appropriate formatting for each
@@ -153,7 +168,7 @@ fun pp-aggregate-result(result :: AggregateResult):
               concat(str("name: "), dquote(str(name))),
               concat(str("outcome: "), pp-guard-outcome(outcome))]),
           str(")")))
-    | agg-test(id, name, max-score, outcome) =>
+    | agg-test(id, name, max-score, outcome, part) =>
       group(
         soft-surround(2, 1,
           str("agg-test("),
@@ -162,7 +177,8 @@ fun pp-aggregate-result(result :: AggregateResult):
               concat(str("id: "), str(tostring(id))),
               concat(str("name: "), dquote(str(name))),
               concat(str("max-score: "), number(max-score)),
-              concat(str("outcome: "), pp-test-outcome(outcome))]),
+              concat(str("outcome: "), pp-test-outcome(outcome)),
+              concat(str("part: "), pp-option-string(part))]),
           str(")")))
     | agg-artifact(id, name, description, outcome) =>
       group(

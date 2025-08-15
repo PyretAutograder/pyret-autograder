@@ -34,7 +34,7 @@ graders =
     mk-functional(
       "fold-reference-tests", [list: "wf"],
       student-path, functional-path, "fold-reference-tests",
-      1
+      1, some("fold")
     ),
     mk-well-formed("wf", [list:], student-path),
   ]

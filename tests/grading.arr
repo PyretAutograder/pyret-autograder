@@ -55,7 +55,7 @@ end
 
 check "grading: control flow":
   fun dummy-agg(info :: String):
-    agg-test("", "", 0, test-ok(0, output-text(info), none))
+    agg-test("", "", 0, test-ok(0, output-text(info), none), none)
   end
 
   fun simple-aggregator(node-result :: NodeResult):
@@ -193,7 +193,7 @@ check "grading: aggregators":
         end
       | skipped(skip-id, ctx) => test-skipped(skip-id)
     end
-    ^ agg-test(id, "Test", 1, _)
+    ^ agg-test(id, "Test", 1, _, none)
     ^ some
   end
 
@@ -277,12 +277,12 @@ check "grading: aggregators":
   grade([list: passing-guard-grader, scorer]).aggregated
   is
   [list: agg-guard("guard", "Guard", guard-passed),
-         agg-test("scorer", "Test", 1, test-ok(1, output-text("got score"), some(output-text("score info"))))]
+         agg-test("scorer", "Test", 1, test-ok(1, output-text("got score"), some(output-text("score info"))), none)]
 
   grade([list: failing-guard-grader, scorer]).aggregated
   is
   [list: agg-guard("guard", "Guard", guard-blocked(output-text("blocked"), some(output-text("block info")))),
-         agg-test("scorer", "Test", 1, test-skipped("guard"))]
+         agg-test("scorer", "Test", 1, test-skipped("guard"), none)]
 
   grade([list: passing-guard-grader, artist]).aggregated
   is

@@ -90,7 +90,8 @@ fun mk-scorer<Info, C>(
   name :: String,
   max-score :: Number,
   calc-score :: ScorerWeight,
-  format :: ScorerFormat<Info>
+  format :: ScorerFormat<Info>,
+  part :: Option<String>
 ) -> Grader<Nothing, Option<Info>, C>:
   INTERNAL-ERROR = "An interal error occured while running this test; " +
                    "please report this to course staff."
@@ -128,7 +129,7 @@ fun mk-scorer<Info, C>(
           end
         | skipped(skip-id, _) => test-skipped(skip-id)
       end
-      ^ agg-test(id, name, max-score, _)
+      ^ agg-test(id, name, max-score, _, part)
       ^ some
     end,
     to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
@@ -143,12 +144,13 @@ fun mk-simple-scorer<Info, C>(
   scorer :: ScorerRunner<Info>,
   name :: String,
   max-score :: Number,
-  format :: ScorerFormat<Info>
+  format :: ScorerFormat<Info>,
+  part :: Option<String>
 ) -> Grader<Nothing, Option<Info>, C>:
   calculator = lam(val, max):
     val * max
   end
-  mk-scorer(id, deps, scorer, name, max-score, calculator, format)
+  mk-scorer(id, deps, scorer, name, max-score, calculator, format, part)
 end
 
 fun mk-repl-scorer<Info, C>(
@@ -159,9 +161,10 @@ fun mk-repl-scorer<Info, C>(
   max-score :: Number,
   calc-score :: ScorerWeight,
   format :: ScorerFormat<Info>,
+  part :: Option<String>,
   program-runner :: (Info -> Option<ProgramRun>)
 ) -> Grader<Nothing, Option<Info>, C>:
-  mk-scorer(id, deps, scorer, name, max-score, calc-score, format).{
+  mk-scorer(id, deps, scorer, name, max-score, calc-score, format, part).{
     to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
       cases (NodeResult) result:
         | executed(outcome, info, _) =>

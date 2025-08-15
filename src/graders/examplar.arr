@@ -89,7 +89,7 @@ fun mk-examplar(
       | right({_; _; _; program}) => some(pr-staff(program()))
     end
   end
-  GB.mk-repl-scorer(id, deps, scorer, name, points, lam(val, max): val * max end, fmter, program-runner)
+  GB.mk-repl-scorer(id, deps, scorer, name, points, lam(val, max): val * max end, fmter, some(fun-name), program-runner)
 end
 
 # TODO: maybe these should take in a list of implementations

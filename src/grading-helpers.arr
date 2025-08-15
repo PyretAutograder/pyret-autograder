@@ -105,7 +105,7 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<FlatAggregateRes
             {outs; new-reasons}
           | else => acc
         end
-      | agg-test(id, name, max, outcome) =>
+      | agg-test(id, name, max, outcome, part) =>
         new-outs = cases (TestOutcome) outcome:
           | test-ok(points, general, staff) =>
             flat-agg-test(name, max, points, general, staff)

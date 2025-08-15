@@ -49,7 +49,7 @@ graders =
     mk-functional(
       "gcd-reference-tests", [list: "wf"],
       student-path, functional-path, "gcd-reference-tests",
-      1
+      1, some("gcd")
     ),
     mk-well-formed("wf", [list:], student-path),
   ]
