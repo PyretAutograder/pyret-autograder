@@ -71,14 +71,14 @@ end
 
 fun tmp-fmt-runtime-err(err :: R.RunChecksErr) -> String:
   cases(R.RunChecksErr) err:
-    | compile-error(comp-err) =>
+    | compile-error(comp-err, _) =>
       "Program resulted in a compile error:\n" +
       for map(cr from comp-err):
         for map(e from cr.problems):
           RED.display-to-string(e.render-reason(), to-repr, empty)
         end.join-str(",\n")
       end.join-str("\n----\n")
-    | runtime-error(run-err) =>
+    | runtime-error(run-err, _) =>
       "Program resulted in a runtime error:\n" +
       "```" + run-err.message + "\n```"
   end
