@@ -83,27 +83,35 @@ fun tmp-fmt-runtime-err(err :: R.RunChecksErr) -> String:
 end
 
 fun tmp-fmt-ai-err(err) -> String:
-  cases(R.RunAltImplErr) err:
-    | ai-cannot-parse-student(shadow err) =>
-      "Cannot parse student's file:\n" + to-repr(err)
-    | ai-cannot-parse-alt-impl(shadow err) =>
-      "Cannot parse specified alt-implementation file:\n" + to-repr(err)
-    | ai-missing-replacement-fun(fun-name) =>
-      "Cannot find alternate implementation of `" + fun-name +
-      "` to use as a replacement."
-    | ai-run-err(shadow err) => tmp-fmt-runtime-err(err)
+  if is-string(err):
+    err
+  else:
+    cases(R.RunAltImplErr) err:
+      | ai-cannot-parse-student(shadow err) =>
+        "Cannot parse student's file:\n" + to-repr(err)
+      | ai-cannot-parse-alt-impl(shadow err) =>
+        "Cannot parse specified alt-implementation file:\n" + to-repr(err)
+      | ai-missing-replacement-fun(fun-name) =>
+        "Cannot find alternate implementation of `" + fun-name +
+        "` to use as a replacement."
+      | ai-run-err(shadow err) => tmp-fmt-runtime-err(err)
+    end
   end
 end
 
-fun tmp-fmt-ac-err(err :: R.RunAltChecksErr) -> String:
-  cases(R.RunAltChecksErr) err:
-    | ac-cannot-parse-student(shadow err) =>
-      "Cannot parse student's file:\n" + to-repr(err)
-    | ac-cannot-parse-checks(shadow err) =>
-      "Cannot parse specified check file:\n" + to-repr(err)
-    | ac-cannot-find-check-block(name) =>
-      "Cannot find a check block named `" + name + "` in the specified file."
-    | ac-run-err(shadow err) => tmp-fmt-runtime-err(err)
+fun tmp-fmt-ac-err(err) -> String:
+  if is-string(err):
+    err
+  else:
+    cases(R.RunAltChecksErr) err:
+      | ac-cannot-parse-student(shadow err) =>
+        "Cannot parse student's file:\n" + to-repr(err)
+      | ac-cannot-parse-checks(shadow err) =>
+        "Cannot parse specified check file:\n" + to-repr(err)
+      | ac-cannot-find-check-block(name) =>
+        "Cannot find a check block named `" + name + "` in the specified file."
+      | ac-run-err(shadow err) => tmp-fmt-runtime-err(err)
+    end
   end
 end
 
