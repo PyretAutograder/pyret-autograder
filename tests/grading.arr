@@ -62,7 +62,6 @@ check "grading: control flow":
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         str-outcome = cases (Outcome) outcome:
-          | block(reason) => "(block " + to-repr(reason) + ")"
           | noop => "(noop)"
           | emit(grading-result) =>
             str-gr = cases (GradingResult) grading-result:
@@ -70,6 +69,7 @@ check "grading: control flow":
               | artifact(path) => "(artifact " + path + ")"
             end
             "(emit " + str-gr + ")"
+          | block(reason) => "(block " + to-repr(reason) + ")"
           | internal-error(err) =>
             "(internal-error " + err.to-string() + ")"
         end
@@ -151,13 +151,13 @@ check "grading: aggregators":
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         cases (Outcome) outcome:
-          | block(reason) => ...
           | noop => ...
           | emit(grading-result) =>
             cases (GradingResult) grading-result:
               | score(earned) => ...
               | artifact(path) => ...
             end
+          | block(reason) => ...
           | internal-error(err) => ...
         end
       | skipped(skip-id, ctx) => ...
@@ -168,9 +168,9 @@ check "grading: aggregators":
     cases (NodeResult) node-result:
       | executed(outcome, info, ctx) =>
         cases (Outcome) outcome:
+          | noop => guard-passed
           | block(reason) =>
             guard-blocked(output-text("blocked"), some(output-text(info)))
-          | noop => guard-passed
           | else => raise("invalid")
         end
       | skipped(skip-id, ctx) => guard-skipped(skip-id)

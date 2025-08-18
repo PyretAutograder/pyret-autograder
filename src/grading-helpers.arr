@@ -28,8 +28,6 @@ end
 
 fun summarize-outcome(outcome :: Outcome, is-staff :: Boolean) -> String:
   cases(Outcome) outcome:
-    | block(reason) =>
-      "blocking further execution due to `" + to-repr(reason) + "`"
     | noop =>
       "no action"
     | emit(res) =>
@@ -38,6 +36,8 @@ fun summarize-outcome(outcome :: Outcome, is-staff :: Boolean) -> String:
         | score(earned) => "score of `" + to-repr(earned) + "`"
         | artifact(path) => "an artifact at `" + path + "`"
       end
+    | block(reason) =>
+      "blocking further execution due to `" + to-repr(reason) + "`"
     | internal-error(err) =>
       if is-staff:
         "**an internal error**:\n```\n" + err.to-string() + "\n```"

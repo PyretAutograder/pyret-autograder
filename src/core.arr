@@ -58,16 +58,16 @@ data Node<BlockReason, RanResult, Error, Info, Context>:
 end
 
 data Outcome<BlockReason, RanResult, Error>:
-  # blocks further execution
-  # reason: the reason for the block
-  | block(reason :: BlockReason)
-
   # node has no effect on execution
   | noop
 
   # yields a result
   # res: the result
   | emit(res :: RanResult)
+
+  # blocks further execution
+  # reason: the reason for the block
+  | block(reason :: BlockReason)
 
   # an internal issue occured in a runner
   # err: the error which occured
@@ -100,9 +100,9 @@ sharing:
     cases (NodeResult) self:
       | executed(outcome, _, _) =>
         cases (Outcome) outcome:
-          | block(_) => some(id)
           | noop => none
           | emit(_) => none
+          | block(_) => some(id)
           | internal-error(_) => some(id)
         end
       | skipped(orig-id, _) => some(orig-id)
