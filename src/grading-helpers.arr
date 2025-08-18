@@ -108,7 +108,7 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<{Id; FlatAggrega
         end
       | agg-test(id, name, max, outcome, part) =>
         new-outs = cases (TestOutcome) outcome:
-          | test-ok(points, general, staff) =>
+          | test-result(points, general, staff) =>
             flat-agg-test(name, max, points, general, staff, part)
           | test-skipped(skip-id) =>
             cases (Option) L.find({(x): x.id == skip-id}, reasons) block:

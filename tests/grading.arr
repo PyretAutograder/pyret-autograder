@@ -55,7 +55,7 @@ end
 
 check "grading: control flow":
   fun dummy-agg(info :: String):
-    agg-test("", "", 0, test-ok(0, output-text(info), none), none)
+    agg-test("", "", 0, test-result(0, output-text(info), none), none)
   end
 
   fun simple-aggregator(node-result :: NodeResult):
@@ -186,7 +186,7 @@ check "grading: aggregators":
           | emit(grading-result) =>
             cases (GradingResult) grading-result:
               | score(earned) =>
-                test-ok(earned, output-text("got score"), some(output-text(info)))
+                test-result(earned, output-text("got score"), some(output-text(info)))
               | else => raise("invalid")
             end
           | else => raise("invalid")
@@ -277,7 +277,7 @@ check "grading: aggregators":
   grade([list: passing-guard-grader, scorer]).aggregated
   is
   [list: agg-guard("guard", "Guard", guard-passed),
-         agg-test("scorer", "Test", 1, test-ok(1, output-text("got score"), some(output-text("score info"))), none)]
+         agg-test("scorer", "Test", 1, test-result(1, output-text("got score"), some(output-text("score info"))), none)]
 
   grade([list: failing-guard-grader, scorer]).aggregated
   is

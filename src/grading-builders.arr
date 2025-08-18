@@ -117,14 +117,14 @@ fun mk-scorer<Info, C>(
                   end
                   realized-score = calc-score(num, max-score)
                   {general; staff} = format(num, info)
-                  test-ok(realized-score, general, staff)
+                  test-result(realized-score, general, staff)
                 | else => raise("INVARIANT VIOLATED: scorer emitted non-score")
               end
             | internal-error(err) =>
               general = output-markdown(INTERNAL-ERROR)
               err-str = err.to-string()
               staff = output-text(err-str) ^ some
-              test-ok(0, general, staff)
+              test-result(0, general, staff)
             | else => raise("INVARIANT VIOLATED: unexpected outcome")
           end
         | skipped(skip-id, _) => test-skipped(skip-id)

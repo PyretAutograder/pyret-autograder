@@ -118,10 +118,10 @@ fun pp-test-outcome(outcome :: TestOutcome):
     Pretty-prints a TestOutcome value, formatting score and output fields.
   ```
   cases (TestOutcome) outcome:
-    | test-ok(shadow score, general-output, staff-output) =>
+    | test-result(shadow score, general-output, staff-output) =>
       group(
         soft-surround(2, 1,
-          str("test-ok("),
+          str("test-result("),
           separate(comma-sep,
             [list:
               concat(str("score: "), number(score)),

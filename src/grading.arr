@@ -64,7 +64,7 @@ data GuardOutcome:
 end
 
 data TestOutcome:
-  | test-ok( # "ok" is a bad name, its just not skipped
+  | test-result(
       score :: Number,
       general-output :: AggregateOutput,
       staff-output :: Option<AggregateOutput>)
