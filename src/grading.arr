@@ -40,7 +40,7 @@ provide:
   type TraceEntry,
   type ExecutionTrace,
   type GradingOutput,
-  data ProgramRun,
+  data RanProgram,
   grade,
 end
 
@@ -50,9 +50,9 @@ data AggregateOutput:
   | output-ansi(content :: String)
 end
 
-data ProgramRun:
-  | pr-general(program :: A.Program)
-  | pr-staff(program :: A.Program)
+data RanProgram:
+  | rp-general(program :: A.Program)
+  | rp-staff(program :: A.Program)
 end
 
 data GuardOutcome:
@@ -122,7 +122,7 @@ type Grader<B, I, C> = {
   deps :: List<Id>,
   run :: GradingRunner<B, I>,
   to-aggregate :: GradingAggregator<B, I, C>,
-  to-repl :: (GraderResult<B, I, C> -> Option<ProgramRun>)
+  to-repl :: (GraderResult<B, I, C> -> Option<RanProgram>)
 }
 
 
@@ -148,7 +148,7 @@ type ExecutionTrace<B, I, C> = List<TraceEntry<B, I, C>>
 type GradingOutput<B, I, C> = {
   aggregated :: List<AggregateResult>,
   trace :: ExecutionTrace<B, I, C>,
-  repl-programs :: SD.StringDict<ProgramRun>
+  repl-programs :: SD.StringDict<RanProgram>
 }
 
 # HACK: these should be existentials, not `Any`
@@ -163,7 +163,7 @@ fun grade(graders :: List<Grader<Any, Any, Any>>) -> GradingOutput<Any, Any, Any
   results = execute(dag)
 
   {aggregated; trace; repl-programs} = for fold(
-    acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>; SD.StringDict<ProgramRun>} from {[list:]; [list:]; [SD.string-dict:]},
+    acc :: {List<AggregateResult>; ExecutionTrace<Any, Any, Any>; SD.StringDict<RanProgram>} from {[list:]; [list:]; [SD.string-dict:]},
     {id; result} from results
   ) block:
     print("grade: " + id + "\n")

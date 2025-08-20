@@ -73,7 +73,7 @@ fun mk-guard<BlockReason, C>(
       ^ agg-guard(id, name, _)
       ^ some
     end,
-    to-repl: lam(result :: GraderResult<BlockReason, Nothing, C>) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult<BlockReason, Nothing, C>) -> Option<RanProgram>:
       none
     end
   }
@@ -132,7 +132,7 @@ fun mk-scorer<Info, C>(
       ^ agg-test(id, name, max-score, _, part)
       ^ some
     end,
-    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<RanProgram>:
       none
     end
   }
@@ -162,16 +162,16 @@ fun mk-repl-scorer<Info, C>(
   calc-score :: ScorerWeight,
   format :: ScorerFormat<Info>,
   part :: Option<String>,
-  program-runner :: (Info -> Option<ProgramRun>)
+  get-ran-program :: (Info -> Option<RanProgram>)
 ) -> Grader<Nothing, Option<Info>, C>:
   mk-scorer(id, deps, scorer, name, max-score, calc-score, format, part).{
-    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<RanProgram>:
       cases (NodeResult) result:
         | executed(outcome, info, _) =>
           cases (Outcome) outcome:
             | emit(_) =>
               cases (Option) info:
-                | some(shadow info) => program-runner(info)
+                | some(shadow info) => get-ran-program(info)
                 | none => none
               end
             | else => none

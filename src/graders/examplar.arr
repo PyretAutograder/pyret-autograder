@@ -24,7 +24,7 @@ import file("../common/ast.arr") as A
 import safe-divide from file("../utils.arr")
 include either
 include from C: type Id end
-include from G: data AggregateOutput, data ProgramRun end
+include from G: data AggregateOutput, data RanProgram end
 
 provide:
   mk-wheat,

@@ -88,7 +88,7 @@ check "grading: control flow":
         {runner(); nothing}
       end,
       to-aggregate: simple-aggregator,
-      to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+      to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
         none
       end
     }
@@ -219,7 +219,7 @@ check "grading: aggregators":
     deps: [list:],
     run: {(): {noop; "passing info"}},
     to-aggregate: guard-aggregator("guard", _),
-    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
     end
   }
@@ -229,7 +229,7 @@ check "grading: aggregators":
     deps: [list:],
     run: {(): {block(blocker1); "block info"}},
     to-aggregate: guard-aggregator("guard", _),
-    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
     end
   }
@@ -239,7 +239,7 @@ check "grading: aggregators":
     deps: [list: "guard"],
     run: {(): {noop; nothing}},
     to-aggregate: guard-aggregator("dep-guard", _),
-    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
     end
   }
@@ -249,7 +249,7 @@ check "grading: aggregators":
     deps: [list: "guard"],
     run: {(): {emit(score(1)); "score info"}},
     to-aggregate: test-aggregator("scorer", _),
-    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
     end
   }
@@ -259,7 +259,7 @@ check "grading: aggregators":
     deps: [list: "guard"],
     run: {(): {emit(artifact("/path/to/file")); "artifact info"}},
     to-aggregate: artifact-aggregator("artist", _),
-    to-repl: lam(result :: GraderResult) -> Option<ProgramRun>:
+    to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
     end
   }
