@@ -1,6 +1,10 @@
-# Pyret DCIC Autograder Design
+# Pyret Autograder Design
 
 ## Motivation
+
+Autograders should be mutually beneficial to both students--allowing
+instantaneous actionable feedback--and course staff--allowing more energy to be
+spent on feedback on design and quality rather than functionality.
 
 ### Testing
 
@@ -46,22 +50,45 @@ diagnostics).
 - we should be able to produce artifacts from the student's code
   - most notably: rendering images
 
-> [!NOTE] TODO
-> Some considerations still need to be made about artifacts:
->
-> - likely will also need dependencies
-> - what happens if they fail, should these be student visible?
->
-> Additionally, we need to determine if there is anything else that the
-> autograder could output which would assist in grading (these could even just
-> be zero point, hidden tests if needed)
-
 ### Adaptability
 
 - The internal representation of the output of the autograder shouldn't be too
   tightly coupled to the requirements needed for Pawtograder.
 - The overall design should be reasonably extensible and relatively well
   documented.
+
+## Core Abstractions
+
+The system is built around a simple but powerful execution model. Each grader 
+is represented as a node that can produce one of four outcomes:
+
+```arr
+data Outcome:
+  | noop
+  | emit(res)
+  | block(reason)
+  | internal-error(err)
+end
+```
+
+- `noop`: Grader completed with no effect on execution flow (e.g., guard passed)
+- `emit`: Grader produced a result (e.g., score, artifact)
+- `block`: Prevents downstream graders from running (e.g., code doesn't parse)
+- `internal-error`: Something went wrong while running the grader (e.g., invalid config, violated invariant)
+
+This outcome model enables dependency-based execution where graders can specify prerequisites and the system automatically handles blocking, skipping, and error propagation.
+
+Graders are represented as nodes in a directed acyclic graph:
+
+```arr
+data Node:
+  | node(id, deps, run, ctx)
+end
+```
+
+Each node has a unique identifier, a list of dependencies (other node IDs), a runner function that produces an outcome, and additional context for result processing.
+
+For a complete understanding of the DAG execution engine, including topological sorting, cycle detection, and dependency resolution, see the implementation in [`src/core.arr`](./src/core.arr).
 
 ## Implementation
 
@@ -85,73 +112,3 @@ Both ...
 > - different tests should be able to be weighted differently, easily (for example very basic tests might be weighted less than a more involved one)
 >
 > We need to also ensure that this doesn't result in unreasonable performance penalties.
-
-## Todo
-
-- have a better idea what type of output we want to support
-  - should be have a notion of adding line comments or associating tests with
-    certain regions of the submission?
-  - we've discussed that even if a test is skipped, it should still show up
-- incorporate with Pawtograder (consider if it is worth using existing action or not)
-  - will require significant coordination with Pawtograder team either way
-- refine core data definitions
-  - finalize how to represent dependencies (DAG, topological sort?)
-  - at its core, it might not be worth differentiating between the different
-    types of tests but rather base it off what is returned
-    - something like a union of `ran`, `block`, `skipped`?
-
-
-
-## Other
-
-We might need to consider how to implement LLM design based feedback (like with
-feedbot, but this is likely out of the scope of this project, unless running
-multiple autograders doesn't end up being supported)
-
-
-## Meeting notes
-
-files should be able to run individually
-
-
-two types of nodes: test and guard
-- guard can continue or block
-- test can run or skipped
-
-(how to integrate artifacts into this naming?)
-
-
-```arr
-data Result:
-  | continue ...
-  | block ...
-  | run ...
-  | skipped ...
-  | artifact ...
-  | internal-error ...
-end
-```
-
-
-
-## Questions / discussions
-
-- Multiple graders, actions?
-  - why is `lint` separate
-- Line annotations from autograders
-<!-- - what does `part` mean? -->
-- instructor only output
-  - all output should be able to have granularity
-- toggle instructor visibility
-- contract violations: yes they should be able to see them...
-  - this can be a guard!!! very basic checks
-- error visibility maybe should be an option??? guard blocks don't give away much
-- multiple files: ex buggy implementations
-- CI to check that main autograder refers to valid things
-  - have reference "good" and "bad" sample references which run via CI
-- what is `extra_data`?
-
-## Jon Meeting
-
-- Api for providing automated feedback
--
