@@ -72,6 +72,7 @@ interface PyretRuntime {
     onDone: unknown
   ): unknown;
   runThunk(f: unknown, then: unknown, options?: unknown): unknown;
+  safeCall<T, U>(fun: () => T, after: (result: T) => U, stackFrame: string): U;
 
   ffi: PyretFFI;
 

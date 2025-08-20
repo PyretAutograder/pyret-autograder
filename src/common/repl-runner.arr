@@ -31,6 +31,7 @@ import require-util as RU
 import file("./visitors.arr") as V
 import file("./ast.arr") as CA
 include js-file("./runtime")
+import js-file("./interop/extract") as EX
 include either
 
 include js-file("../tools/debugging")
@@ -41,6 +42,7 @@ provide:
   run-with-alternate-impl,
   run-with-alternate-checks,
   run
+  run-for-answer
 end
 
 # TODO: deal with this!!!
@@ -192,13 +194,14 @@ data RunChecksErr:
   | runtime-error(x :: Any, program :: A.Program)
 end
 
-fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
+fun run-base(program :: A.Program, compile-options :: CS.CompileOptions)
+   -> Either<RunChecksErr, RunChecksResult>
+block:
   locator = repl.make-definitions-locator(lam(): nothing end, CS.standard-globals).{
     method get-module(self):
       CL.pyret-ast(program)
     end
   }
-  compile-options = CS.default-compile-options.{checks-format: "json"}
 
   identity-spy = lam(x):
     spy: x end
@@ -211,7 +214,11 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   identity-print-json = mk-eff-identity(print-json)
   identity-print-raw = mk-eff-identity(print-raw)
 
-  cases(Either) repl.restart-interactions(locator, compile-options):
+  repl.restart-interactions(locator, compile-options)
+end
+
+fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
+  cases(Either) run-base(program, CS.default-compile-options.{checks-format: "json"}):
     | left(err) =>
       err
       ^ compile-error(_, program)
@@ -238,4 +245,43 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
       end
   end
   # ^ identity-spy
+end
+
+data RunAnswerErr:
+  | ans-cannot-parse-student(err :: CA.ParsePathErr)
+  | ans-cannot-parse-question(err :: CA.ParsePathErr)
+end
+
+# TODO: make type correct
+# program can return anything so probably can't actually get rid of Any
+# but we can put in an Either etc.
+fun run-for-answer(student-path :: String, question-path :: String) -> Any:
+  cases (Either) CA.parse-path(student-path):
+  | left(err) => left(ans-cannot-parse-student(err))
+  | right(student) =>
+    cases (Either) CA.parse-path(question-path):
+    | left(err) => left(ans-cannot-parse-question(err))
+    | right(question) =>
+      cases (A.Program) question:
+      | s-program(_, _, _, _, _, _, q-body) =>
+        without-checks = remove-checks(student, none)
+        prog = add-to-program(without-checks, q-body)
+        cases (Either) run-base(prog, CS.default-compile-options):
+        | left(err) =>
+          err
+          ^ compile-error(_, prog)
+          ^ left
+        | right(val) =>
+          if LL.is-success-result(val):
+            EX.get-module-result-answer(val)
+            ^ right
+          else:
+            LL.render-error-message(val)
+            ^ runtime-error(_, prog)
+            ^ left
+          end
+        end
+      end
+    end
+  end
 end
