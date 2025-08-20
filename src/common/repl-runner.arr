@@ -271,9 +271,9 @@ fun run-for-answer(student-path :: String, question-path :: String) -> Any:
           ^ compile-error(_, prog)
           ^ left
         | right(val) =>
-          if LL.is-success-result(val):
-            EX.get-module-result-answer(val)
-            ^ right
+          if LL.is-success-result(val) block:
+            EX.get-module-result-answer(val) ^ right
+            # right(nothing)
           else:
             LL.render-error-message(val)
             ^ runtime-error(_, prog)
