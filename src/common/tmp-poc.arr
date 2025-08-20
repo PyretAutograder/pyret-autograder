@@ -30,7 +30,9 @@ provide:
   tmp-run-with-alternate-impl,
   tmp-run-with-alternate-checks,
   tmp-fmt-ai-err,
-  tmp-fmt-ac-err
+  tmp-fmt-ac-err,
+  tmp-extract-ai-ran-program,
+  tmp-extract-ac-ran-program,
 end
 
 fun handle(res, path, name):
@@ -55,16 +57,19 @@ fun handle(res, path, name):
 end
 
 
+type AiInfo = Either<R.RunAltImplErr, { Number; Number; String; (-> A.Program) }>
+type AcInfo = Either<R.RunAltChecksErr, { Number; Number; String; (-> A.Program) }>
+
 fun tmp-run-with-alternate-impl(
   student-path :: String, alt-impl-path :: String, fun-name :: String
-) -> Either<R.RunAltImplErr, { Number; Number; String; (-> A.Program) }>:
+) -> AiInfo:
   res = R.run-with-alternate-impl(student-path, alt-impl-path, fun-name)
   handle(res, student-path, fun-name)
 end
 
 fun tmp-run-with-alternate-checks(
   student-path :: String, check-path :: String, check-name :: String
-) -> Either<R.RunAltChecksErr, { Number; Number; String; (-> A.Program) }>:
+) -> AcInfo:
   res = R.run-with-alternate-checks(student-path, check-path, check-name)
   handle(res, check-path, check-name)
 end
@@ -117,3 +122,26 @@ fun tmp-fmt-ac-err(err) -> String:
   end
 end
 
+fun tmp-extract-ai-ran-program(info :: AiInfo, constr) -> Option<G.RanProgram>:
+  cases(Either) info:
+    | left(err) =>
+      ask:
+        | is-string(err) then: none
+        | R.is-ai-run-err(err) then: some(constr(err.err.program))
+        | otherwise: none
+      end
+    | right({_; _; _; program}) => some(constr(program()))
+  end
+end
+
+fun tmp-extract-ac-ran-program(info :: AcInfo, constr) -> Option<G.RanProgram>:
+  cases(Either) info:
+    | left(err) =>
+      ask:
+        | is-string(err) then: none
+        | R.is-ac-run-err(err) then: some(constr(err.err.program))
+        | otherwise: none
+      end
+    | right({_; _; _; program}) => some(constr(program()))
+  end
+end

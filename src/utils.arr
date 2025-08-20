@@ -18,6 +18,7 @@
 |#
 import lists as L
 import string-dict as SD
+import either as E
 
 provide:
   unique,
@@ -123,4 +124,11 @@ fun filter_n<T>(
       acc
     end
   end.reverse()
+end
+
+fun option-from-either<A, B>(val :: E.Either<A, B>) -> Option<B>:
+  cases (E.Either) val:
+    | left(_) => none
+    | right(v) => some(v)
+  end
 end

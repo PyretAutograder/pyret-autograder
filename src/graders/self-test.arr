@@ -70,7 +70,10 @@ fun mk-self-test(
 ):
   name = "Self-Test on " + fun-name
   scorer = lam(): score-self-test(path, fun-name) end
+  calc = GB.simple-calculator
   fmter = fmt-self-test(fun-name, _, _)
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter, some(fun-name))
+  part = some(fun-name)
+  get-rp = AAAA.tmp-extract-ai-ran-program(_, G.rp-general)
+  GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, part, get-rp)
 end
 

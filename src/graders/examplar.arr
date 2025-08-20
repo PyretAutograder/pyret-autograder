@@ -82,14 +82,11 @@ fun mk-examplar(
   scorer = lam():
     score-examplar(student-path, alt-impl-path, fun-name, decider)
   end
+  calc = GB.simple-calculator
   fmter = fmt-examplar-test(_, _, fun-name, adjective, good-str, bad-str)
-  program-runner = lam(info :: Info) -> Option<ProgramRun>:
-    cases(Either) info:
-      | left(_) => none
-      | right({_; _; _; program}) => some(pr-staff(program()))
-    end
-  end
-  GB.mk-repl-scorer(id, deps, scorer, name, points, lam(val, max): val * max end, fmter, some(fun-name), program-runner)
+  part = some(fun-name)
+  get-rp = AAAA.tmp-extract-ai-ran-program(_, G.rp-staff)
+  GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, part, get-rp)
 end
 
 # TODO: maybe these should take in a list of implementations

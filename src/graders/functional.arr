@@ -33,7 +33,7 @@ end
 type Info = String
 
 fun score-functional-test(
-  student-path :: String, ref-path :: String, check-name :: String, fun-name :: String
+  student-path :: String, ref-path :: String, check-name :: String
 ):
   res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
   cases(Either) res:
@@ -67,17 +67,17 @@ fun fmt-functional-test(check-name :: String, fun-name :: Option<String>, score 
   {general; staff}
 end
 
+# TODO: make fun-name required
 fun mk-functional(
   id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
   check-name :: String, points :: Number, fun-name :: Option<String>
 ):
   name = "Functional Test for " + check-name
-  scorer = lam(): score-functional-test(student-path, ref-path, check-name, fun-name.or-else(check-name)) end
+  scorer = lam(): score-functional-test(student-path, ref-path, check-name) end
+  calc = GB.simple-calculator
   fmter = fmt-functional-test(check-name, fun-name, _, _)
-  part = cases(Option) fun-name:
-    | none => some(check-name)
-    | some(fn) => some(fn)
-  end
-  GB.mk-simple-scorer(id, deps, scorer, name, points, fmter, part)
+  part = fun-name
+  get-rp = AAAA.tmp-extract-ac-ran-program(_, G.rp-staff)
+  GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, part, get-rp)
 end
 

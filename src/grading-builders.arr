@@ -32,6 +32,7 @@ provide:
   mk-scorer,
   mk-simple-scorer,
   mk-repl-scorer,
+  simple-calculator
 end
 
 # first element in the tuple represents general output
@@ -138,6 +139,10 @@ fun mk-scorer<Info, C>(
   }
 end
 
+simple-calculator = lam(val, max):
+  val * max
+end
+
 fun mk-simple-scorer<Info, C>(
   id :: Id,
   deps :: List<Id>,
@@ -147,10 +152,7 @@ fun mk-simple-scorer<Info, C>(
   format :: ScorerFormat<Info>,
   part :: Option<String>
 ) -> Grader<Nothing, Option<Info>, C>:
-  calculator = lam(val, max):
-    val * max
-  end
-  mk-scorer(id, deps, scorer, name, max-score, calculator, format, part)
+  mk-scorer(id, deps, scorer, name, max-score, simple-calculator, format, part)
 end
 
 fun mk-repl-scorer<Info, C>(
@@ -181,7 +183,6 @@ fun mk-repl-scorer<Info, C>(
     end
   }
 end
-
 
 fun make-artist<Info, C>(id :: Id, deps :: List<Id>) -> Nothing:
   nothing
