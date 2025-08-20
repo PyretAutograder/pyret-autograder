@@ -64,6 +64,7 @@
     }
 
     return runtime.makeJSModuleReturn({
+      getMod,
       translateSrcloc,
       translateErrorDisplay,
     });
