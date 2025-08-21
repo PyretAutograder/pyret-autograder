@@ -13,6 +13,7 @@ import file("../common/repl-runner.arr") as R
 import ast as A
 import srcloc as SL
 import lists as L
+import json as J
 
 include either
 include from C:
@@ -38,6 +39,7 @@ data DiversityGuardBlock:
   | parser-error(err :: CA.ParsePathErr)
   | fn-not-defined(name :: String)
   | run-error(err :: R.RunChecksErr)
+  | invalid-result(unexpected :: J.JSON)
   | too-few-inputs(name :: String, expected :: Number, actual :: Number)
   | too-few-outputs(name :: String, expected :: Number, actual :: Number)
 end
@@ -57,11 +59,91 @@ fun check-test-diversity(
       cases (Either) R.run(instrumented) block:
       | left(err) => some(run-error(err))
       | right({j; _}) =>
-        as-json = j.serialize()
-        print(as-json)
-        none
+        parse-check-results(
+          j,
+          fn,
+          "check-" + fn + "-diversity-inputs",
+          "check-" + fn + "-diversity-outputs"
+        )
       end
     end
+  end
+end
+
+fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outputs-name :: String) -> Option<DiversityGuardBlock>:
+  bad = some(invalid-result(raw))
+  var seen-inputs = false
+  var seen-outputs = false
+
+  fun parse-blocks-result(b :: List<J.JSON>) -> Option<DiversityGuardBlock>:
+    cases (List) b:
+    | empty =>
+      if seen-inputs and seen-outputs:
+        none
+      else:
+        bad
+      end
+    | link(single-block, rest) =>
+      recursive = lam(): parse-blocks-result(rest) end
+      cases (J.JSON) single-block:
+      | j-obj(dict) =>
+        cases (Option) dict.get("name"):
+        | some(name) =>
+          cases (J.JSON) name:
+          | j-str(name-str) =>
+            cases (Option) dict.get("total"):
+            | some(total-opt) =>
+              cases (J.JSON) total-opt:
+              | j-num(total) =>
+                cases (Option) dict.get("passed"):
+                | some(passed-opt) =>
+                  cases (J.JSON) passed-opt:
+                  | j-num(passed) =>
+                    success = total == passed
+                    # intentionally prioritizing inputs because our output info
+                    # is even less useful if there are too few inputs
+                    if name-str == inputs-name:
+                      if success block:
+                        seen-inputs := true
+                        recursive()
+                      # TODO: make these not 0
+                      else: some(too-few-inputs(fn, 0, 0))
+                      end
+                    else if name-str == outputs-name:
+                      if success block:
+                        seen-outputs := true
+                        recursive()
+                      else: some(too-few-outputs(fn, 0, 0))
+                      end
+                    else: recursive()
+                    end
+                  | else => bad
+                  end
+                | else => bad
+                end
+              | else => bad
+              end
+            | else => bad
+            end
+          | else => bad
+          end
+        | else => recursive()
+        end
+      | else => bad
+      end
+    end
+  end
+
+  cases (J.JSON) raw:
+  | j-obj(dict) =>
+    cases (Option) dict.get(dummy-file-name):
+    | some(autograder-results) =>
+      cases (J.JSON) autograder-results:
+      | j-arr(blocks) => parse-blocks-result(blocks)
+      | else => bad
+      end
+    end
+  | else => bad
   end
 end
 
