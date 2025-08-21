@@ -53,6 +53,7 @@ fun instrument(
 ) -> Either<DiversityGuardBlock, A.Program>:
   ast-ended = AU.append-nothing-if-necessary(student)
   empty-list-set = lam():
+    # `[Autograder-Sets.list-set:]`
     A.s-construct(
       dummy-loc,
       A.s-construct-normal,
@@ -61,11 +62,13 @@ fun instrument(
     )
   end
   state = [list:
+    # `var [fn]-diversity-inputs = [Autograder-Sets.list-set:]`
     A.s-var(
       dummy-loc,
       A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-inputs"), A.a-blank),
       empty-list-set()
     ),
+    # `var [fn]-diversity-outputs = [Autograder-Sets.list-set:]`
     A.s-var(
       dummy-loc,
       A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-outputs"), A.a-blank),
@@ -100,9 +103,12 @@ fun instrument(
 end
 
 fun make-size-check(set :: String, min :: Number) -> A.Expr:
+  # check "check-[set]":
+  #   [set].size() > [min] is true
+  # end
   A.s-check(
     dummy-loc,
-    some("check-" + check-name),
+    some("check-" + set),
     A.s-block(
       dummy-loc,
       [list:
@@ -149,6 +155,7 @@ fun wrap-function(
       l,
       [list:
         inner,
+        # `output = student-[fn]([args])`
         A.s-let(
           dummy-loc,
           A.s-bind(dummy-loc, false, A.s-name(dummy-loc, "output"), A.a-blank),
@@ -159,6 +166,7 @@ fun wrap-function(
             all-args-ids
           )
         ),
+        # `[fn]-diversity-inputs := [fn]-diversity-inputs.add({[args]})`
         A.s-assign(
           dummy-loc,
           A.s-name(dummy-loc, inputs),
@@ -168,6 +176,7 @@ fun wrap-function(
             [list: A.s-tuple(dummy-loc, all-args-ids)]
           )
         ),
+        # `[fn]-diversity-outputs := [fn]-diversity-outputs.add(output)`
         A.s-assign(
           dummy-loc,
           A.s-name(dummy-loc, outputs),
@@ -177,6 +186,7 @@ fun wrap-function(
             [list: A.s-id(dummy-loc, A.s-name("output"))]
           )
         ),
+        # `output`
         A.s-id(dummy-loc, A.s-name(dummy-loc, "output"))
       ]
     )
