@@ -231,6 +231,9 @@ fun instrument(
   ]
   state-added = ast-ended.visit(V.make-program-prepender(state))
   utils = [list:
+    # fun autogrdder$at-least(a, b):
+    #   a >= b
+    # end
     A.s-fun(
       dummy-loc(),
       "autograder$at-least",
@@ -356,7 +359,7 @@ end
 
 fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
   # check "check-[set]":
-  #   [set].size() > [min] is true
+  #   [set].size() is%(autograder$at-least) [min]
   # end
   A.s-check(
     dummy-loc(),
