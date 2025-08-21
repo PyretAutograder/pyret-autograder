@@ -59,11 +59,9 @@ fun check-test-diversity(
     cases (Either) instrument(ast, fn, min-in, min-out):
     | left(err) => some(err)
     | right(instrumented) =>
-      cases (Either) R.run(instrumented) block:
+      cases (Either) R.run(instrumented):
       | left(err) => some(run-error(err))
       | right({j; _}) =>
-        s = j.serialize()
-        print(s)
         parse-check-results(
           j,
           fn,
@@ -146,16 +144,23 @@ end
 
 fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outputs-name :: String) -> Option<DiversityGuardBlock>:
   bad = some(invalid-result(raw))
-  var seen-inputs = false
-  var seen-outputs = false
+  var seen-inputs = unseen
+  var seen-outputs = unseen
 
   fun parse-blocks-result(b :: List<J.JSON>) -> Option<DiversityGuardBlock>:
+    # intentionally prioritizing inputs because our output info
+    # is even less useful if there are too few inputs
     cases (List) b:
     | empty =>
-      if seen-inputs and seen-outputs:
-        none
-      else:
-        bad
+      cases (SeenCheck) seen-inputs:
+      | failed(expected, actual) => some(too-few-inputs(fn, expected, actual))
+      | passed =>
+        cases (SeenCheck) seen-outputs:
+        | failed(expected, actual) => some(too-few-outputs(fn, expected, actual))
+        | passed => none
+        | unseen => bad
+        end
+      | unseen => bad
       end
     | link(single-block, rest) =>
       recursive = lam(): parse-blocks-result(rest) end
@@ -171,30 +176,16 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
               | j-num(total) =>
                 cases (Option) dict.get("passed"):
                 | some(passed-opt) =>
-                  cases (J.JSON) passed-opt:
-                  | j-num(passed) =>
-                    success = total == passed
-                    # intentionally prioritizing inputs because our output info
-                    # is even less useful if there are too few inputs
+                  cases (J.JSON) passed-opt block:
+                  | j-num(checks-passed) =>
+                    success = total == checks-passed
                     if name-str == inputs-name:
-                      if success block:
-                        seen-inputs := true
-                        recursive()
-                      else:
-                        cases (Option) parse-fail-result(dict):
-                        | some({expected; actual}) =>
-                          some(too-few-inputs(fn, expected, actual))
-                        | none => bad
-                        end
-                      end
+                      seen-inputs := update-check-state(success, dict)
                     else if name-str == outputs-name:
-                      if success block:
-                        seen-outputs := true
-                        recursive()
-                      else: some(too-few-outputs(fn, 0, 0))
-                      end
-                    else: recursive()
+                      seen-outputs := update-check-state(success, dict)
+                    else: nothing
                     end
+                    recursive()
                   | else => bad
                   end
                 | else => bad
@@ -254,6 +245,21 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
       | else => none
       end
     | else => none
+    end
+  end
+
+  fun update-check-state(
+    success :: Boolean,
+    dict :: SD.StringDict<J.JSON>
+  ) -> SeenCheck:
+    if success:
+      passed
+    else:
+      cases (Option) parse-fail-result(dict):
+      | some({expected; actual}) =>
+        failed(expected, actual)
+      | none => unseen
+      end
     end
   end
 
