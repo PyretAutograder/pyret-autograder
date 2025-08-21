@@ -21,8 +21,10 @@ include from C:
 end
 
 provide:
+  mk-test-diversity-guard,
   data DiversityGuardBlock,
-  check-test-diversity as _check-test-diversity
+  check-test-diversity as _check-test-diversity,
+  fmt-test-diversity as _fmt-test-diversity
 end
 
 # TODO: handle exceptions in student code
@@ -68,6 +70,75 @@ fun check-test-diversity(
       end
     end
   end
+end
+
+fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
+  student = cases (DiversityGuardBlock) reason:
+  | parser-error(_) =>
+    "Cannot find your function definition because we cannot parse your file."
+  | fn-not-defined(name) =>
+    "Cannot find a function named " + MD.escape-inline-code(name)
+    + " in your code."
+  | run-error(_) =>
+    "We ran into an error trying to run your function and its tests."
+  | invalid-result(_) =>
+    "The autograder received an unexpected response running your tests. "
+    + "Please report this bug to a staff member."
+  | too-few-inputs(name, expected, actual) =>
+    "Your tests for function " + MD.escape-inline-code(name)
+    + " called it with " + num-to-string(actual) + " distinct sets of arguments. "
+    + " A good test suite should make at least " + num-to-string(expected)
+    + " distinct calls."
+  | too-few-outputs(name, expected, actual) =>
+     "Your tests for function " + MD.escape-inline-code(name)
+     + " caused it to produce " + num-to-string(actual) + " different outputs."
+     + " A good test suite should cause the function to produce at least "
+     + num-to-string(expected) + " different outputs.\n"
+     + "Note: This counts the _actual_ outputs your function returned, not "
+     + "the expected outcomes in your tests. This may be flagging an incorrect "
+     + "implementation _or_ an insufficient test suite."
+  end ^ G.output-markdown
+  staff = cases (DiversityGuardBlock) reason:
+  | parser-error(_) => none
+  | fn-not-defined  => none
+  | run-error(err) =>
+    ("Got the following error when trying to run wrapped file:\n```\n"
+    + MD.escape-code-block(to-repr(err))
+    + "\n```")
+    ^ G.output-markdown
+    ^ some
+  | invalid-result(raw) =>
+    json-string = raw.serialize()
+    ("Got invalid JSON response when running wrapped file:\n```\n"
+    + MD.escape-code-block(json-string)
+    + "\n```")
+    ^ G.output-markdown
+    ^ some
+  | too-few-inputs(name, expected, actual) => none
+  | too-few-outputs(name, expected, actual) => none
+  end
+  {student; staff}
+end
+
+fun mk-test-diversity-guard(
+  id :: Id,
+  deps :: List<Id>,
+  path :: String,
+  fn :: String,
+  min-in :: Number,
+  min-out :: Number
+):
+  name = "Test suite diversity for " + fn
+  checker = lam(): check-test-diversity(path, fn, min-in, min-out) end
+  GB.mk-guard(id, deps, checker, name, fmt-test-diversity)
+end
+
+# --- Check result parsing ---
+
+data SeenCheck:
+  | unseen
+  | passed
+  | failed(expected :: Number, actual :: Number)
 end
 
 fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outputs-name :: String) -> Option<DiversityGuardBlock>:
@@ -146,6 +217,8 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
   | else => bad
   end
 end
+
+# --- AST transformation ---
 
 fun instrument(
   student :: A.Program,
