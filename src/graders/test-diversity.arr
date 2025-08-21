@@ -59,6 +59,8 @@ fun check-test-diversity(
       cases (Either) R.run(instrumented) block:
       | left(err) => some(run-error(err))
       | right({j; _}) =>
+        s = j.serialize()
+        print(s)
         parse-check-results(
           j,
           fn,
@@ -178,7 +180,35 @@ fun instrument(
     )
   ]
   state-added = ast-ended.visit(V.make-program-prepender(state))
-  cases (Option) wrap-function(state-added, fn):
+  utils = [list:
+    A.s-fun(
+      dummy-loc(),
+      "autograder$at-least",
+      [list:],
+      [list:
+        A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "a"), A.a-blank),
+        A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "b"), A.a-blank)
+      ],
+      A.a-blank,
+      "",
+      A.s-block(
+        dummy-loc(),
+        [list:
+          A.s-op(
+            dummy-loc(), dummy-loc(),
+            "op>=",
+            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "a")),
+            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "b"))
+          )
+        ]
+      ),
+      none,
+      none,
+      false
+    )
+  ]
+  utils-added = state-added.visit(V.make-program-prepender(utils))
+  cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
       make-size-check(fn + "-diversity-inputs", min-in),
@@ -287,18 +317,13 @@ fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
         A.s-check-test(
           dummy-loc(),
           A.s-op-is(dummy-loc()),
-          none,
-          A.s-op(
-            dummy-loc(), dummy-loc(),
-            "op>=",
-            A.s-app(
-              dummy-loc(),
-              A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
-              [list:]
-            ),
-            A.s-num(dummy-loc(), min)
+          some(A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$at-least"))),
+          A.s-app(
+            dummy-loc(),
+            A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
+            [list:]
           ),
-          some(A.s-bool(dummy-loc(), true)),
+          some(A.s-num(dummy-loc(), min)),
           none
         )
       ]
