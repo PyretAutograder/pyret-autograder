@@ -123,39 +123,6 @@ fun instrument(
   end
 end
 
-fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
-  # check "check-[set]":
-  #   [set].size() > [min] is true
-  # end
-  A.s-check(
-    dummy-loc(),
-    some("check-" + set-name),
-    A.s-block(
-      dummy-loc(),
-      [list:
-        A.s-check-test(
-          dummy-loc(),
-          A.s-op-is(dummy-loc()),
-          none,
-          A.s-op(
-            dummy-loc(), dummy-loc(),
-            "op>=",
-            A.s-app(
-              dummy-loc(),
-              A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
-              [list:]
-            ),
-            A.s-num(dummy-loc(), min)
-          ),
-          some(A.s-bool(dummy-loc(), true)),
-          none
-        )
-      ]
-    ),
-    true
-  )
-end
-
 fun wrap-function(
   student :: A.Program,
   fn :: String
@@ -223,6 +190,39 @@ fun wrap-function(
     | else => none
     end
   end
+end
+
+fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
+  # check "check-[set]":
+  #   [set].size() > [min] is true
+  # end
+  A.s-check(
+    dummy-loc(),
+    some("check-" + set-name),
+    A.s-block(
+      dummy-loc(),
+      [list:
+        A.s-check-test(
+          dummy-loc(),
+          A.s-op-is(dummy-loc()),
+          none,
+          A.s-op(
+            dummy-loc(), dummy-loc(),
+            "op>=",
+            A.s-app(
+              dummy-loc(),
+              A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
+              [list:]
+            ),
+            A.s-num(dummy-loc(), min)
+          ),
+          some(A.s-bool(dummy-loc(), true)),
+          none
+        )
+      ]
+    ),
+    true
+  )
 end
 
 fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>:
