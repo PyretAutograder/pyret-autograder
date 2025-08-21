@@ -18,6 +18,8 @@ include from C:
   type Id
 end
 
+# TODO: handle exceptions in student code
+
 dummy-loc = SL.builtin("test-diversity")
 
 data DiversityGuardBlock:
@@ -36,39 +38,64 @@ fun check-test-diversity(
   cases (Either) CA.parse-path(path):
   | left(err) => some(parser-error(err))
   | right(ast) =>
-    ast-ended = AU.append-nothing-if-necessary(ast)
-    empty-list-set = lam():
-      A.s-construct(
-        dummy-loc,
-        A.s-construct-normal,
-        A.s-id(dummy-loc, A.s-name(dummy-loc, "list-set")),
-        [list:]
-      )
+    cases (Either) instrument(ast, fn, min-in, min-out):
+    | left(err) => some(err)
+    | right(instrumented) => none
     end
-    state = [list:
-      A.s-var(
-        dummy-loc,
-        A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-inputs"), A.a-blank),
-        empty-list-set()
-      ),
-      A.s-var(
-        dummy-loc,
-        A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-outputs"), A.a-blank),
-        empty-list-set()
-      )
+  end
+end
+
+fun instrument(
+  student ::A.Program,
+  fn :: String,
+  min-in :: Number,
+  min-out :: Number
+) -> Either<DiversityGuardBlock, A.Program>:
+  ast-ended = AU.append-nothing-if-necessary(student)
+  empty-list-set = lam():
+    A.s-construct(
+      dummy-loc,
+      A.s-construct-normal,
+      A.s-dot(dummy-loc, A.s-id(dummy-loc, A.s-name("Autograder-Sets")), "list-set"),
+      [list:]
+    )
+  end
+  state = [list:
+    A.s-var(
+      dummy-loc,
+      A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-inputs"), A.a-blank),
+      empty-list-set()
+    ),
+    A.s-var(
+      dummy-loc,
+      A.s-bind(dummy-loc, false, A.s-name(dummy-loc, fn + "-diversity-outputs"), A.a-blank),
+      empty-list-set()
+    )
+  ]
+  state-added = ast-ended.visit(V.make-program-prepender(state))
+  cases (Option) wrap-function(state-added, fn):
+  | some(wrapped) =>
+    checks = [list:
+      make-size-check(fn + "-diversity-inputs", min-in),
+      make-size-check(fn + "-diversity-outputs", min-out)
     ]
-    state-added = ast-ended.visit(V.make-program-prepender(state))
-    cases (Option) wrap-function(state-added, fn):
-    | some(wrapped) =>
-      checks = [list:
-        make-size-check(fn + "-diversity-inputs", min-in),
-        make-size-check(fn + "-diversity-outputs", min-out)
-      ]
-      with-getters = for fold(acc from wrapped, c from checks):
-        acc.visit(V.make-program-appender(c))
-      end
-    | none => some(fn-not-defined(fn))
+    with-checks = for fold(acc from wrapped, c from checks):
+      acc.visit(V.make-program-appender(c))
     end
+    cases (A.Program) with-checks:
+    | s-program(l, use, p, ptypes, provides, imports, body) =>
+      new-imports = link(
+        A.s-import(
+          dummy-loc,
+          A.s-const-import(dummy-loc, "builtin://sets"),
+          A.s-name(dummy-loc, "Autograder-Sets")
+        ),
+        imports
+      )
+      final-program = A.s-program(l, use, p, ptypes, provides, new-imports, body)
+      right(final-program)
+    end
+  | none => left(fn-not-defined(fn))
   end
 end
 
