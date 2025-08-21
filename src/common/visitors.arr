@@ -22,7 +22,8 @@ provide:
   make-fun-extractor,
   make-check-extractor,
   make-check-filter,
-  make-program-appender
+  make-program-appender,
+  make-program-prepender
 end
 
 import ast as A
