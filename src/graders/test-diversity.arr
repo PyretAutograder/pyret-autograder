@@ -95,7 +95,7 @@ fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
      + " caused it to produce " + num-to-string(actual) + " different outputs."
      + " A good test suite should cause the function to produce at least "
      + num-to-string(expected) + " different outputs.\n"
-     + "Note: This counts the _actual_ outputs your function returned, not " +
+     + "Note: This counts the _actual_ outputs your function returned, not "
      + "the expected outcomes in your tests. This may be flagging an incorrect "
      + "implementation _or_ an insufficient test suite."
   end ^ G.output-markdown
@@ -103,16 +103,16 @@ fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
   | parser-error(_) => none
   | fn-not-defined  => none
   | run-error(err) =>
-    "Got the following error when trying to run wrapped file:\n```\n"
+    ("Got the following error when trying to run wrapped file:\n```\n"
     + MD.escape-code-block(to-repr(err))
-    + "\n```"
+    + "\n```")
     ^ G.output-markdown
     ^ some
   | invalid-result(raw) =>
     json-string = raw.serialize()
-    "Got invalid JSON response when running wrapped file:\n```\n"
+    ("Got invalid JSON response when running wrapped file:\n```\n"
     + MD.escape-code-block(json-string)
-    + "\n```"
+    + "\n```")
     ^ G.output-markdown
     ^ some
   | too-few-inputs(name, expected, actual) => none
