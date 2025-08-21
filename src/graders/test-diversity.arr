@@ -14,6 +14,7 @@ import ast as A
 import srcloc as SL
 import lists as L
 import json as J
+import string-dict as SD
 
 include either
 include from C:
@@ -108,8 +109,12 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
                       if success block:
                         seen-inputs := true
                         recursive()
-                      # TODO: make these not 0
-                      else: some(too-few-inputs(fn, 0, 0))
+                      else:
+                        cases (Option) parse-fail-result(dict):
+                        | some({expected; actual}) =>
+                          some(too-few-inputs(fn, expected, actual))
+                        | none => bad
+                        end
                       end
                     else if name-str == outputs-name:
                       if success block:
@@ -133,6 +138,51 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
         end
       | else => bad
       end
+    end
+  end
+
+  fun parse-fail-result(block-result :: SD.StringDict<J.JSON>) -> Option<{Number; Number}>:
+    cases (Option) block-result.get("results"):
+    | some(results-j) =>
+      cases (J.JSON) results-j:
+      | j-arr(results) =>
+        cases (List) results:
+        | link(single-check, rest) =>
+          cases (J.JSON) single-check:
+          | j-obj(check-dict) =>
+            cases (Option) check-dict.get("message"):
+            | some(message-j) =>
+              cases (J.JSON) message-j:
+              | j-str(message) =>
+                # hope that pyret doesn't change it's test fail message format
+                split = string-split-all(message, " ")
+                reversed = split.reverse()
+                if reversed.length() >= 2:
+                  expected-opt = reversed.get(0) ^ string-to-number
+                  actual-opt = reversed.get(1) ^ string-to-number
+                  cases (Option) expected-opt:
+                    | some(expected) =>
+                      cases (Option) actual-opt:
+                      | some(actual) =>
+                        some({expected; actual})
+                      | else => none
+                      end
+                    | else => none
+                    end
+                else:
+                  none
+                end
+              | else => none
+              end
+            | else => none
+            end
+          | else => none
+          end
+        | else => none
+        end
+      | else => none
+      end
+    | else => none
     end
   end
 
