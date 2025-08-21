@@ -87,6 +87,7 @@ fun instrument(
     end
     cases (A.Program) with-checks:
     | s-program(l, use, p, ptypes, provides, imports, body) =>
+      # `import sets as Autograder-Sets`
       new-imports = link(
         A.s-import(
           dummy-loc,
