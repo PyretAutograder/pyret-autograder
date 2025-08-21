@@ -14,6 +14,7 @@ import ast as A
 import srcloc as SL
 import lists as L
 import json as J
+import string-dict as SD
 
 include either
 include from C:
@@ -61,6 +62,8 @@ fun check-test-diversity(
       cases (Either) R.run(instrumented) block:
       | left(err) => some(run-error(err))
       | right({j; _}) =>
+        s = j.serialize()
+        print(s)
         parse-check-results(
           j,
           fn,
@@ -177,8 +180,12 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
                       if success block:
                         seen-inputs := true
                         recursive()
-                      # TODO: make these not 0
-                      else: some(too-few-inputs(fn, 0, 0))
+                      else:
+                        cases (Option) parse-fail-result(dict):
+                        | some({expected; actual}) =>
+                          some(too-few-inputs(fn, expected, actual))
+                        | none => bad
+                        end
                       end
                     else if name-str == outputs-name:
                       if success block:
@@ -202,6 +209,51 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
         end
       | else => bad
       end
+    end
+  end
+
+  fun parse-fail-result(block-result :: SD.StringDict<J.JSON>) -> Option<{Number; Number}>:
+    cases (Option) block-result.get("results"):
+    | some(results-j) =>
+      cases (J.JSON) results-j:
+      | j-arr(results) =>
+        cases (List) results:
+        | link(single-check, rest) =>
+          cases (J.JSON) single-check:
+          | j-obj(check-dict) =>
+            cases (Option) check-dict.get("message"):
+            | some(message-j) =>
+              cases (J.JSON) message-j:
+              | j-str(message) =>
+                # hope that pyret doesn't change it's test fail message format
+                split = string-split-all(message, " ")
+                reversed = split.reverse()
+                if reversed.length() >= 2:
+                  expected-opt = reversed.get(0) ^ string-to-number
+                  actual-opt = reversed.get(1) ^ string-to-number
+                  cases (Option) expected-opt:
+                    | some(expected) =>
+                      cases (Option) actual-opt:
+                      | some(actual) =>
+                        some({expected; actual})
+                      | else => none
+                      end
+                    | else => none
+                    end
+                else:
+                  none
+                end
+              | else => none
+              end
+            | else => none
+            end
+          | else => none
+          end
+        | else => none
+        end
+      | else => none
+      end
+    | else => none
     end
   end
 
@@ -251,7 +303,38 @@ fun instrument(
     )
   ]
   state-added = ast-ended.visit(V.make-program-prepender(state))
-  cases (Option) wrap-function(state-added, fn):
+  utils = [list:
+    # fun autogrdder$at-least(a, b):
+    #   a >= b
+    # end
+    A.s-fun(
+      dummy-loc(),
+      "autograder$at-least",
+      [list:],
+      [list:
+        A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "a"), A.a-blank),
+        A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "b"), A.a-blank)
+      ],
+      A.a-blank,
+      "",
+      A.s-block(
+        dummy-loc(),
+        [list:
+          A.s-op(
+            dummy-loc(), dummy-loc(),
+            "op>=",
+            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "a")),
+            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "b"))
+          )
+        ]
+      ),
+      none,
+      none,
+      false
+    )
+  ]
+  utils-added = state-added.visit(V.make-program-prepender(utils))
+  cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
       make-size-check(fn + "-diversity-inputs", min-in),
@@ -349,7 +432,7 @@ end
 
 fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
   # check "check-[set]":
-  #   [set].size() > [min] is true
+  #   [set].size() is%(autograder$at-least) [min]
   # end
   A.s-check(
     dummy-loc(),
@@ -360,18 +443,13 @@ fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
         A.s-check-test(
           dummy-loc(),
           A.s-op-is(dummy-loc()),
-          none,
-          A.s-op(
-            dummy-loc(), dummy-loc(),
-            "op>=",
-            A.s-app(
-              dummy-loc(),
-              A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
-              [list:]
-            ),
-            A.s-num(dummy-loc(), min)
+          some(A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$at-least"))),
+          A.s-app(
+            dummy-loc(),
+            A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
+            [list:]
           ),
-          some(A.s-bool(dummy-loc(), true)),
+          some(A.s-num(dummy-loc(), min)),
           none
         )
       ]
