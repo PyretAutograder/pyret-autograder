@@ -45,9 +45,9 @@ fun find-mutation(path :: String, top-level-only :: Boolean) -> Option<TrainingW
         true
       end,
       method s-fun(self, l, name, params, args, ann, doc, body, check-loc, checks, blocky):
-        if top-level-only: true
-        else block:
-          flag-vars := not top-level-only
+        if top-level-only block: true
+        else:
+          flag-vars := not(top-level-only)
           out = params.all(_.visit(self))
             and args.all(_.visit(self))
             and ann.visit(self)
@@ -59,10 +59,11 @@ fun find-mutation(path :: String, top-level-only :: Boolean) -> Option<TrainingW
       end
     }
     ast.visit(visitor)
-    if found-vars.length() == 0 and found-refs.length() == 0:
+    if (found-vars.length() == 0) and (found-refs.length() == 0):
       none
     else:
-      some(found-mutation(found-vars, found-refs))
+      # to get top-level first
+      some(found-mutation(found-vars.reverse(), found-refs.reverse(), top-level-only))
     end
   end
 end
@@ -78,7 +79,7 @@ fun fmt-training-wheels(reason :: TrainingWheelsBlock) -> GB.ComboAggregate:
     formatted-vars =
       "Found mutable variables at:\n" + format-srcloc-list(vars)
     formatted-refs =
-      "Found references used at:\n" + forat-srcloc-list(refs)
+      "Found references used at:\n" + format-srcloc-list(refs)
     var-message =
       "We found uses of mutation in your program that are not allowed."
     + if tl-only:
@@ -95,7 +96,7 @@ fun fmt-training-wheels(reason :: TrainingWheelsBlock) -> GB.ComboAggregate:
     + if refs.length() > 0: "\n" + ref-message
       else: ""
       end
-  end ^ GB.output-markdoen
+  end ^ G.output-markdown
   staff = none
   {student; staff}
 end
