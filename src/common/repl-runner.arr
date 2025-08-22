@@ -40,6 +40,7 @@ provide:
   type *,
   run-with-alternate-impl,
   run-with-alternate-checks,
+  run
 end
 
 # TODO: deal with this!!!
