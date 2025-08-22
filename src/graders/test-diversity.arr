@@ -28,8 +28,6 @@ provide:
   fmt-test-diversity as _fmt-test-diversity
 end
 
-# TODO: handle exceptions in student code
-
 # file refuses to compile if this is not above all functions
 # well-formed complains when different things are on the same line number
 # this will (sporadically and inconsistently!) break if the student file is
@@ -39,8 +37,9 @@ var next-line = 1000
 
 dummy-file-name = "autograder"
 # surface pyret cannot use $ in identifiers, so we can be sure these aren't used
-set-module-name = "Autograder$Sets"
-at-least-util = "autograder$at-least"
+set-module-name = "$Autograder-Sets"
+either-module-name = "$Autograder-Either"
+at-least-util = "$autograder-at-least"
 
 data DiversityGuardBlock:
   | parser-error(err :: CA.ParsePathErr)
@@ -146,11 +145,11 @@ fun dummy-loc() -> SL.Srcloc block:
 end
 
 fun input-set-name(fn :: String) -> String:
-  "autograder$" + fn + "-diversity-inputs"
+ "$autograder-" + fn + "-diversity-inputs"
 end
 
 fun output-set-name(fn :: String) -> String:
-  "autograder$" + fn + "-diversity-outputs"
+  "$autograder-" + fn + "-diversity-outputs"
 end
 
 fun input-check-name(fn :: String) -> String:
@@ -361,14 +360,22 @@ fun instrument(
     with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
-      # `import sets as Autograder$Sets`
       new-imports = link(
+        # `import sets as Autograder$Sets`
         A.s-import(
           dummy-loc(),
           A.s-const-import(dummy-loc(), "sets"),
           A.s-name(dummy-loc(), set-module-name)
         ),
-        imports
+        link(
+          # `import either as Autograder$Either`
+          A.s-import(
+            dummy-loc(),
+            A.s-const-import(dummy-loc(), "either"),
+            A.s-name(dummy-loc(), either-module-name)
+          ),
+          imports
+        )
       )
       final-program = A.s-program(l, uses, p, ptypes, provides, new-imports, body)
       right(final-program)
@@ -402,15 +409,130 @@ fun wrap-function(
         l,
         [list:
           inner,
-          # `output = student-[fn]([args])`
+          # FIXME (pyret-lang): currently there's a bug that means opaque
+          # exceptions cannot be compared for equality so we have to use this
+          # workaround with a manual `cases`; when this gets fixed we should be
+          # able to just use the result of `run-task` without any extra work.
+
+          # output = cases (Autogrder$Either.Either) run-task(lam(): autograder$student-[fn]([args]) end):
+          # | left(v) => left(v)
+          # | right(exn) => right(exn-unwrap(exn))
+          # end
           A.s-let(
             dummy-loc(),
             A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), "output"), A.a-blank),
-            A.s-app(
+            A.s-cases(
               dummy-loc(),
-              A.s-id(dummy-loc(),
-              A.s-name(dummy-loc(), student-fn-name)),
-              all-args-ids
+              A.a-dot(dummy-loc(), A.s-name(dummy-loc(), either-module-name), "Either"),
+              A.s-app(
+                dummy-loc(),
+                A.s-id(dummy-loc(), A.s-name(dummy-loc(), "run-task")),
+                [list:
+                  A.s-lam(
+                    dummy-loc(),
+                    "", # empty string for anonymous lambda
+                    [list:],
+                    [list:],
+                    A.a-blank,
+                    "",
+                    A.s-block(
+                      dummy-loc(),
+                      [list:                    
+                        A.s-app(
+                          dummy-loc(),
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), student-fn-name)
+                          ),
+                          all-args-ids
+                        )
+                      ]
+                    ),
+                    none,
+                    none,
+                    false
+                  )
+                ]
+              ),
+              [list:
+                A.s-cases-branch(
+                  dummy-loc(),
+                  dummy-loc(),
+                  "left",
+                  [list:
+                    A.s-cases-bind(
+                      dummy-loc(),
+                      A.s-cases-bind-normal,
+                      A.s-bind(
+                        dummy-loc(),
+                        false,
+                        A.s-name(dummy-loc(), "autograder$v"), A.a-blank
+                      )
+                    )
+                  ],
+                  A.s-block(
+                    dummy-loc(),
+                    [list:
+                      A.s-app(
+                        dummy-loc(),
+                        A.s-dot(
+                          dummy-loc(),
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), either-module-name)
+                          ),
+                          "left"
+                        ),
+                        [list:
+                          A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$v"))
+                        ]
+                      )
+                    ]
+                  )
+                ),
+                A.s-cases-branch(
+                  dummy-loc(),
+                  dummy-loc(),
+                  "right",
+                  [list:
+                    A.s-cases-bind(
+                      dummy-loc(),
+                      A.s-cases-bind-normal,
+                      A.s-bind(
+                        dummy-loc(),
+                        false,
+                        A.s-name(dummy-loc(), "autograder$exn"), A.a-blank
+                      )
+                    )
+                  ],
+                  A.s-block(
+                    dummy-loc(),
+                    [list:
+                      A.s-app(
+                        dummy-loc(),
+                        A.s-dot(
+                          dummy-loc(),
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), either-module-name)
+                          ),
+                          "right"
+                        ),
+                        [list:
+                          A.s-app(
+                            dummy-loc(),
+                            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "exn-unwrap")),
+                            [list:
+                              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$exn"))
+                            ]
+                          )
+                        ]
+                      )
+                    ]
+                  )
+                )
+              ],
+              false
             ),
             false
           ),
@@ -434,8 +556,68 @@ fun wrap-function(
               [list: A.s-id(dummy-loc(), A.s-name(dummy-loc(), "output"))]
             )
           ),
-          # `output`
-          A.s-id(dummy-loc(), A.s-name(dummy-loc(), "output"))
+          # cases ($Autograder-Either) output:
+          # | left(v) => v
+          # | right(exn) => raise(exn)
+          # end
+          A.s-cases(
+            dummy-loc(),
+            A.a-dot(dummy-loc(), A.s-name(dummy-loc(), either-module-name), "Either"),
+            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "output")),
+            [list:
+              A.s-cases-branch(
+                dummy-loc(),
+                dummy-loc(),
+                "left",
+                [list:
+                  A.s-cases-bind(
+                    dummy-loc(),
+                    A.s-cases-bind-normal,
+                    A.s-bind(
+                      dummy-loc(),
+                      true,
+                      A.s-name(dummy-loc(), "v"), A.a-blank
+                    )
+                  )
+                ],
+                A.s-block(
+                  dummy-loc(),
+                  [list:
+                    A.s-id(dummy-loc(), A.s-name(dummy-loc(), "v"))
+                  ]
+                )
+              ),
+              A.s-cases-branch(
+                dummy-loc(),
+                dummy-loc(),
+                "right",
+                [list:
+                  A.s-cases-bind(
+                    dummy-loc(),
+                    A.s-cases-bind-normal,
+                    A.s-bind(
+                      dummy-loc(),
+                      true,
+                      A.s-name(dummy-loc(), "exn"), A.a-blank
+                    )
+                  )
+                ],
+                A.s-block(
+                  dummy-loc(),
+                  [list:
+                    A.s-app(
+                      dummy-loc(),
+                      A.s-id(dummy-loc(), A.s-name(dummy-loc(), "raise")),
+                      [list:
+                        A.s-id(dummy-loc(), A.s-name(dummy-loc(), "exn"))
+                      ]
+                    )
+                  ]
+                )
+              )
+            ],
+            false
+          )
         ]
       )
       new-fn = A.s-fun(l, fn, params, all-args, ann, "", new-body, check-loc, checks, true)
