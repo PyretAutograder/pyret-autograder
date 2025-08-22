@@ -131,6 +131,12 @@ end
 # --- Name generation ---
 
 fun dummy-loc() -> SL.Srcloc block:
+  doc: ```
+  The Pyret compiler assumes that all `check` blocks have real
+  (i.e., not builtin) source locations. The well-formedness checker also rejects
+  the file if multiple expressions in a `s-block` are on "the same line". So the
+  easiest way around both of these is just to fake the line number every time.
+  ```
   next-line := next-line + 1
   SL.srcloc(dummy-file-name, next-line, 0, 0, next-line, 0, 0)
 end
@@ -486,6 +492,13 @@ fun make-size-check(
 end
 
 fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>:
+  doc: ```
+  For a function like `fun foo(a, _, b, _)`, when instrumenting, we must
+  actually bind all arguments even if the student code doesn't care about them.
+  This is so that we are able to refer to them, both when calling the student
+  function (we still need to _provide_ the ignored arguments) and when adding
+  the received arguments to the input set.
+  ```
   fun convert-underscore(b :: A.Bind) -> A.Bind:
     cases (A.Bind) b:
     | s-bind(l, shadows, id, ann) =>
@@ -508,6 +521,10 @@ fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>
 end
 
 fun args-to-ids(args :: List<A.Bind>) -> List<A.Expr>:
+  doc: ```
+  This function converts a list of bindings to a list of identifier (or tuple)
+  expressions, so we can provide them as arguments.
+  ```
   for map(b from args):
     cases (A.Bind) b:
     | s-bind(l, shadows, id, ann) =>
