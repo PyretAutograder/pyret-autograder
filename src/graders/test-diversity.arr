@@ -402,15 +402,39 @@ fun wrap-function(
         l,
         [list:
           inner,
-          # `output = student-[fn]([args])`
+          # `output = run-task(lam(): autograder$student-[fn]([args]) end)`
           A.s-let(
             dummy-loc(),
             A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), "output"), A.a-blank),
             A.s-app(
               dummy-loc(),
-              A.s-id(dummy-loc(),
-              A.s-name(dummy-loc(), student-fn-name)),
-              all-args-ids
+              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "run-task")),
+              [list:
+                A.s-lam(
+                  dummy-loc(),
+                  "", # empty string for anonymous lambda
+                  [list:],
+                  [list:],
+                  A.a-blank,
+                  "",
+                  A.s-block(
+                    dummy-loc(),
+                    [list:                    
+                      A.s-app(
+                        dummy-loc(),
+                        A.s-id(
+                          dummy-loc(),
+                          A.s-name(dummy-loc(), student-fn-name)
+                        ),
+                        all-args-ids
+                      )
+                    ]
+                  ),
+                  none,
+                  none,
+                  false
+                )
+              ]
             ),
             false
           ),
