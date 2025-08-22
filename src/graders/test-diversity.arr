@@ -40,6 +40,7 @@ var next-line = 1000
 dummy-file-name = "autograder"
 # surface pyret cannot use $ in identifiers, so we can be sure these aren't used
 set-module-name = "Autograder$Sets"
+either-module-name = "Autograder$Either"
 at-least-util = "autograder$at-least"
 
 data DiversityGuardBlock:
@@ -361,14 +362,22 @@ fun instrument(
     with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
-      # `import sets as Autograder$Sets`
       new-imports = link(
+        # `import sets as Autograder$Sets`
         A.s-import(
           dummy-loc(),
           A.s-const-import(dummy-loc(), "sets"),
           A.s-name(dummy-loc(), set-module-name)
         ),
-        imports
+        link(
+          # `import either as Autograder$Either`
+          A.s-import(
+            dummy-loc(),
+            A.s-const-import(dummy-loc(), "either"),
+            A.s-name(dummy-loc(), either-module-name)
+          ),
+          imports
+        )
       )
       final-program = A.s-program(l, uses, p, ptypes, provides, new-imports, body)
       right(final-program)
@@ -402,39 +411,130 @@ fun wrap-function(
         l,
         [list:
           inner,
-          # `output = run-task(lam(): autograder$student-[fn]([args]) end)`
+          # FIXME (pyret-lang): currently there's a bug that means opaque
+          # exceptions cannot be compared for equality so we have to use this
+          # workaround with a manual `cases`; when this gets fixed we should be
+          # able to just use the result of `run-task` without any extra work.
+
+          # output = cases (Autogrder$Either.Either) run-task(lam(): autograder$student-[fn]([args]) end):
+          # | left(v) => left(v)
+          # | right(exn) => right(exn-unwrap(exn))
+          # end
           A.s-let(
             dummy-loc(),
             A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), "output"), A.a-blank),
-            A.s-app(
+            A.s-cases(
               dummy-loc(),
-              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "run-task")),
+              A.a-dot(dummy-loc(), A.s-name(dummy-loc(), either-module-name), "Either"),
+              A.s-app(
+                dummy-loc(),
+                A.s-id(dummy-loc(), A.s-name(dummy-loc(), "run-task")),
+                [list:
+                  A.s-lam(
+                    dummy-loc(),
+                    "", # empty string for anonymous lambda
+                    [list:],
+                    [list:],
+                    A.a-blank,
+                    "",
+                    A.s-block(
+                      dummy-loc(),
+                      [list:                    
+                        A.s-app(
+                          dummy-loc(),
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), student-fn-name)
+                          ),
+                          all-args-ids
+                        )
+                      ]
+                    ),
+                    none,
+                    none,
+                    false
+                  )
+                ]
+              ),
               [list:
-                A.s-lam(
+                A.s-cases-branch(
                   dummy-loc(),
-                  "", # empty string for anonymous lambda
-                  [list:],
-                  [list:],
-                  A.a-blank,
-                  "",
+                  dummy-loc(),
+                  "left",
+                  [list:
+                    A.s-cases-bind(
+                      dummy-loc(),
+                      A.s-cases-bind-normal,
+                      A.s-bind(
+                        dummy-loc(),
+                        false,
+                        A.s-name(dummy-loc(), "autograder$v"), A.a-blank
+                      )
+                    )
+                  ],
                   A.s-block(
                     dummy-loc(),
-                    [list:                    
+                    [list:
                       A.s-app(
                         dummy-loc(),
-                        A.s-id(
+                        A.s-dot(
                           dummy-loc(),
-                          A.s-name(dummy-loc(), student-fn-name)
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), either-module-name)
+                          ),
+                          "left"
                         ),
-                        all-args-ids
+                        [list:
+                          A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$v"))
+                        ]
                       )
                     ]
-                  ),
-                  none,
-                  none,
-                  false
+                  )
+                ),
+                A.s-cases-branch(
+                  dummy-loc(),
+                  dummy-loc(),
+                  "right",
+                  [list:
+                    A.s-cases-bind(
+                      dummy-loc(),
+                      A.s-cases-bind-normal,
+                      A.s-bind(
+                        dummy-loc(),
+                        false,
+                        A.s-name(dummy-loc(), "autograder$exn"), A.a-blank
+                      )
+                    )
+                  ],
+                  A.s-block(
+                    dummy-loc(),
+                    [list:
+                      A.s-app(
+                        dummy-loc(),
+                        A.s-dot(
+                          dummy-loc(),
+                          A.s-id(
+                            dummy-loc(),
+                            A.s-name(dummy-loc(), either-module-name)
+                          ),
+                          "right"
+                        ),
+                        [list:
+                          A.s-app(
+                            dummy-loc(),
+                            A.s-id(dummy-loc(), A.s-name(dummy-loc(), "exn-unwrap")),
+                            [list:
+                              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$exn"))
+                            ]
+                          )
+                        ]
+                      )
+                    ]
+                  )
                 )
-              ]
+              ],
+              false
             ),
             false
           ),
