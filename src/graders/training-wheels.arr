@@ -44,6 +44,13 @@ fun find-mutation(path :: String, top-level-only :: Boolean) -> Option<TrainingW
         found-refs := link(l, found-refs)
         true
       end,
+      method s-variant-member(self, l, ty :: A.VariantMemberType, _) block:
+        cases (A.VariantMemberType) ty:
+        | s-mutable => found-refs := link(l, found-refs)
+        | else => nothing
+        end
+        true
+      end,
       method s-fun(self, l, name, params, args, ann, doc, body, check-loc, checks, blocky):
         if top-level-only block: true
         else:

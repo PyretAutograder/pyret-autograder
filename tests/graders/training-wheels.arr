@@ -48,6 +48,8 @@ check "training-wheels: flags mutation":
 
   portable(find-mutation(P.file("inner-mutation.arr"), true)) is none
 
-  find-mutation(P.file("use-ref.arr"), false) is none
-  find-mutation(P.file("use-ref.arr"), true) is none
+  portable(find-mutation(P.file("use-ref.arr"), false)) is
+    some(found-mutation([list: ], [list: srcloc("", 2, 0, 0, 2, 0, 0)], false))
+  portable(find-mutation(P.file("use-ref.arr"), true)) is
+    some(found-mutation([list: ], [list: srcloc("", 2, 0, 0, 2, 0, 0)], true))
 end
