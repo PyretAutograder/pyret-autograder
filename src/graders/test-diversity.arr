@@ -31,7 +31,11 @@ end
 # TODO: handle exceptions in student code
 
 # file refuses to compile if this is not above all functions
-var next-line = 0
+# well-formed complains when different things are on the same line number
+# this will (sporadically and inconsistently!) break if the student file is
+# sufficiently large in line count
+# FIXME: find a more permanent solution
+var next-line = 1000
 
 dummy-file-name = "autograder"
 # surface pyret cannot use $ in identifiers, so we can be sure these aren't used
@@ -171,11 +175,11 @@ fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlo
   var seen-outputs = unseen
 
   fun parse-blocks-result(b :: List<J.JSON>) -> Option<DiversityGuardBlock>:
-    # intentionally prioritizing inputs because our output info
-    # is even less useful if there are too few inputs
     cases (List) b:
     | empty =>
       cases (SeenCheck) seen-inputs:
+      # intentionally prioritizing inputs because our output info
+      # is even less useful if there are too few inputs
       | failed(expected, actual) => some(too-few-inputs(fn, expected, actual))
       | passed =>
         cases (SeenCheck) seen-outputs:
@@ -186,40 +190,28 @@ fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlo
       | unseen => bad
       end
     | link(single-block, rest) =>
-      recursive = lam(): parse-blocks-result(rest) end
       cases (J.JSON) single-block:
       | j-obj(dict) =>
-        cases (Option) dict.get("name"):
-        | some(name) =>
-          cases (J.JSON) name:
-          | j-str(name-str) =>
-            cases (Option) dict.get("total"):
-            | some(total-opt) =>
-              cases (J.JSON) total-opt:
-              | j-num(total) =>
-                cases (Option) dict.get("passed"):
-                | some(passed-opt) =>
-                  cases (J.JSON) passed-opt block:
-                  | j-num(checks-passed) =>
-                    success = total == checks-passed
-                    if name-str == input-check-name(fn):
-                      seen-inputs := update-check-state(success, dict)
-                    else if name-str == output-check-name(fn):
-                      seen-outputs := update-check-state(success, dict)
-                    else: nothing
-                    end
-                    recursive()
-                  | else => bad
-                  end
-                | else => bad
-                end
-              | else => bad
+        cases (J.JSON) dict.get-value("name"):
+        | j-str(name) =>
+          cases (J.JSON) dict.get-value("total"):
+          | j-num(total) =>
+            cases (J.JSON) dict.get-value("passed") block:
+            | j-num(checks-passed) =>
+              success = total == checks-passed
+              new-state = update-check-state(success, dict)
+              if name == input-check-name(fn):
+                seen-inputs := new-state
+              else if name == output-check-name(fn):
+                seen-outputs := new-state
+              else: nothing
               end
+              parse-blocks-result(rest)
             | else => bad
             end
           | else => bad
           end
-        | else => recursive()
+        | else => bad
         end
       | else => bad
       end
@@ -227,39 +219,31 @@ fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlo
   end
 
   fun parse-fail-result(block-result :: SD.StringDict<J.JSON>) -> Option<{Number; Number}>:
-    cases (Option) block-result.get("results"):
-    | some(results-j) =>
-      cases (J.JSON) results-j:
-      | j-arr(results) =>
-        cases (List) results:
-        | link(single-check, rest) =>
-          cases (J.JSON) single-check:
-          | j-obj(check-dict) =>
-            cases (Option) check-dict.get("message"):
-            | some(message-j) =>
-              cases (J.JSON) message-j:
-              | j-str(message) =>
-                # FIXME (pyret-lang): need better/stable output format
-                split = string-split-all(message, " ")
-                reversed = split.reverse()
-                if reversed.length() >= 2:
-                  expected-opt = reversed.get(0) ^ string-to-number
-                  actual-opt = reversed.get(1) ^ string-to-number
-                  cases (Option) expected-opt:
-                    | some(expected) =>
-                      cases (Option) actual-opt:
-                      | some(actual) =>
-                        some({expected; actual})
-                      | else => none
-                      end
-                    | else => none
-                    end
-                else:
-                  none
+    cases (J.JSON) block-result.get-value("results"):
+    | j-arr(results) =>
+      cases (List) results:
+      | link(single-check, rest) =>
+        cases (J.JSON) single-check:
+        | j-obj(check-dict) =>
+          cases (J.JSON) check-dict.get-value("message"):
+          | j-str(message) =>
+            # FIXME (pyret-lang): need better/stable output format
+            split = string-split-all(message, " ")
+            reversed = split.reverse()
+            if reversed.length() >= 2:
+              expected-opt = reversed.get(0) ^ string-to-number
+              actual-opt = reversed.get(1) ^ string-to-number
+              cases (Option) expected-opt:
+                | some(expected) =>
+                  cases (Option) actual-opt:
+                  | some(actual) =>
+                    some({expected; actual})
+                  | else => none
+                  end
+                | else => none
                 end
-              | else => none
-              end
-            | else => none
+            else:
+              none
             end
           | else => none
           end
@@ -291,7 +275,11 @@ fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlo
     cases (Option) dict.get(dummy-file-name):
     | some(autograder-results) =>
       cases (J.JSON) autograder-results:
-      | j-arr(blocks) => parse-blocks-result(blocks)
+      | j-arr(blocks) =>
+        cases (Either) run-task(lam(): parse-blocks-result(blocks) end):
+        | left(v) => v
+        | right(_) => bad
+        end
       | else => bad
       end
     end
@@ -331,7 +319,7 @@ fun instrument(
       empty-list-set-stx()
     )
   ]
-  state-added = ast-ended.visit(V.make-program-prepender(state))
+  state-added = add-all(ast-ended, state, V.make-program-prepender)
   utils = [list:
     # fun autogrdder$at-least(a, b):
     #   a >= b
@@ -362,7 +350,7 @@ fun instrument(
       false
     )
   ]
-  utils-added = state-added.visit(V.make-program-prepender(utils))
+  utils-added = add-all(state-added, utils, V.make-program-prepender)
   cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
@@ -537,5 +525,16 @@ fun args-to-ids(args :: List<A.Bind>) -> List<A.Expr>:
       # and there are no changes to the student function's argument bindings
       A.s-tuple(dummy-loc(), args-to-ids(fields))
     end
+  end
+end
+
+# --- Utils ---
+fun add-all(
+  base :: A.Program,
+  items :: List<A.Expr>,
+  make-visitor
+) -> A.Program:
+  for fold(acc from base, i from items):
+    acc.visit(make-visitor(i))
   end
 end
