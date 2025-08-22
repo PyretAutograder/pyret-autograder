@@ -390,7 +390,7 @@ fun wrap-function(
     | s-fun(l, name, params, args, ann, doc, body, check-loc, checks, blocky) =>
       all-args = remove-underscore-args(fn, args)
       all-args-ids = args-to-ids(all-args)
-      student-fn-name = "student-" + fn
+      student-fn-name = "autograder$student-" + fn
       inner = A.s-fun(l, student-fn-name, params, args, ann, doc, body, none, none, blocky)
       shadow inner = inner.visit(V.shadow-visitor)
 
@@ -489,7 +489,8 @@ fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>
     cases (A.Bind) b:
     | s-bind(l, shadows, id, ann) =>
       new-id = cases (A.Name) id:
-      | s-underscore(shadow l) => A.s-name(l, GS.make-name(name + "-underscore-"))
+      | s-underscore(shadow l) =>
+        A.s-name(l, GS.make-name("autograder$" + name + "-underscore-"))
       | else => id
       end
       A.s-bind(l, shadows, new-id, ann)
