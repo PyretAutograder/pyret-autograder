@@ -357,7 +357,8 @@ fun instrument(
       make-size-check(input-set-name(fn), input-check-name(fn), min-in),
       make-size-check(output-set-name(fn), output-check-name(fn), min-out)
     ]
-    with-checks = add-all(wrapped, checks, V.make-program-appender)
+    student-checks-removed = wrapped.visit(V.make-check-filter(_ == fn))
+    with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
       # `import sets as Autograder$Sets`
