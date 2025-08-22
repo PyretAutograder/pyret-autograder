@@ -31,7 +31,11 @@ end
 # TODO: handle exceptions in student code
 
 # file refuses to compile if this is not above all functions
-var next-line = 0
+# well-formed complains when different things are on the same line number
+# this will (sporadically and inconsistently!) break if the student file is
+# sufficiently large in line count
+# FIXME: find a more permanent solution
+var next-line = 1000
 
 dummy-file-name = "autograder"
 # surface pyret cannot use $ in identifiers, so we can be sure these aren't used
@@ -331,7 +335,7 @@ fun instrument(
       empty-list-set-stx()
     )
   ]
-  state-added = ast-ended.visit(V.make-program-prepender(state))
+  state-added = add-all(ast-ended, state, V.make-program-prepender)
   utils = [list:
     # fun autogrdder$at-least(a, b):
     #   a >= b
@@ -362,16 +366,14 @@ fun instrument(
       false
     )
   ]
-  utils-added = state-added.visit(V.make-program-prepender(utils))
+  utils-added = add-all(state-added, utils, V.make-program-prepender)
   cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
       make-size-check(input-set-name(fn), input-check-name(fn), min-in),
       make-size-check(output-set-name(fn), output-check-name(fn), min-out)
     ]
-    with-checks = for fold(acc from wrapped, c from checks):
-      acc.visit(V.make-program-appender(c))
-    end
+    with-checks = add-all(wrapped, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
       # `import sets as Autograder$Sets`
@@ -537,5 +539,16 @@ fun args-to-ids(args :: List<A.Bind>) -> List<A.Expr>:
       # and there are no changes to the student function's argument bindings
       A.s-tuple(dummy-loc(), args-to-ids(fields))
     end
+  end
+end
+
+# --- Utils ---
+fun add-all(
+  base :: A.Program,
+  items :: List<A.Expr>,
+  make-visitor
+) -> A.Program:
+  for fold(acc from base, i from items):
+    acc.visit(make-visitor(i))
   end
 end
