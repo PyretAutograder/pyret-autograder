@@ -22,6 +22,7 @@ import file("./functional.arr") as functional
 import file("./examplar.arr") as examplar
 import file("./fn-def-guard.arr") as fn-def
 import file("./test-diversity.arr") as test-diversity
+import file("./training-wheels.arr") as training-wheels
 
 # NOTE: only provides the functions, everything else should be an
 # implementation detail and can be imported directly from the module
@@ -32,3 +33,4 @@ provide from functional: * end
 provide from examplar: * end
 provide from fn-def: * end
 provide from test-diversity: * end
+provide from training-wheels: * end
