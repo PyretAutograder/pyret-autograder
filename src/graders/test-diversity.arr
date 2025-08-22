@@ -239,7 +239,7 @@ fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlo
             | some(message-j) =>
               cases (J.JSON) message-j:
               | j-str(message) =>
-                # hope that pyret doesn't change it's test fail message format
+                # FIXME (pyret-lang): need better/stable output format
                 split = string-split-all(message, " ")
                 reversed = split.reverse()
                 if reversed.length() >= 2:
