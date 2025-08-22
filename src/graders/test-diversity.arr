@@ -30,13 +30,13 @@ end
 
 # TODO: handle exceptions in student code
 
-dummy-file-name = "autograder"
+# file refuses to compile if this is not above all functions
 var next-line = 0
 
-fun dummy-loc() -> SL.Srcloc block:
-  next-line := next-line + 1
-  SL.srcloc(dummy-file-name, next-line, 0, 0, next-line, 0, 0)
-end
+dummy-file-name = "autograder"
+# surface pyret cannot use $ in identifiers, so we can be sure these aren't used
+set-module-name = "Autograder$Sets"
+at-least-util = "autograder$at-least"
 
 data DiversityGuardBlock:
   | parser-error(err :: CA.ParsePathErr)
@@ -61,13 +61,7 @@ fun check-test-diversity(
     | right(instrumented) =>
       cases (Either) R.run(instrumented):
       | left(err) => some(run-error(err))
-      | right({j; _}) =>
-        parse-check-results(
-          j,
-          fn,
-          "check-" + fn + "-diversity-inputs",
-          "check-" + fn + "-diversity-outputs"
-        )
+      | right({j; _}) => parse-check-results(j, fn)
       end
     end
   end
@@ -134,6 +128,35 @@ fun mk-test-diversity-guard(
   GB.mk-guard(id, deps, checker, name, fmt-test-diversity)
 end
 
+# --- Name generation ---
+
+fun dummy-loc() -> SL.Srcloc block:
+  doc: ```
+  The Pyret compiler assumes that all `check` blocks have real
+  (i.e., not builtin) source locations. The well-formedness checker also rejects
+  the file if multiple expressions in a `s-block` are on "the same line". So the
+  easiest way around both of these is just to fake the line number every time.
+  ```
+  next-line := next-line + 1
+  SL.srcloc(dummy-file-name, next-line, 0, 0, next-line, 0, 0)
+end
+
+fun input-set-name(fn :: String) -> String:
+  "autograder$" + fn + "-diversity-inputs"
+end
+
+fun output-set-name(fn :: String) -> String:
+  "autograder$" + fn + "-diversity-outputs"
+end
+
+fun input-check-name(fn :: String) -> String:
+  "check-" + fn + "-diversity-inputs"
+end
+
+fun output-check-name(fn :: String) -> String:
+  "check-" + fn + "-diversity-outputs"
+end
+
 # --- Check result parsing ---
 
 data SeenCheck:
@@ -142,7 +165,7 @@ data SeenCheck:
   | failed(expected :: Number, actual :: Number)
 end
 
-fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outputs-name :: String) -> Option<DiversityGuardBlock>:
+fun parse-check-results(raw :: J.JSON, fn :: String) -> Option<DiversityGuardBlock>:
   bad = some(invalid-result(raw))
   var seen-inputs = unseen
   var seen-outputs = unseen
@@ -179,9 +202,9 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
                   cases (J.JSON) passed-opt block:
                   | j-num(checks-passed) =>
                     success = total == checks-passed
-                    if name-str == inputs-name:
+                    if name-str == input-check-name(fn):
                       seen-inputs := update-check-state(success, dict)
-                    else if name-str == outputs-name:
+                    else if name-str == output-check-name(fn):
                       seen-outputs := update-check-state(success, dict)
                     else: nothing
                     end
@@ -216,7 +239,7 @@ fun parse-check-results(raw :: J.JSON, fn :: String, inputs-name :: String, outp
             | some(message-j) =>
               cases (J.JSON) message-j:
               | j-str(message) =>
-                # hope that pyret doesn't change it's test fail message format
+                # FIXME (pyret-lang): need better/stable output format
                 split = string-split-all(message, " ")
                 reversed = split.reverse()
                 if reversed.length() >= 2:
@@ -286,25 +309,25 @@ fun instrument(
 ) -> Either<DiversityGuardBlock, A.Program>:
   ast-ended = AU.append-nothing-if-necessary(student)
   empty-list-set-stx = lam():
-    # `[Autograder-Sets.list-set:]`
+    # `[Autograder$Sets.list-set:]`
     A.s-construct(
       dummy-loc(),
       A.s-construct-normal,
-      A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), "Autograder-Sets")), "list-set"),
+      A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-module-name)), "list-set"),
       [list:]
     )
   end
   state = [list:
-    # `var [fn]-diversity-inputs = [Autograder-Sets.list-set:]`
+    # `var autograder$[fn]-diversity-inputs = [Autograder$Sets.list-set:]`
     A.s-var(
       dummy-loc(),
-      A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), fn + "-diversity-inputs"), A.a-blank),
+      A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), input-set-name(fn)), A.a-blank),
       empty-list-set-stx()
     ),
-    # `var [fn]-diversity-outputs = [Autograder-Sets.list-set:]`
+    # `var autograder$[fn]-diversity-outputs = [Autograder$Sets.list-set:]`
     A.s-var(
       dummy-loc(),
-      A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), fn + "-diversity-outputs"), A.a-blank),
+      A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), output-set-name(fn)), A.a-blank),
       empty-list-set-stx()
     )
   ]
@@ -315,7 +338,7 @@ fun instrument(
     # end
     A.s-fun(
       dummy-loc(),
-      "autograder$at-least",
+      at-least-util,
       [list:],
       [list:
         A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "a"), A.a-blank),
@@ -343,20 +366,19 @@ fun instrument(
   cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
-      make-size-check(fn + "-diversity-inputs", min-in),
-      make-size-check(fn + "-diversity-outputs", min-out)
+      make-size-check(input-set-name(fn), input-check-name(fn), min-in),
+      make-size-check(output-set-name(fn), output-check-name(fn), min-out)
     ]
-    with-checks = for fold(acc from wrapped, c from checks):
-      acc.visit(V.make-program-appender(c))
-    end
+    student-checks-removed = wrapped.visit(V.make-check-filter(_ == fn))
+    with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
-      # `import sets as Autograder-Sets`
+      # `import sets as Autograder$Sets`
       new-imports = link(
         A.s-import(
           dummy-loc(),
           A.s-const-import(dummy-loc(), "sets"),
-          A.s-name(dummy-loc(), "Autograder-Sets")
+          A.s-name(dummy-loc(), set-module-name)
         ),
         imports
       )
@@ -381,12 +403,12 @@ fun wrap-function(
     | s-fun(l, name, params, args, ann, doc, body, check-loc, checks, blocky) =>
       all-args = remove-underscore-args(fn, args)
       all-args-ids = args-to-ids(all-args)
-      student-fn-name = "student-" + fn
+      student-fn-name = "autograder$student-" + fn
       inner = A.s-fun(l, student-fn-name, params, args, ann, doc, body, none, none, blocky)
       shadow inner = inner.visit(V.shadow-visitor)
 
-      inputs = fn + "-diversity-inputs"
-      outputs = fn + "-diversity-outputs"
+      inputs = input-set-name(fn)
+      outputs = output-set-name(fn)
 
       new-body = A.s-block(
         l,
@@ -404,7 +426,7 @@ fun wrap-function(
             ),
             false
           ),
-          # `[fn]-diversity-inputs := [fn]-diversity-inputs.add({[args]})`
+          # `autograder$[fn]-diversity-inputs := autograder$[fn]-diversity-inputs.add({[args]})`
           A.s-assign(
             dummy-loc(),
             A.s-name(dummy-loc(), inputs),
@@ -414,7 +436,7 @@ fun wrap-function(
               [list: A.s-tuple(dummy-loc(), all-args-ids)]
             )
           ),
-          # `[fn]-diversity-outputs := [fn]-diversity-outputs.add(output)`
+          # `autograder$[fn]-diversity-outputs := autograder$[fn]-diversity-outputs.add(output)`
           A.s-assign(
             dummy-loc(),
             A.s-name(dummy-loc(), outputs),
@@ -436,20 +458,24 @@ fun wrap-function(
   end
 end
 
-fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
+fun make-size-check(
+  set-name :: String,
+  check-name :: String,
+  min :: Number
+) -> A.Expr:
   # check "check-[set]":
   #   [set].size() is%(autograder$at-least) [min]
   # end
   A.s-check(
     dummy-loc(),
-    some("check-" + set-name),
+    some(check-name),
     A.s-block(
       dummy-loc(),
       [list:
         A.s-check-test(
           dummy-loc(),
           A.s-op-is(dummy-loc()),
-          some(A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$at-least"))),
+          some(A.s-id(dummy-loc(), A.s-name(dummy-loc(), at-least-util))),
           A.s-app(
             dummy-loc(),
             A.s-dot(dummy-loc(), A.s-id(dummy-loc(), A.s-name(dummy-loc(), set-name)), "size"),
@@ -465,11 +491,19 @@ fun make-size-check(set-name :: String, min :: Number) -> A.Expr:
 end
 
 fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>:
+  doc: ```
+  For a function like `fun foo(a, _, b, _)`, when instrumenting, we must
+  actually bind all arguments even if the student code doesn't care about them.
+  This is so that we are able to refer to them, both when calling the student
+  function (we still need to _provide_ the ignored arguments) and when adding
+  the received arguments to the input set.
+  ```
   fun convert-underscore(b :: A.Bind) -> A.Bind:
     cases (A.Bind) b:
     | s-bind(l, shadows, id, ann) =>
       new-id = cases (A.Name) id:
-      | s-underscore(shadow l) => A.s-name(l, GS.make-name(name + "-underscore-"))
+      | s-underscore(shadow l) =>
+        A.s-name(l, GS.make-name("autograder$" + name + "-underscore-"))
       | else => id
       end
       A.s-bind(l, shadows, new-id, ann)
@@ -487,6 +521,10 @@ fun remove-underscore-args(name :: String, args :: List<A.Bind>) -> List<A.Bind>
 end
 
 fun args-to-ids(args :: List<A.Bind>) -> List<A.Expr>:
+  doc: ```
+  This function converts a list of bindings to a list of identifier (or tuple)
+  expressions, so we can provide them as arguments.
+  ```
   for map(b from args):
     cases (A.Bind) b:
     | s-bind(l, shadows, id, ann) =>
