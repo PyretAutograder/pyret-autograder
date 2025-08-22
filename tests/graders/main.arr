@@ -19,3 +19,4 @@
 import file("./well-formed.arr") as _
 import file("./fn-def-guard.arr") as _
 import file("./test-diversity.arr") as _
+import file("./training-wheels.arr") as _

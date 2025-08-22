@@ -15,6 +15,11 @@ fun only-lines(l :: List<Srcloc>) -> List<Srcloc>:
 end
 
 fun portable(result :: Option<TrainingWheelsBlock>) -> Option<TrainingWheelsBlock>:
+  doc: ```
+  Strip machine-specific information from srclocs in a block. Removes volatile
+  information like the absolute file path and column numbers which are harder to
+  test against.
+  ```
   cases (Option) result:
   | none => none
   | some(b) =>
@@ -39,17 +44,21 @@ check "training-wheels: flags mutation":
         [list:],
         true
     ))
+
   portable(find-mutation(P.file("inner-mutation.arr"), false)) is
     some(found-mutation(
         [list: srcloc("", 2, 0, 0, 2, 0, 0)],
         [list:],
         false
     ))
-
   portable(find-mutation(P.file("inner-mutation.arr"), true)) is none
 
   portable(find-mutation(P.file("use-ref.arr"), false)) is
     some(found-mutation([list: ], [list: srcloc("", 2, 0, 0, 2, 0, 0)], false))
   portable(find-mutation(P.file("use-ref.arr"), true)) is
     some(found-mutation([list: ], [list: srcloc("", 2, 0, 0, 2, 0, 0)], true))
+
+  portable(find-mutation(P.file("nested-fun-var.arr"), true)) is none
+  portable(find-mutation(P.file("nested-fun-var.arr"), false)) is
+    some(found-mutation([list: srcloc("", 3, 0, 0, 3, 0, 0)], [list:], false))
 end
