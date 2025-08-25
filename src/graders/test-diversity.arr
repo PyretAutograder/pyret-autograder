@@ -15,6 +15,7 @@ import srcloc as SL
 import lists as L
 import json as J
 import string-dict as SD
+import pprint as PP
 
 include either
 include from C:
@@ -22,7 +23,7 @@ include from C:
 end
 
 provide:
-  mk-test-diversity-guard,
+  mk-test-diversity,
   data DiversityGuardBlock,
   check-test-diversity as _check-test-diversity,
   fmt-test-diversity as _fmt-test-diversity
@@ -430,8 +431,9 @@ fun wrap-function(
       all-args = remove-underscore-args(fn, args)
       all-args-ids = args-to-ids(all-args)
       student-fn-name = "$autograder-student-" + fn
-      inner = A.s-fun(l, student-fn-name, params, args, ann, doc, body, none, none, blocky)
-      shadow inner = inner.visit(V.shadow-visitor)
+      new-inner-body = fix-recursion(body, fn, student-fn-name)
+      inner = A.s-fun(l, student-fn-name, params, args, ann, doc, new-inner-body, none, none, blocky)
+      shadowed = inner.visit(V.shadow-visitor)
 
       inputs = input-set-name(fn)
       outputs = output-set-name(fn)
@@ -439,7 +441,7 @@ fun wrap-function(
       new-body = A.s-block(
         l,
         [list:
-          inner,
+          shadowed,
           # FIXME (pyret-lang): currently there's a bug that means opaque
           # exceptions cannot be compared for equality so we have to use this
           # workaround with a manual `cases`; when this gets fixed we should be
@@ -741,7 +743,123 @@ fun args-to-ids(args :: List<A.Bind>) -> List<A.Expr>:
   end
 end
 
+fun fix-recursion(body :: A.Expr, fn :: String, new-name :: String) -> A.Expr:
+  fun same-name(n :: A.Name) -> Boolean:
+    cases (A.Name) n:
+    | s-name(_, actual) => actual == fn
+    | else => false
+    end
+  end
+
+  fun rename(n :: A.Name) -> A.Name:
+    if same-name(n):
+      cases (A.Name) n:
+      | s-name(name-loc, _) => A.s-name(name-loc, new-name)
+      | else => raise("unreachable")
+      end
+    else:
+      n
+    end
+  end
+
+  fun did-shadow(b :: A.Bind) -> Boolean:
+    cases (A.Bind) b:
+    | s-bind(_, shadows, name, _) => shadows and same-name(name)
+    | s-tuple-bind(_, fields, as-name) =>
+      L.any(did-shadow, fields) or did-shadow(as-name)
+    end
+  end
+
+  fun should-continue(e :: A.Expr) -> Boolean:
+    cases (A.Expr) e:
+    | s-let(_, b, _, _) => not(did-shadow(b))
+    | s-var(_, b, _) => not(did-shadow(b))
+    | s-rec(_, b, _) => not(did-shadow(b))
+    | else => true
+    end
+  end
+
+  rec expr-visitor = A.default-map-visitor.{
+    method s-id(self, l, n):
+      A.s-id(l, rename(n))
+    end,
+    method s-rec(self, l, b, v):
+      if did-shadow(b): A.s-rec(l, b, v)
+      else: A.s-rec(l, b, v.visit(expr-visitor))
+      end
+    end,
+    method s-block(self, l, stmts):
+      fun folder(es):
+        cases (List) es:
+        | empty => empty
+        | link(e, rest) =>
+          fixed-e = e.visit(expr-visitor)
+          if should-continue(e):
+            link(fixed-e, folder(rest))
+          else:
+            link(fixed-e, rest)
+          end
+        end
+      end
+      A.s-block(l, folder(stmts))
+    end,
+    method s-cases-branch(self, l, pl, n, args, shadow body):
+      real-binds = L.map(lam(cb):
+        cases (A.CasesBind) cb:
+        | s-cases-bind(_, _, b) => b
+        end
+      end, args)
+      if L.any(did-shadow, real-binds):
+        A.s-cases-branch(l, pl, n, args, body)
+      else:
+        A.s-cases-branch(l, pl, n, args, body.visit(expr-visitor))
+      end
+    end,
+    method s-for(self, l, iter, bindings, ann, shadow body, blocky):
+      real-binds = L.map(lam(fb):
+        cases (A.ForBind) fb:
+        | s-for-bind(_, b, _) => b
+        end
+      end, bindings)
+      new-bindings = L.map(lam(fb):
+        cases (A.ForBind) fb:
+        | s-for-bind(shadow l, b, v) => A.s-for-bind(l, b, v.visit(expr-visitor))
+        end
+      end, bindings)
+      if L.any(did-shadow, real-binds):
+        A.s-for(l, iter, new-bindings, ann, body, blocky)
+      else:
+        A.s-for(l, iter, new-bindings, ann, body.visit(expr-visitor), blocky)
+      end
+    end,
+    method s-fun(self, l, name, params, args, ann, doc, shadow body, check-loc, checks, blocky):
+      fun-like(l, name, params, args, ann, doc, body, check-loc, checks, blocky, A.s-fun)
+    end,
+    method s-lam(self, l, name, params, args, ann, doc, shadow body, check-loc, checks, blocky):
+      fun-like(l, name, params, args, ann, doc, body, check-loc, checks, blocky, A.s-lam)
+    end,
+    method s-method(self, l, name, params, args, ann, doc, shadow body, check-loc, checks, blocky):
+      fun-like(l, name, params, args, ann, doc, body, check-loc, checks, blocky, A.s-method)
+    end
+  }
+
+  fun fun-like(l, name, params, args, ann, doc, shadow body, check-loc, checks, blocky, constructor):
+    new-checks = cases (Option) checks:
+    | none => none
+    | some(shadow checks) => some(checks.visit(expr-visitor))
+    end
+    if L.any(did-shadow, args):
+      constructor(l, name, params, args, ann, doc, body, check-loc, new-checks, blocky)
+    else:
+      constructor(l, name, params, args, ann, doc, body.visit(expr-visitor), check-loc, new-checks, blocky)
+    end
+  end
+
+  body.visit(expr-visitor)
+end
+
 # --- Utils ---
+
 fun add-all(
   base :: A.Program,
   items :: List<A.Expr>,
