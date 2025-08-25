@@ -34,10 +34,16 @@
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          packages = with pkgs; [
-            nodejs_24
-            gnumake
-          ] ++ lib.optionals stdenv.isDarwin [ git ];
+          packages =
+            with pkgs;
+            [
+              nodejs_24
+              gnumake
+            ]
+            ++ lib.optionals stdenv.isDarwin [ git ];
+          shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.libuuid ]}:''$LD_LIBRARY_PATH"
+          '';
         };
       });
     };

@@ -1,20 +1,20 @@
 /** @satisfies {PyretModule} */
 ({
-  // requires: [
-  //   { "import-type": "dependency", protocol: "js-file", args: ["./bridge"] },
-  // ],
+  requires: [
+    { "import-type": "dependency", protocol: "js-file", args: ["./bridge"] },
+    { "import-type": "builtin", name: "load-lib" },
+  ],
   // nativeRequires: [
   //   "pyret-base/js/exn-stack-parser",
   // ],
-  requires: [],
-  nativeRequires: ["canvas", "fs"],
+  nativeRequires: [],
   provides: {
     values: {
       // TODO: figure out the module types
-      "get-module-result-answer": ["arrow", ["Any"], "Any"],
-    }
+      "save-module-result-image": ["arrow", ["Any"], "Any"],
+    },
   },
-  theModule: function(runtime, _ns, _uri, canvas, fs) {
+  theModule: function (runtime, _ns, _uri, bridge, loadLib) {
     "use strict";
 
     /** @typedef {{val: { runtime: PyretRuntime; result: any; program: any; realm: any; } }} ModuleReturn */
@@ -38,22 +38,27 @@
     /**
      * @param {ModuleReturn} mr
      */
-    function getModuleResultAnswer(mr) {
+    function saveModuleResultImage(mr) {
       checkSuccess(mr, "answer");
-      const ans = mr.val.runtime.getField(mr.val.result.result, "answer");
+      const foreignRt = mr.val.runtime;
+      const [gf, gmf] = bridge.rtHelpers(runtime);
+      const [fgf, fgmf] = bridge.rtHelpers(foreignRt);
 
-      return runtime.pauseStack((restarter) => {
-        const c = canvas.createCanvas(ans.val.width, ans.val.height);
-        const ctx = c.getContext("2d");
-        ans.val.render(ctx);
-        const buf = c.toBuffer("image/png");
-        fs.writeFile("./test.png", buf, () => restarter.resume(ans));
-      });
+      const llInternal = gf(loadLib, "internal");
+      const ans = llInternal.getModuleResultAnswer(mr);
+      const img = bridge.getMod(foreignRt, "builtin://image");
+      const saveImage = fgmf(img, "save-image");
+
+      return foreignRt.safeCall(() => {
+        saveImage.app(ans, "./test.png");
+        return foreignRt.nothing;
+      }, (_) => {
+        return runtime.makeNumber(0);
+      }, "save-image");
     }
 
     return runtime.makeModuleReturn({
-      "get-module-result-answer":
-        runtime.makeFunction(getModuleResultAnswer, "get-module-result-answer"),
+      "save-module-result-image": runtime.makeFunction(saveModuleResultImage, "save-module-result-image"),
     }, {});
   },
 })
