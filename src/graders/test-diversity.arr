@@ -33,7 +33,7 @@ end
 # this will (sporadically and inconsistently!) break if the student file is
 # sufficiently large in line count
 # FIXME: find a more permanent solution
-var next-line = 1000
+var next-line = 1073741824
 
 dummy-file-name = "autograder"
 # surface pyret cannot use $ in identifiers, so we can be sure these aren't used
@@ -75,21 +75,21 @@ fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
   | parser-error(_) =>
     "Cannot find your function definition because we cannot parse your file."
   | fn-not-defined(name) =>
-    "Cannot find a function named " + MD.escape-inline-code(name)
-    + " in your code."
+    "Cannot find a function named `" + MD.escape-inline-code(name)
+    + "` in your code."
   | run-error(_) =>
     "We ran into an error trying to run your function and its tests."
   | invalid-result(_) =>
     "The autograder received an unexpected response running your tests. "
     + "Please report this bug to a staff member."
   | too-few-inputs(name, expected, actual) =>
-    "Your tests for function " + MD.escape-inline-code(name)
-    + " called it with " + num-to-string(actual) + " distinct sets of arguments. "
+    "Your tests for function `" + MD.escape-inline-code(name)
+    + "` called it with " + num-to-string(actual) + " distinct sets of arguments. "
     + " A good test suite should make at least " + num-to-string(expected)
     + " distinct calls."
   | too-few-outputs(name, expected, actual) =>
-     "Your tests for function " + MD.escape-inline-code(name)
-     + " caused it to produce " + num-to-string(actual) + " different outputs."
+     "Your tests for function `" + MD.escape-inline-code(name)
+     + "` caused it to produce " + num-to-string(actual) + " different outputs."
      + " A good test suite should cause the function to produce at least "
      + num-to-string(expected) + " different outputs.\n"
      + "Note: This counts the _actual_ outputs your function returned, not "
@@ -118,7 +118,7 @@ fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
   {student; staff}
 end
 
-fun mk-test-diversity-guard(
+fun mk-test-diversity(
   id :: Id,
   deps :: List<Id>,
   path :: String,
@@ -296,7 +296,7 @@ fun instrument(
 ) -> Either<DiversityGuardBlock, A.Program>:
   ast-ended = AU.append-nothing-if-necessary(student)
   empty-list-set-stx = lam():
-    # `[Autograder$Sets.list-set:]`
+    # `[$Autograder-Sets.list-set:]`
     A.s-construct(
       dummy-loc(),
       A.s-construct-normal,
@@ -305,13 +305,13 @@ fun instrument(
     )
   end
   state = [list:
-    # `var autograder$[fn]-diversity-inputs = [Autograder$Sets.list-set:]`
+    # `var $autograder-[fn]-diversity-inputs = [Autograder$Sets.list-set:]`
     A.s-var(
       dummy-loc(),
       A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), input-set-name(fn)), A.a-blank),
       empty-list-set-stx()
     ),
-    # `var autograder$[fn]-diversity-outputs = [Autograder$Sets.list-set:]`
+    # `var $autograder-[fn]-diversity-outputs = [Autograder$Sets.list-set:]`
     A.s-var(
       dummy-loc(),
       A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), output-set-name(fn)), A.a-blank),
@@ -320,7 +320,7 @@ fun instrument(
   ]
   state-added = add-all(ast-ended, state, V.make-program-prepender)
   utils = [list:
-    # fun autogrdder$at-least(a, b):
+    # fun $autograder-at-least(a, b):
     #   a >= b
     # end
     A.s-fun(
@@ -356,19 +356,20 @@ fun instrument(
       make-size-check(input-set-name(fn), input-check-name(fn), min-in),
       make-size-check(output-set-name(fn), output-check-name(fn), min-out)
     ]
+    # TODO: this should remove all irrelevant code. see #16
     student-checks-removed = wrapped.visit(V.make-check-filter(_ == fn))
     with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
       new-imports = link(
-        # `import sets as Autograder$Sets`
+        # `import sets as $Autograder-Sets`
         A.s-import(
           dummy-loc(),
           A.s-const-import(dummy-loc(), "sets"),
           A.s-name(dummy-loc(), set-module-name)
         ),
         link(
-          # `import either as Autograder$Either`
+          # `import either as $Autograder-Either`
           A.s-import(
             dummy-loc(),
             A.s-const-import(dummy-loc(), "either"),
@@ -388,6 +389,36 @@ fun wrap-function(
   student :: A.Program,
   fn :: String
 ) -> Option<A.Program> block:
+  doc: ```
+  Given a student program that contains this function definition
+  (when `fn` is "foo"):
+    fun foo(args):
+      ...
+    where:
+      ...
+    end
+  gets wrapped into:
+    fun foo(args):
+      # underscore arguments are replaced with fresh names so we can refer to
+      # them in the later call and set addition
+      fun $autograder-student-foo(shadow args):
+        ...
+      end
+      output = cases ($Autograder-Either.Either)
+        run-task(lam(): $autograder-student-foo(args) end):
+      | left(v) => left(v)
+      | right(exn) => right(exn-unwrap(exn))
+      end
+      # {args} denotes that we put all of the arguments in a tuple
+      $autograder-foo-diversity-inputs :=
+        $autograder-foo-diversity-inputs.add({args})
+      $autograder-foo-diversity-outputs :=
+        $autograder-foo-diversity-outputs.add(output)
+      output
+    where:
+      ...
+    end
+  ```
   extractor = V.make-fun-extractor(fn)
   student.visit(extractor)
   maybe-student-fn = extractor.get-target()
@@ -398,7 +429,7 @@ fun wrap-function(
     | s-fun(l, name, params, args, ann, doc, body, check-loc, checks, blocky) =>
       all-args = remove-underscore-args(fn, args)
       all-args-ids = args-to-ids(all-args)
-      student-fn-name = "autograder$student-" + fn
+      student-fn-name = "$autograder-student-" + fn
       inner = A.s-fun(l, student-fn-name, params, args, ann, doc, body, none, none, blocky)
       shadow inner = inner.visit(V.shadow-visitor)
 
@@ -414,13 +445,13 @@ fun wrap-function(
           # workaround with a manual `cases`; when this gets fixed we should be
           # able to just use the result of `run-task` without any extra work.
 
-          # output = cases (Autogrder$Either.Either) run-task(lam(): autograder$student-[fn]([args]) end):
+          # output = cases ($Autogrder-Either.Either) run-task(lam(): $autograder-student-[fn]([args]) end):
           # | left(v) => left(v)
           # | right(exn) => right(exn-unwrap(exn))
           # end
           A.s-let(
             dummy-loc(),
-            A.s-bind(dummy-loc(), false, A.s-name(dummy-loc(), "output"), A.a-blank),
+            A.s-bind(dummy-loc(), true, A.s-name(dummy-loc(), "output"), A.a-blank),
             A.s-cases(
               dummy-loc(),
               A.a-dot(dummy-loc(), A.s-name(dummy-loc(), either-module-name), "Either"),
@@ -465,8 +496,8 @@ fun wrap-function(
                       A.s-cases-bind-normal,
                       A.s-bind(
                         dummy-loc(),
-                        false,
-                        A.s-name(dummy-loc(), "autograder$v"), A.a-blank
+                        true,
+                        A.s-name(dummy-loc(), "v"), A.a-blank
                       )
                     )
                   ],
@@ -484,7 +515,7 @@ fun wrap-function(
                           "left"
                         ),
                         [list:
-                          A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$v"))
+                          A.s-id(dummy-loc(), A.s-name(dummy-loc(), "v"))
                         ]
                       )
                     ]
@@ -500,8 +531,8 @@ fun wrap-function(
                       A.s-cases-bind-normal,
                       A.s-bind(
                         dummy-loc(),
-                        false,
-                        A.s-name(dummy-loc(), "autograder$exn"), A.a-blank
+                        true,
+                        A.s-name(dummy-loc(), "exn"), A.a-blank
                       )
                     )
                   ],
@@ -523,7 +554,7 @@ fun wrap-function(
                             dummy-loc(),
                             A.s-id(dummy-loc(), A.s-name(dummy-loc(), "exn-unwrap")),
                             [list:
-                              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "autograder$exn"))
+                              A.s-id(dummy-loc(), A.s-name(dummy-loc(), "exn"))
                             ]
                           )
                         ]
@@ -536,7 +567,7 @@ fun wrap-function(
             ),
             false
           ),
-          # `autograder$[fn]-diversity-inputs := autograder$[fn]-diversity-inputs.add({[args]})`
+          # `$autograder-[fn]-diversity-inputs := $autograder-[fn]-diversity-inputs.add({[args]})`
           A.s-assign(
             dummy-loc(),
             A.s-name(dummy-loc(), inputs),
@@ -546,7 +577,7 @@ fun wrap-function(
               [list: A.s-tuple(dummy-loc(), all-args-ids)]
             )
           ),
-          # `autograder$[fn]-diversity-outputs := autograder$[fn]-diversity-outputs.add(output)`
+          # `$autograder-[fn]-diversity-outputs := $autograder-[fn]-diversity-outputs.add(output)`
           A.s-assign(
             dummy-loc(),
             A.s-name(dummy-loc(), outputs),
