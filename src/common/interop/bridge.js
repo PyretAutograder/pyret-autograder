@@ -10,22 +10,6 @@
     "use strict";
 
     /**
-     * @param {PyretRuntime} rt
-     */
-    function rtHelpers(rt) {
-      const gf = rt.getField;
-      /**
-       * @param {PyretModule} mod
-       * @param {String} field 
-       */
-      // @ts-expect-error
-      const gmf = (mod, field) => gf(rt.getField(mod, "values"), field)
-      return [gf, gmf];
-    }
-
-    const [ gf, gmf ] = rtHelpers(runtime);
-
-    /**
      * @param {PyretRuntime} foreignRt
      * @param {string} modName
      */
@@ -38,17 +22,28 @@
     }
 
     /**
+     * @param {PyretRuntime} rt
+     */
+    function rtHelpers(rt) {
+      const gf = rt.getField;
+      const gmf = (/** @type {any} */ mod, /** @type {string} */ field) => 
+        gf(gf(mod, "values"), field)
+      return [gf, gmf];
+    }
+
+    /**
      * @param {PyretRuntime} foreignRt
      * @param {any} foreignSrcloc
      */
     function translateSrcloc(foreignRt, foreignSrcloc) {
+      const [ gf, gmf ] = rtHelpers(runtime);
       const [ fgf, fgmf ] = rtHelpers(foreignRt);
       const srclocM = getMod(foreignRt, "builtin://srcloc");
 
       return foreignRt.ffi.cases(fgmf(srclocM, "is-Srcloc"), "Srcloc", foreignSrcloc, {
         builtin: (moduleName) => gmf(srcloc, "builtin").app(moduleName),
-        srcloc: (source, sl, sc, sch, el, ec, ech) =>
-          gmf(srcloc, "builtin").app(source, sl, sc, sch, el, ec, ech),
+        srcloc: (source, sline, scol, schar, eline, ecol, echar) =>
+          gmf(srcloc, "srcloc").app(source, sline, scol, schar, eline, ecol, echar),
       });
     }
 
@@ -65,6 +60,7 @@
 
     return runtime.makeJSModuleReturn({
       getMod,
+      rtHelpers,
       translateSrcloc,
       translateErrorDisplay,
     });
