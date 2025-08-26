@@ -17,7 +17,7 @@
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
 include file("../src/core.arr")
-include file("../src/utils.arr")
+include file("../src/utils/general.arr")
 
 import lists as L
 import sets as S

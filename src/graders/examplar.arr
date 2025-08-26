@@ -21,7 +21,7 @@ import file("../grading.arr") as G
 import file("../grading-builders.arr") as GB
 import file("../common/tmp-poc.arr") as AAAA # TODO: proper implementation
 import file("../common/ast.arr") as A
-import safe-divide from file("../utils.arr")
+import safe-divide from file("../utils/general.arr")
 include either
 include from C: type Id end
 include from G: data AggregateOutput, data RanProgram end

@@ -17,7 +17,7 @@
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
 include file("../src/core.arr")
-include file("../src/utils.arr")
+include file("../src/utils/general.arr")
 include file("../src/grading.arr")
 import string-dict as SD
 

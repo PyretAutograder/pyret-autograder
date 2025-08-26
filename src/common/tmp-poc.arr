@@ -16,7 +16,7 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
-include file("../utils.arr")
+include file("../utils/general.arr")
 import file("../core.arr") as C
 import file("../grading.arr") as G
 import file("./repl-runner.arr") as R

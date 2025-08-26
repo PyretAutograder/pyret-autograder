@@ -16,7 +16,7 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
-include file("../src/utils.arr")
+include file("../../src/utils/general.arr")
 import string-dict as SD
 
 check "unique":
@@ -37,7 +37,7 @@ check "list-to-stringdict":
   list-to-stringdict([list: {"key1"; 1}, {"key2"; 2}]) is [SD.string-dict: "key1", 1, "key2", 2]
 end
 
-check "save-divide":
+check "safe-divide":
   safe-divide(1, 1, 0) is 1
   safe-divide(0, 0, 42) is 42
 end
