@@ -16,9 +16,4 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
-import file("./utils/main.arr") as _
-import file("./core.arr") as _
-import file("./grading.arr") as _
-import file("./grading-helpers.arr") as _
-import file("./graders/main.arr") as _
-import file("./common/main.arr") as _
+import file("./general.arr") as _

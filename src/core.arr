@@ -20,7 +20,7 @@ import lists as L
 import sets as S
 import string-dict as SD
 
-include file("./utils.arr")
+include file("./utils/general.arr")
 
 provide:
   data Node,

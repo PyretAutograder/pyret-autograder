@@ -20,7 +20,7 @@ import srcloc as SL
 import filelib as FL
 import filesystem as FS
 import lists as L
-import safe-inclusive-substring, filter_n, max from file("../utils.arr")
+import safe-inclusive-substring, filter_n, max from file("../utils/general.arr")
 
 provide *
 
