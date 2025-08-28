@@ -1,13 +1,13 @@
-external-dep = 2
-
-fun foo(a, b):
-  id(a + b) * external-dep
+fun foo(x):
+  if x == 1:
+    # because of this shadowing the function name, we cannot make any more
+    # recursive calls in this scope. therefore, we do not rename this `foo`
+    shadow foo = 1
+    foo
+  else: x * foo(x - 1)
+  end
 where:
-  foo(1, 2) is 6
-  foo(-1, 1) is 0
-  foo(1, 2) is -2
-end
-
-fun id(x) block:
-  raise(x)
+  foo(5) is 120
+  foo(3) is 6
+  foo(5) is 0
 end
