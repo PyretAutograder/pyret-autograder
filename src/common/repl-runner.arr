@@ -31,6 +31,7 @@ import require-util as RU
 import file("./visitors.arr") as V
 import file("./ast.arr") as CA
 include js-file("./runtime")
+import js-file("./interop/module-return") as MR
 include either
 
 include js-file("../tools/debugging")
@@ -93,7 +94,7 @@ fun remove-checks(stx :: A.Program, check-name :: Option<String>) -> A.Program:
   stx.visit(V.make-check-filter(pred))
 end
 
-#---------------------------run-with-alternate-impl---------------------------#
+#--------------------------[run-with-alternate-impl]--------------------------#
 
 data RunAltImplErr:
   | ai-cannot-parse-student(err :: CA.ParsePathErr)
@@ -138,7 +139,7 @@ fun replace-fun(
   end
 end
 
-#--------------------------run-with-alternate-checks--------------------------#
+#-------------------------[run-with-alternate-checks]-------------------------#
 
 data RunAltChecksErr:
   | ac-cannot-parse-student(err :: CA.ParsePathErr)
@@ -185,7 +186,7 @@ fun add-to-program(stx :: A.Program, expr :: A.Expr):
   stx.visit(V.make-program-appender(expr))
 end
 
-#----------------------------------run-checks----------------------------------#
+#---------------------------------[run-checks]---------------------------------#
 
 data RunChecksErr:
   | compile-error(x :: Any, program :: A.Program) # TODO: whats in here?
@@ -219,13 +220,8 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
     | right(val) =>
       if LL.is-success-result(val):
         val
-        # ^ identity-print-raw
-        ^ lam(x) block:
-            # print-module-result(x)
-            x
-          end
-        ^ LL.render-check-results(_)
-        # ^ identity-spy
+        ^ MR.extract-check-results
+        ^ identity-spy
         ^ _.message
         # ^ identity-print-json
         ^ J.read-json
@@ -239,3 +235,6 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   end
   # ^ identity-spy
 end
+
+
+#----------------------------------run-checks----------------------------------#
