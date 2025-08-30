@@ -16,8 +16,5 @@
   You should have received a copy of the GNU Lesser General Public License
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
-import file("./well-formed.arr") as _
-import file("./fn-def-guard.arr") as _
-import file("./test-diversity.arr") as _
-import file("./training-wheels.arr") as _
-import file("./image-artifact.arr") as _
+import file("./general.arr") as _
+import file("./either.arr") as _

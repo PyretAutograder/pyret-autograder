@@ -1,9 +1,12 @@
 /** @satisfies {PyretModule} */
 ({
-  requires: [{ "import-type": "builtin", name: "error-display" }],
+  requires: [
+    { "import-type": "builtin", name: "error-display" },
+    { "import-type": "builtin", name: "srcloc" },
+  ],
   provides: {},
   nativeRequires: [],
-  theModule: function (runtime, _namespace, _uri, errDisplay) {
+  theModule: function (runtime, _namespace, _uri, errDisplay, srcloc) {
     "use strict";
 
     /**
@@ -19,20 +22,29 @@
     }
 
     /**
-     * @param {PyretRuntime} foreignRt
-     * @param {any} srcloc
+     * @param {PyretRuntime} rt
      */
-    function translateSrcloc(foreignRt, srcloc) {
-      const gf = foreignRt.getField;
+    function rtHelpers(rt) {
+      const gf = rt.getField;
+      const gmf = (/** @type {any} */ mod, /** @type {string} */ field) => 
+        gf(gf(mod, "values"), field)
+      return [gf, gmf];
+    }
+
+    /**
+     * @param {PyretRuntime} foreignRt
+     * @param {any} foreignSrcloc
+     */
+    function translateSrcloc(foreignRt, foreignSrcloc) {
+      const [ gf, gmf ] = rtHelpers(runtime);
+      const [ fgf, fgmf ] = rtHelpers(foreignRt);
       const srclocM = getMod(foreignRt, "builtin://srcloc");
 
-      return foreignRt.ffi.cases(gf(gf(srclocM, "values"), "is-Srcloc"), "Srcloc", srcloc, {
-
+      return foreignRt.ffi.cases(fgmf(srclocM, "is-Srcloc"), "Srcloc", foreignSrcloc, {
+        builtin: (moduleName) => gmf(srcloc, "builtin").app(moduleName),
+        srcloc: (source, sline, scol, schar, eline, ecol, echar) =>
+          gmf(srcloc, "srcloc").app(source, sline, scol, schar, eline, ecol, echar),
       });
-
-      console.dir(srclocM, {depth: 3})
-      runtime.ffi.throwMessageException("TODO");
-
     }
 
     /**
@@ -46,8 +58,9 @@
       runtime.ffi.throwMessageException("TODO");
     }
 
-
     return runtime.makeJSModuleReturn({
+      getMod,
+      rtHelpers,
       translateSrcloc,
       translateErrorDisplay,
     });

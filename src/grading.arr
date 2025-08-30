@@ -17,7 +17,7 @@
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
 include file("./core.arr")
-include file("./utils.arr")
+include file("./utils/general.arr")
 include js-file("./escape-hatch") # HACK: remove once/if typesystem supports existentials
 import ast as A
 import string-dict as SD

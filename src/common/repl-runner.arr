@@ -31,6 +31,7 @@ import require-util as RU
 import file("./visitors.arr") as V
 import file("./ast.arr") as CA
 include js-file("./runtime")
+import js-file("./interop/extract") as EX
 include either
 
 include js-file("../tools/debugging")
@@ -41,6 +42,7 @@ provide:
   run-with-alternate-impl,
   run-with-alternate-checks,
   run
+  run-for-answer
 end
 
 # TODO: deal with this!!!
@@ -85,6 +87,8 @@ repl = R.make-repl(
   context,
   lam(): CLI.module-finder end
 )
+
+#------------------------------------utils------------------------------------#
 
 fun remove-checks(stx :: A.Program, check-name :: Option<String>) -> A.Program:
   pred = check-name
@@ -185,21 +189,74 @@ fun add-to-program(stx :: A.Program, expr :: A.Expr):
   stx.visit(V.make-program-appender(expr))
 end
 
+#--------------------------------run-image-save--------------------------------#
+
+data RunImgSaveErr:
+  | is-cannot-parse-student(err :: CA.ParsePathErr)
+  | is-cannot-parse-question(err :: CA.ParsePathErr)
+  | is-run-err(err :: RunChecksErr)
+  | is-save-img-err(err :: Any)
+end
+
+fun run-image-save(
+  student-path :: String, question-path :: String, save-path :: String
+) -> Either<>:
+  cases (Either) CA.parse-path(student-path):
+  | left(err) => left(ans-cannot-parse-student(err))
+  | right(student) =>
+    cases (Either) CA.parse-path(question-path):
+    | left(err) => left(ans-cannot-parse-question(err))
+    | right(question) =>
+      cases (A.Program) question:
+      | s-program(_, _, _, _, _, _, q-body) =>
+        without-checks = remove-checks(student, none)
+        prog = add-to-program(without-checks, q-body)
+        cases (Either) run-base(prog, CS.default-compile-options):
+        | left(err) =>
+          err
+          ^ compile-error(_, prog)
+          ^ is-run-err
+          ^ left
+        | right(val) =>
+          if LL.is-success-result(val):
+            cases (Either) EX.save-module-result-image(val):
+            | left(err) => left(is-save-img-err(err))
+            | right(path) => right(path)
+            end
+          else:
+            LL.render-error-message(val)
+            ^ runtime-error(_, prog)
+            ^ is-run-err
+            ^ left
+          end
+        end
+      end
+    end
+  end
+end
+
+
 #----------------------------------run-checks----------------------------------#
 
+# TODO: rename
 data RunChecksErr:
   | compile-error(x :: Any, program :: A.Program) # TODO: whats in here?
   | runtime-error(x :: Any, program :: A.Program)
 end
 
-fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
+fun run-base(program :: A.Program, compile-options :: CS.CompileOptions)
+   -> Either<RunChecksErr, RunChecksResult>
+block:
   locator = repl.make-definitions-locator(lam(): nothing end, CS.standard-globals).{
     method get-module(self):
       CL.pyret-ast(program)
     end
   }
-  compile-options = CS.default-compile-options.{checks-format: "json"}
 
+  repl.restart-interactions(locator, compile-options)
+end
+
+fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   identity-spy = lam(x):
     spy: x end
     x
@@ -211,7 +268,7 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   identity-print-json = mk-eff-identity(print-json)
   identity-print-raw = mk-eff-identity(print-raw)
 
-  cases(Either) repl.restart-interactions(locator, compile-options):
+  cases(Either) run-base(program, CS.default-compile-options.{checks-format: "json"}):
     | left(err) =>
       err
       ^ compile-error(_, program)
@@ -239,3 +296,5 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   end
   # ^ identity-spy
 end
+
+
