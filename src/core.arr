@@ -216,15 +216,11 @@ fun execute<B, R, E, I, C>(
     {acc.set(node.id, {res; idx}); idx + 1}
   end
 
-  ret = for SD.map-keys(id from results):
+  for SD.map-keys(id from results):
     {res; idx} = results.get-value(id)
     {idx; id; res}
   end
     .sort-by(lam(a, b): a.{0} < b.{0} end, lam(a, b): a.{0} == b.{0} end)
     .map(lam({_; id; result}): {id; result} end)
-
-  spy: dag, sorted-dag, results, ret end
-
-  ret
 end
 
