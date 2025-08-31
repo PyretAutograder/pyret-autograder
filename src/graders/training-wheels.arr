@@ -16,7 +16,7 @@ end
 
 provide:
   data TrainingWheelsBlock,
-  mk-training-wheels-guard,
+  mk-training-wheels,
   find-mutation as _find-mutation,
   fmt-training-wheels as _fmt-training-wheels
 end
@@ -135,7 +135,7 @@ fun fmt-training-wheels(reason :: TrainingWheelsBlock) -> GB.ComboAggregate:
   {student; staff}
 end
 
-fun mk-training-wheels-guard(id :: Id, deps :: List<Id>, path :: String, top-level-only :: Boolean):
+fun mk-training-wheels(id :: Id, deps :: List<Id>, path :: String, top-level-only :: Boolean):
   name = "Training wheels"
   checker = lam(): find-mutation(path, top-level-only) end
   GB.mk-guard(id, deps, checker, name, fmt-training-wheels)
