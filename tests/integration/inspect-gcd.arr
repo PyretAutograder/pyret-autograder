@@ -25,6 +25,7 @@ student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
 wheat-path = P.example("gcd-grading/wheat.arr")
 functional-path = P.example("gcd-grading/functional.arr")
+draw-gcd = P.example("gcd-grading/draw-gcd.arr")
 
 graders =
   [list:
@@ -52,6 +53,7 @@ graders =
       1, some("gcd")
     ),
     mk-well-formed("wf", [list:], student-path),
+    mk-image-artifact("art", [list:], student-path, draw-gcd, "gcd.png", "GCD")
   ]
 
 # FIXME: nested modules not working

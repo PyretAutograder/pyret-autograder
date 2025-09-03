@@ -125,7 +125,7 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<{Id; FlatAggrega
       | agg-artifact(id, name, desc, outcome) =>
         cases (ArtifactOutcome) outcome:
           | art-ok(path, _) =>
-            new-desc = desc.then(_.content).or-else("")
+            new-desc = desc.and-then(_.content).or-else("")
             new-outs = link({id; flat-agg-art(name, desc, path)}, outs)
             {new-outs; reasons}
           | art-skipped(_) =>

@@ -1,3 +1,4 @@
+include image
 fun is-true(x):
   x
 end
