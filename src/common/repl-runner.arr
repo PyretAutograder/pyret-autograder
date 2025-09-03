@@ -41,11 +41,11 @@ provide:
   type *,
   run-with-alternate-impl,
   run-with-alternate-checks,
-  run
-  run-for-answer
+  run-image-save,
+  run,
 end
 
-# TODO: deal with this!!!
+# TODO: issue #14
 # type RunChecksResult = {
 #   program :: A.Program,
 #   passed :: Number,
@@ -87,6 +87,8 @@ repl = R.make-repl(
   context,
   lam(): CLI.module-finder end
 )
+
+#------------------------------------utils------------------------------------#
 
 fun remove-checks(stx :: A.Program, check-name :: Option<String>) -> A.Program:
   pred = check-name
@@ -187,8 +189,56 @@ fun add-to-program(stx :: A.Program, expr :: A.Expr):
   stx.visit(V.make-program-appender(expr))
 end
 
+#--------------------------------run-image-save--------------------------------#
+
+data RunImgSaveErr:
+  | is-cannot-parse-student(err :: CA.ParsePathErr)
+  | is-cannot-parse-question(err :: CA.ParsePathErr)
+  | is-run-err(err :: RunChecksErr)
+  | is-save-img-err(err :: String)
+end
+
+fun run-image-save(
+  student-path :: String, question-path :: String, save-path :: String
+) -> Either<RunImgSaveErr, String>:
+  cases (Either) CA.parse-path(student-path):
+  | left(err) => left(is-cannot-parse-student(err))
+  | right(student) =>
+    cases (Either) CA.parse-path(question-path):
+    | left(err) => left(is-cannot-parse-question(err))
+    | right(question) =>
+      cases (A.Program) question:
+      | s-program(_, _, _, _, _, _, q-body) =>
+        without-checks = remove-checks(student, none)
+        prog = add-to-program(without-checks, q-body)
+        cases (Either) run-base(prog, CS.default-compile-options):
+        | left(err) =>
+          err
+          ^ compile-error(_, prog)
+          ^ is-run-err
+          ^ left
+        | right(val) =>
+          if LL.is-success-result(val):
+            cases (Either) EX.save-module-result-image(val, save-path):
+            | left(err) => left(is-save-img-err(err))
+            | right(path) => right(path)
+            end
+          else:
+            LL.render-error-message(val)
+            ^ runtime-error(_, prog)
+            ^ is-run-err
+            ^ left
+          end
+        end
+      end
+    end
+  end
+end
+
+
 #----------------------------------run-checks----------------------------------#
 
+# TODO: rename
 data RunChecksErr:
   | compile-error(x :: Any, program :: A.Program) # TODO: whats in here?
   | runtime-error(x :: Any, program :: A.Program)
@@ -203,6 +253,10 @@ block:
     end
   }
 
+  repl.restart-interactions(locator, compile-options)
+end
+
+fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   identity-spy = lam(x):
     spy: x end
     x
@@ -214,10 +268,6 @@ block:
   identity-print-json = mk-eff-identity(print-json)
   identity-print-raw = mk-eff-identity(print-raw)
 
-  repl.restart-interactions(locator, compile-options)
-end
-
-fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   cases(Either) run-base(program, CS.default-compile-options.{checks-format: "json"}):
     | left(err) =>
       err
@@ -247,41 +297,4 @@ fun run(program :: A.Program) -> Either<RunChecksErr, RunChecksResult> block:
   # ^ identity-spy
 end
 
-data RunAnswerErr:
-  | ans-cannot-parse-student(err :: CA.ParsePathErr)
-  | ans-cannot-parse-question(err :: CA.ParsePathErr)
-end
 
-# TODO: make type correct
-# program can return anything so probably can't actually get rid of Any
-# but we can put in an Either etc.
-fun run-for-answer(student-path :: String, question-path :: String) -> Any:
-  cases (Either) CA.parse-path(student-path):
-  | left(err) => left(ans-cannot-parse-student(err))
-  | right(student) =>
-    cases (Either) CA.parse-path(question-path):
-    | left(err) => left(ans-cannot-parse-question(err))
-    | right(question) =>
-      cases (A.Program) question:
-      | s-program(_, _, _, _, _, _, q-body) =>
-        without-checks = remove-checks(student, none)
-        prog = add-to-program(without-checks, q-body)
-        cases (Either) run-base(prog, CS.default-compile-options):
-        | left(err) =>
-          err
-          ^ compile-error(_, prog)
-          ^ left
-        | right(val) =>
-          if LL.is-success-result(val):
-            EX.save-module-result-image(val)
-            ^ right
-          else:
-            LL.render-error-message(val)
-            ^ runtime-error(_, prog)
-            ^ left
-          end
-        end
-      end
-    end
-  end
-end

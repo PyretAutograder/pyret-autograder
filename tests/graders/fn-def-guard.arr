@@ -43,3 +43,4 @@ check "fmt-fn-def: totality":
   fmt-fn-def(fn-not-defined("foo", 1)) does-not-raise
   fmt-fn-def(wrong-arity("foo", 1, 2)) does-not-raise
 end
+

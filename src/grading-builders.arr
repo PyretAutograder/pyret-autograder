@@ -32,7 +32,10 @@ provide:
   mk-scorer,
   mk-simple-scorer,
   mk-repl-scorer,
-  simple-calculator
+  simple-calculator,
+
+  type ArtifactProducer,
+  mk-artist,
 end
 
 # first element in the tuple represents general output
@@ -110,7 +113,7 @@ fun mk-scorer<Info, C>(
         | executed(outcome, info, _) =>
           cases (Outcome) outcome:
             | emit(res) =>
-              cases (GradingResult) res block:
+              cases (GradingResult) res:
                 | score(num) =>
                   shadow info = cases (Option) info:
                     | some(shadow info) => info
@@ -184,7 +187,41 @@ fun mk-repl-scorer<Info, C>(
   }
 end
 
-fun make-artist<Info, C>(id :: Id, deps :: List<Id>) -> Nothing:
-  nothing
+type ArtifactProducer = (-> Either<InternalError, String>)
+
+fun mk-artist<Info, C>(
+  id :: Id, deps :: List<Id>, producer :: ArtifactProducer, name :: String
+) -> Grader<Nothing, Option<Info>, C>:
+  {
+    id: id,
+    deps: deps,
+    run: lam():
+      cases (Either) producer():
+        | left(err) => {internal-error(err); none}
+        | some({path; info}) => {emit(artifact(path)); some(info)}
+      end
+    end,
+    to-aggregate: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<AggregateResult>:
+      cases (NodeResult) result:
+        | executed(outcome, info, _) =>
+          cases (Outcome) outcome:
+            | noop => none
+            | emit(res) =>
+              cases (GradingResult) res:
+                | artifact(path) => some(art-ok(path, none))
+                | else => raise("INVARIANT VIOLATED: artist emitted non-artifact")
+              end
+            | internal-error(err) => none # TODO: error swallowed
+            | else => raise("INVARIANT VIOLATED: unexpected outcome")
+          end
+        | skipped(skip-id, _) => some(art-skipped(skip-id))
+      end
+        # TODO: description (does this even exist upstream?)
+        .and-then(agg-artifact(id, name, none, _))
+    end,
+    to-repl: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<RanProgram>:
+      none
+    end
+  }
 end
 

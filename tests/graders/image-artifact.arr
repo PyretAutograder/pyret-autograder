@@ -1,11 +1,20 @@
 import file("../meta/path-utils.arr") as P
 import file("../../src/common/ast.arr") as CA
 include file("../../src/graders/image-artifact.arr")
+include either
 
-save-image = _save-image
+produce-image-artifact = _produce-image-artifact
 
-check "save-image: obtains image":
+check "produce-image-artifact: obtains image":
   student = P.file("image-student.arr")
   gen = P.file("artifact.arr")
-  save-image(student, gen, P.file("out.png")) is nothing
+  produce-image-artifact(student, gen, "out.png") is right({"out.png"; nothing})
+
+  # TODO: check outputted
+end
+
+check "mk-image-artifact: smoke":
+  student = P.file("image-student.arr")
+  gen = P.file("artifact.arr")
+  mk-image-artifact("id", [list:], student, gen, "out.png", "Artifact") does-not-raise
 end
