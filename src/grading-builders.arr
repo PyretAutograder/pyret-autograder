@@ -198,7 +198,7 @@ fun mk-artist<Info, C>(
     run: lam():
       cases (Either) producer():
         | left(err) => {internal-error(err); none}
-        | some({path; info}) => {emit(artifact(path)); some(info)}
+        | right({path; info}) => {emit(artifact(path)); some(info)}
       end
     end,
     to-aggregate: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<AggregateResult>:
