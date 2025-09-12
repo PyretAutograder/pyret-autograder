@@ -48,7 +48,7 @@ jobs:
       - name: Push changes
         run: git push --follow-tags
 
-      - name: Install & test
+      - name: Install
         run: npm ci
 
       - name: Publish to npm

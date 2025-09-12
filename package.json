@@ -10,8 +10,8 @@
   },
   "main": "src/main.arr",
   "dependencies": {
-    "pyret-lang": "npm:@ironm00n/pyret-lang@0.0.2",
-    "pyret-npm": "npm:@ironm00n/pyret-npm@0.0.2"
+    "pyret-lang": "npm:@ironm00n/pyret-lang@0.0.3",
+    "pyret-npm": "npm:@ironm00n/pyret-npm@0.0.3"
   },
   "scripts": {
     "test": "npx pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
