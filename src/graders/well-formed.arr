@@ -98,7 +98,7 @@ fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
       end
       exn = inner.exn
       msg = inner.message
-      "The submitted file cannot be parsed by pyret. Please make sure that " +
+      "The submitted file cannot be understood by pyret. Please make sure that " +
       "your file can run. Pyret reports the following issue:\n\n" +
       "```" +
       RED.display-to-string(exn.render-fancy-reason(src-available), to-repr, empty) # TODO: escape
