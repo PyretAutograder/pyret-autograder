@@ -14,7 +14,10 @@
     "pyret-npm": "npm:@ironm00n/pyret-npm@0.0.3"
   },
   "scripts": {
-    "test": "npx pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr",
+    "pyret-trove": "npx pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/",
+    "test": "npm run pyret-trove -- -p tests/main.arr",
+    "integration:gcd": "npm run pyret-trove -- -p tests/integration/inspect-gcd.arr",
+    "integration:fold": "npm run pyret-trove -- -p tests/integration/inspect-fold.arr",
     "clean": "rm -rf -- ./pyret"
   },
   "devDependencies": {

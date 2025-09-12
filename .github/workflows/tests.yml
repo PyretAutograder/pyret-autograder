@@ -21,5 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Run unit tests
+        run: npm run test
+
+      - name: GCD integration test
+        run: npm run integration:gcd
+
+      - name: fold integration test
+        run: npm run integration:fold

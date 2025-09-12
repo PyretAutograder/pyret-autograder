@@ -36,4 +36,6 @@ fun inspect-grade(graders) block:
 
   print("===================Staff Logs===================\n")
   print(staff-logs.content + "\n")
+
+  result
 end

@@ -39,5 +39,10 @@ graders =
     mk-well-formed("wf", [list:], student-path),
   ]
 
-inspect-grade(graders)
+result = inspect-grade(graders)
+
+check "aggregate-to-flat smoke":
+  grading-helpers.aggregate-to-flat(result.aggregated) does-not-raise
+end
+
 

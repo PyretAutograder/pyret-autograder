@@ -21,6 +21,7 @@ include file("../meta/inspect-grade.arr")
 include file("../../src/main.arr")
 include file("../../src/tools/main.arr")
 
+
 student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
 wheat-path = P.example("gcd-grading/wheat.arr")
@@ -59,5 +60,9 @@ graders =
 # FIXME: nested modules not working
 # debugging.wait-for-debugger()
 
-inspect-grade(graders)
+result = inspect-grade(graders)
+
+check "aggregate-to-flat smoke":
+  grading-helpers.aggregate-to-flat(result.aggregated) does-not-raise
+end
 
