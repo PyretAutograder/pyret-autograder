@@ -187,10 +187,10 @@ fun mk-repl-scorer<Info, C>(
   }
 end
 
-type ArtifactProducer = (-> Either<InternalError, String>)
+type ArtifactProducer<Info> = (-> Either<InternalError, {String; ArtifactFormat; Info}>)
 
 fun mk-artist<Info, C>(
-  id :: Id, deps :: List<Id>, producer :: ArtifactProducer, name :: String
+  id :: Id, deps :: List<Id>, producer :: ArtifactProducer<Info>, name :: String
 ) -> Grader<Nothing, Option<Info>, C>:
   {
     id: id,
@@ -198,7 +198,7 @@ fun mk-artist<Info, C>(
     run: lam():
       cases (Either) producer():
         | left(err) => {internal-error(err); none}
-        | right({path; info}) => {emit(artifact(path)); some(info)}
+        | right({path; format; info}) => {emit(artifact(path, format)); some(info)}
       end
     end,
     to-aggregate: lam(result :: GraderResult<Nothing, Option<Info>, C>) -> Option<AggregateResult>:
@@ -208,7 +208,7 @@ fun mk-artist<Info, C>(
             | noop => none
             | emit(res) =>
               cases (GradingResult) res:
-                | artifact(path) => some(art-ok(path, none))
+                | artifact(path, format) => some(art-ok(path, format))
                 | else => raise("INVARIANT VIOLATED: artist emitted non-artifact")
               end
             | internal-error(err) => none # TODO: error swallowed

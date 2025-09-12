@@ -17,7 +17,7 @@ fun produce-image-artifact(
   student-path :: String,
   generator-path :: String,
   save-to :: String
-) -> Either<String>:
+) -> Either<G.InternalError, {String; G.ArtifactFormat; Nothing}>:
   res = R.run-image-save(student-path, generator-path, save-to)
   cases (Either) res:
     | left(err) => 
@@ -25,7 +25,7 @@ fun produce-image-artifact(
         err: err,
         to-string: lam(): to-repr(err) end
       })
-    | right(path) => right({path; nothing})
+    | right(path) => right({path; G.png; nothing})
   end
 end
 

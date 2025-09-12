@@ -27,6 +27,7 @@ provide:
   data AggregateOutput,
   data TestOutcome,
   data ArtifactOutcome,
+  data ArtifactFormat,
   data GuardOutcome,
   data AggregateResult,
   type GraderOutput,
@@ -71,8 +72,13 @@ data TestOutcome:
   | test-skipped(id :: Id)
 end
 
+data ArtifactFormat:
+  | png
+  | zip
+end
+
 data ArtifactOutcome:
-  | art-ok(path :: String, extra :: Option<Any>) # TODO: remove extra?
+  | art-ok(path :: String, format :: ArtifactFormat)
   | art-skipped(id :: Id)
 end
 
@@ -113,7 +119,8 @@ type GradingRunner<B, I> = (-> GraderOutput<B, I>)
 #   fn id(): Id;
 #   fn deps(): List<Id>;
 #   fn run(): GraderOutput<BlockReason, Info>;
-#   fn to_aggregate<C>(result: GradingResult<BlockReason, Info, C>): Option<AggregateResult>
+#   fn to_aggregate<C>(result: GradingResult<BlockReason, Info, C>): Option<AggregateResult>;
+#   fn to_repl<C>(result: GradingResult<BlockReason, Info, C>): Option<RanProgram>;
 # }
 
 # FIXME: this needs existentials
@@ -135,7 +142,7 @@ type NormalizedNumber = Number%(is-normalized)
 # TODO: this could be parameterized too, but not worth it rn
 data GradingResult:
   | score(earned :: NormalizedNumber)
-  | artifact(path :: String) # TODO: might make more sense to make this an image object
+  | artifact(path :: String, format :: ArtifactFormat)
 end
 
 type TraceEntry<B, I, C> = {

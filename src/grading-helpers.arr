@@ -34,7 +34,7 @@ fun summarize-outcome(outcome :: Outcome, is-staff :: Boolean) -> String:
       "emitting a result of a " +
       cases(GradingResult) res:
         | score(earned) => "score of `" + to-repr(earned) + "`"
-        | artifact(path) => "an artifact at `" + path + "`"
+        | artifact(path, format) => "a " + to-repr(format) + " artifact at `" + path + "`"
       end
     | block(reason) =>
       "blocking further execution due to `" + to-repr(reason) + "`"
