@@ -92,7 +92,8 @@ data FlatAggregateResult:
 | flat-agg-art( # TODO: this needs more thought
     name :: String,
     description :: String,
-    path :: String)
+    path :: String,
+    format :: ArtifactFormat)
 end
 
 fun aggregate-to-flat(results :: List<AggregateResult>) -> List<{Id; FlatAggregateResult}>:
@@ -124,9 +125,9 @@ fun aggregate-to-flat(results :: List<AggregateResult>) -> List<{Id; FlatAggrega
         {new-outs; reasons}
       | agg-artifact(id, name, desc, outcome) =>
         cases (ArtifactOutcome) outcome:
-          | art-ok(path, _) =>
+          | art-ok(path, format) =>
             new-desc = desc.and-then(_.content).or-else("")
-            new-outs = link({id; flat-agg-art(name, new-desc, path)}, outs)
+            new-outs = link({id; flat-agg-art(name, new-desc, path, format)}, outs)
             {new-outs; reasons}
           | art-skipped(_) =>
             # TODO: is this really what we want?
