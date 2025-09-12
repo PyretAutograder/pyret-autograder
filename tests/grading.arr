@@ -203,7 +203,7 @@ check "grading: aggregators":
         cases (Outcome) outcome:
           | emit(grading-result) =>
             cases (GradingResult) grading-result:
-              | artifact(path) => art-ok(path, some(info))
+              | artifact(path, format) => art-ok(path, format)
               | else => raise("invalid")
             end
           | else => raise("invalid")
@@ -257,7 +257,7 @@ check "grading: aggregators":
   artist = {
     id: "artist",
     deps: [list: "guard"],
-    run: {(): {emit(artifact("/path/to/file")); "artifact info"}},
+    run: {(): {emit(artifact("/path/to/file", png)); "artifact info"}},
     to-aggregate: artifact-aggregator("artist", _),
     to-repl: lam(result :: GraderResult) -> Option<RanProgram>:
       none
@@ -287,7 +287,7 @@ check "grading: aggregators":
   grade([list: passing-guard-grader, artist]).aggregated
   is
   [list: agg-guard("guard", "Guard", guard-passed),
-         agg-artifact("artist", "Artifact", none, art-ok("/path/to/file", some("artifact info")))]
+         agg-artifact("artist", "Artifact", none, art-ok("/path/to/file", png))]
 
   grade([list: failing-guard-grader, artist]).aggregated
   is
