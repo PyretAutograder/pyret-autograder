@@ -20,7 +20,8 @@ import file("./well-formed.arr") as well-formed
 import file("./self-test.arr") as self-test
 import file("./functional.arr") as functional
 import file("./examplar.arr") as examplar
-import file("./fn-def-guard.arr") as fn-def
+import file("./fn-def.arr") as fn-def
+import file("./const-def.arr") as const-def
 import file("./test-diversity.arr") as test-diversity
 import file("./training-wheels.arr") as training-wheels
 import file("./image-artifact.arr") as image-artifact
@@ -33,6 +34,7 @@ provide from self-test: * end
 provide from functional: * end
 provide from examplar: * end
 provide from fn-def: * end
+provide from const-def: * end
 provide from test-diversity: * end
 provide from training-wheels: * end
 provide from image-artifact: * end

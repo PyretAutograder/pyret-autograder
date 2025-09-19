@@ -32,7 +32,7 @@ include from C:
 end
 
 provide:
-  mk-fn-def-guard,
+  mk-fn-def,
   data FnDefGuardBlock,
   check-fn-defined as _check-fn-defined,
   fmt-fn-def as _fmt-fn-def
@@ -107,7 +107,7 @@ fun fmt-fn-def(reason :: FnDefGuardBlock) -> GB.ComboAggregate:
   {student; staff}
 end
 
-fun mk-fn-def-guard(id :: Id, deps :: List<Id>, path :: String, fn-name :: String, arity :: Number):
+fun mk-fn-def(id :: Id, deps :: List<Id>, path :: String, fn-name :: String, arity :: Number):
   name = "Find function " + fn-name + " with " + num-to-string(arity) + " arguments"
   checker = lam(): check-fn-defined(path, fn-name, arity) end
   GB.mk-guard(id, deps, checker, name, fmt-fn-def)

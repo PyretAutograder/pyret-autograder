@@ -26,34 +26,46 @@ student-path = P.example("gcd.arr")
 chaff-path = P.example("gcd-grading/chaff.arr")
 wheat-path = P.example("gcd-grading/wheat.arr")
 functional-path = P.example("gcd-grading/functional.arr")
-draw-gcd = P.example("gcd-grading/draw-gcd.arr")
+draw-gcd = P.example("gcd-grading/gcd-img.arr")
 
 graders =
   [list:
+    mk-fn-def(
+      "gcd-defined",
+      [list: "wf"],
+      student-path, "gcd", 2
+    ),
     mk-self-test(
       "gcd-self-test",
-      [list: "wf"],
+      [list: "gcd-defined"],
       student-path, "gcd",
       1
     ),
+    mk-functional(
+      "gcd-reference-tests", [list: "gcd-defined"],
+      student-path, functional-path, "gcd-reference-tests",
+      1, some("gcd")
+    ),
+    mk-test-diversity(
+      "gcd-diversity",
+      [list: "gcd-defined"],
+      student-path, "gcd", 3, 2
+    ),
+    # FIXME: this currently fails because there's no program splicing
     mk-chaff(
       "gcd-chaff-1",
-      [list: "wf"],
+      [list: "gcd-defined", "gcd-diversity"],
       student-path, chaff-path, "gcd",
       1
     ),
     mk-wheat(
       "gcd-wheat-1",
-      [list: "wf"],
+      [list: "gcd-defined", "gcd-diversity"],
       student-path, wheat-path, "gcd",
       1
     ),
-    mk-functional(
-      "gcd-reference-tests", [list: "wf"],
-      student-path, functional-path, "gcd-reference-tests",
-      1, some("gcd")
-    ),
     mk-well-formed("wf", [list:], student-path),
+    mk-const-def("gcd-img-defined", [list: "wf"], student-path, "gcd-img"),
     mk-image-artifact("art", [list:], student-path, draw-gcd, "gcd.png", "GCD")
   ]
 

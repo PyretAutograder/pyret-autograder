@@ -45,3 +45,6 @@ end
 check:
   3 + 3 is 6
 end
+
+gcd-img = text(to-repr(gcd(8, 4)), 40, "blue")
+

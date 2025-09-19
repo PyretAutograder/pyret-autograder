@@ -18,29 +18,28 @@
 |#
 import file("../meta/path-utils.arr") as P
 import file("../../src/common/ast.arr") as CA
-include file("../../src/graders/fn-def-guard.arr")
+include file("../../src/graders/const-def.arr")
 
-check-fn-defined = _check-fn-defined
-fmt-fn-def = _fmt-fn-def
+check-fn-def = _check-const-def
+fmt-fn-def = _fmt-const-def
 
-check "fn-def: not present":
-  path = P.file("no-foo.arr")
-  check-fn-defined(path, "foo", 1) is some(fn-not-defined("foo", 1))
+check "const-def: not present":
+  path = P.file("no-bar.arr")
+  check-fn-def(path, "bar") is some(const-not-defined("bar"))
 end
 
-check "fn-def: wrong arity":
-  path = P.file("foo-two-args.arr")
-  check-fn-defined(path, "foo", 1) is some(wrong-arity("foo", 1, 2))
+check "const-def: s-bind":
+  path = P.file("bar.arr")
+  check-fn-def(path, "bar") is none
 end
 
-check "fn-def: correct":
-  path = P.file("foo-one-arg.arr")
-  check-fn-defined(path, "foo", 1) is none
+check "const-def: s-tuple-bind":
+  path = P.file("bar-tuple.arr")
+  check-fn-def(path, "bar") is none
 end
 
 check "fmt-fn-def: totality":
   fmt-fn-def(parser-error(CA.path-doesnt-exist("/invalid/file.arr"))) does-not-raise
-  fmt-fn-def(fn-not-defined("foo", 1)) does-not-raise
-  fmt-fn-def(wrong-arity("foo", 1, 2)) does-not-raise
+  fmt-fn-def(const-not-defined("foo")) does-not-raise
 end
 
