@@ -94,10 +94,10 @@ fun mk-wheat(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number
 ):
-  name = "Wheat for " + fun-name
+  name = "Your tests for " + fun-name + " against our correct implementation(s)"
   decider = _ == _
-  good-str = "none of your tests incorrectly failed."
-  bad-str = "at least one of your tests failed."
+  good-str = "all of your tests passed, as they should, since our implementation is correct."
+  bad-str = "at least one of your tests failed, which means your tests contain mistakes, since our implementation is correct."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
     "correct", good-str, bad-str
@@ -108,10 +108,10 @@ fun mk-chaff(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number
 ):
-  name = "Chaff for " + fun-name
+  name = "Your tests for " + fun-name + " against our incorrect implementation(s)"
   decider = _ <> _
-  good-str = "at least one of your tests caught our bad implementation."
-  bad-str = "none of your tests caught it."
+  good-str = "at least one of your tests successfully identified the mistake in our incorrect implementation."
+  bad-str = "all of your tests passed, which means they were not thorough enough to identify the mistake in our incorrect implementation."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
     "incorrect", good-str, bad-str
