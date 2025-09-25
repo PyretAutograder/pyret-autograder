@@ -56,7 +56,7 @@ fun fmt-examplar-test(
   general = output-markdown(cases(Either) info:
     | left(_) =>
       "Something went wrong while trying to run " + desc + ".\n\n" +
-      "Make sure that your function is defined and has tests using a `with` block." # TODO remove after we have guards
+      "Make sure that your function is defined and has tests using a `where` block." # TODO remove after we have guards
     | right(_) =>
       "Ran " + desc + "; " + ask:
         | score == 0 then: bad-str
