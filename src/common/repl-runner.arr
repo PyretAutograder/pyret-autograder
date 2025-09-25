@@ -165,6 +165,7 @@ fun run-with-alternate-checks(
       | left(err) => left(err)
       | right(extra-check) =>
         prog = add-to-program(without-checks, extra-check)
+        shadow prog = prog.visit(V.shadow-visitor)
         cases(Either) run(prog):
         | left(err) => left(ac-run-err(err))
         | right(res) => right(res)
