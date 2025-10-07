@@ -72,7 +72,7 @@ graders =
 # FIXME: nested modules not working
 # debugging.wait-for-debugger()
 
-result = inspect-grade(graders)
+result = inspect-grade(graders, true, false)
 
 check "aggregate-to-flat smoke":
   grading-helpers.aggregate-to-flat(result.aggregated) does-not-raise

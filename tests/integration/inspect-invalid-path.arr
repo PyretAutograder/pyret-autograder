@@ -27,5 +27,5 @@ graders =
     mk-well-formed("wf", [list:], student-path),
   ]
 
-inspect-grade(graders)
+inspect-grade(graders, true, false)
 

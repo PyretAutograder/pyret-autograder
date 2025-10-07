@@ -18,7 +18,7 @@
     "test": "npm run pyret-trove -- -p tests/main.arr",
     "integration:gcd": "npm run pyret-trove -- -p tests/integration/inspect-gcd.arr",
     "integration:fold": "npm run pyret-trove -- -p tests/integration/inspect-fold.arr",
-    "integration:tables": "npm run pyret-trove -- -p tests/integration/inspect-tables.arr",
+    "integration:tower": "npm run pyret-trove -- -p tests/integration/inspect-tower.arr",
     "clean": "rm -rf -- ./pyret"
   },
   "devDependencies": {

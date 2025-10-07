@@ -29,3 +29,6 @@ jobs:
 
       - name: fold integration test
         run: npm run integration:fold
+
+      - name: "'The Tower Of Terror' integration test"
+        run: npm run integration:tower

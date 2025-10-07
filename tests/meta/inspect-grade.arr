@@ -21,7 +21,7 @@ include file("./pp.arr")
 
 provide *
 
-fun inspect-grade(graders) block:
+fun inspect-grade(graders, show-student-logs, show-staff-logs) block:
   result = grade(graders)
 
   print("===================Aggregated===================\n")
@@ -31,11 +31,17 @@ fun inspect-grade(graders) block:
 
   {student-logs; staff-logs} = grading-helpers.summarize-execution-traces(result.trace)
 
-  print("==================Student Logs==================\n")
-  print(student-logs.content + "\n")
+  if show-student-logs block:
+    print("==================Student Logs==================\n")
+    print(student-logs.content + "\n")
+    nothing
+  else: nothing end
 
-  print("===================Staff Logs===================\n")
-  print(staff-logs.content + "\n")
+  if show-staff-logs block:
+    print("===================Staff Logs===================\n")
+    print(staff-logs.content + "\n")
+    nothing
+  else: nothing end
 
   result
 end
