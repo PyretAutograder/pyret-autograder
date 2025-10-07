@@ -44,7 +44,13 @@ fun make-fun-splicer(fun-to-splice):
 end
 
 shadow-visitor = A.default-map-visitor.{
-  method s-bind(self, l, _, name, ann): A.s-bind(l, true, name, ann) end
+  method s-bind(self, l, shadows, name, ann):
+    cases (A.Name) name:
+      # TODO: remove this check once `shadow _` is allowed
+      | s-underscore(_) => A.s-bind(l, shadows, name, ann)
+      | else => A.s-bind(l, true, name, ann)
+    end
+  end
 }
 
 fun make-fun-extractor(target-name) block:
