@@ -103,7 +103,7 @@ end
 
 fun fmt-training-wheels(reason :: TrainingWheelsBlock) -> GB.ComboAggregate:
   fun format-srcloc-list(l :: List<SL.Srcloc>) -> String:
-    l.map("- " + _.format()).join-str("\n")
+    l.map(lam(x): "- " + x.format(true) end).join-str("\n")
   end
   student = cases (TrainingWheelsBlock) reason:
   | parser-error(_) =>
