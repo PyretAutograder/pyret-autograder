@@ -29,6 +29,7 @@ include either
 provide:
   tmp-run-with-alternate-impl,
   tmp-run-with-alternate-checks,
+  tmp-fmt-runtime-err,
   tmp-fmt-ai-err,
   tmp-fmt-ac-err,
   tmp-extract-ai-ran-program,

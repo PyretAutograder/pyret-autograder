@@ -9,6 +9,7 @@ import file("../common/ast.arr") as CA
 import file("../common/markdown.arr") as MD
 import file("../common/visitors.arr") as V
 import file("../common/repl-runner.arr") as R
+import file("../common/tmp-poc.arr") as AAAA # TODO: proper implementation
 
 import ast as A
 import srcloc as SL
@@ -99,11 +100,10 @@ fun fmt-test-diversity(reason :: DiversityGuardBlock) -> GB.ComboAggregate:
   end ^ G.output-markdown
   staff = cases (DiversityGuardBlock) reason:
   | parser-error(_) => none
-  | fn-not-defined  => none
+  | fn-not-defined(_)  => none
   | run-error(err) =>
-    ("Got the following error when trying to run wrapped file:\n```\n"
-    + MD.escape-code-block(to-repr(err))
-    + "\n```")
+    ("Got the following error when trying to run wrapped file:\n"
+    + AAAA.tmp-fmt-runtime-err(err))
     ^ G.output-markdown
     ^ some
   | invalid-result(raw) =>
