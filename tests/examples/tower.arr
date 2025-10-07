@@ -79,7 +79,7 @@ end
 # -------------------------------- Exercise 3 -------------------------------- #
 
 fun first-floor(building :: Building) -> Option<Building%(is-story)>:
-  doc: "returns the first floow above ground if it exists"
+  doc: "returns the first floor above ground if it exists"
 
   cases(Building) building:
     | ground => none

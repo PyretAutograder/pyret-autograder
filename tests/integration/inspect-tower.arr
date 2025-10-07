@@ -84,17 +84,17 @@ fun build-graders(path :: String):
   + test-design-recipe-for({
       fn: "max-rooms", arity: 1,
       min-in: 4, min-out: 3,
-      wheats: 0, chaffs: 0
+      wheats: 2, chaffs: 3
     }, [list: "tw"], path)
   + test-design-recipe-for({
       fn: "first-floor", arity: 1,
-      min-in: 3, min-out: 2,
-      wheats: 0, chaffs: 0
+      min-in: 1, min-out: 1,
+      wheats: 2, chaffs: 4
     }, [list: "tw"], path)
   + test-design-recipe-for({
       fn: "is-unbalanced", arity: 1,
       min-in: 3, min-out: 2,
-      wheats: 0, chaffs: 0
+      wheats: 2, chaffs: 4
     }, [list: "tw"], path)
 end
 

@@ -1,5 +1,5 @@
 check "num-rooms: functionality":
-  1 is 1
+  num-rooms(ground) is 0
 end
 
 check "max-rooms: functionality":
