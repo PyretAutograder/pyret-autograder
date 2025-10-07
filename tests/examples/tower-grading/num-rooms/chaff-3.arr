@@ -4,7 +4,8 @@ fun num-rooms(building :: Building) -> Number:
     | story(_, above-rooms, _, below) =>
       cases(Building) below:
       | ground => above-rooms
-      | story(_, below-rooms, _ shadow below) =>
-        num-rooms(below-rooms, below)
+      | story(_, below-rooms, _, shadow below) =>
+        below-rooms + num-rooms(below)
+      end
   end
 end

@@ -34,7 +34,7 @@ fun mk-examplar(fn, num, dep, path, constr, typ):
       suff = num-to-string(i + 1)
       constr(
         fn + "-" + typ + "-" + suff, [list: dep], path, 
-        P.example("tower-grading/" + fn + "-" + typ + "-" + suff + ".arr"),
+        P.example("tower-grading/" + fn + "/" + typ + "-" + suff + ".arr"),
         fn, points
       )
     end, 
@@ -79,7 +79,7 @@ fun build-graders(path :: String):
   + test-design-recipe-for({
       fn: "num-rooms", arity: 1,
       min-in: 4, min-out: 3,
-      wheats: 2, chaffs: 2
+      wheats: 2, chaffs: 3
     }, [list: "tw"], path)
   + test-design-recipe-for({
       fn: "max-rooms", arity: 1,
@@ -102,5 +102,10 @@ graders = build-graders(P.example("tower.arr"))
 
 # FIXME: nested modules not working
 # debugging.wait-for-debugger()
-inspect-grade(graders, false, false)
+result = inspect-grade(graders, false, false)
+
+check "aggregate-to-flat smoke":
+  grading-helpers.aggregate-to-flat(result.aggregated) does-not-raise
+end
+
 
