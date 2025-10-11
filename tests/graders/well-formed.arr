@@ -25,29 +25,39 @@ import file("../meta/path-utils.arr") as P
 import filesystem as FS
 
 check-well-formed = _check-well-formed
+fmt-well-formed = _fmt-well-formed
 
 # TODO: test for file not existing
 
-check "well-formed: unparsable":
-  path = P.file("unparsable.arr")
+check "well-formed: path-doesnt-exist":
+  path = P.file("this/file-doesnt/exist/i/hope.arr")
+  check-well-formed(path) is some(path-doesnt-exist(path))
+end
 
-  # FIXME: how to make this relative to current file
-  check-well-formed(path)
-    is
-    some(cannot-parse(
-      {
-        exn: ERR.parse-error-eof(
-            S.srcloc(path, 3, 1, 13, 3, 1, 13)),
-        message: "There were 0 potential parses.\n" +
-          "Parse failed, next token is <end of file> at " + path + ", 3:1-3:1"
-      },
-      FS.read-file-string(path)
-    ))
+check "well-formed: path-isnt-file":
+  check-well-formed(P.file("dir")) is some(path-isnt-file(P.file("dir")))
+end
+
+expected-unparsable = 
+  let path = P.file("unparsable.arr"):
+  cannot-parse(
+    {
+      exn: ERR.parse-error-eof(
+          S.srcloc(path, 3, 1, 13, 3, 1, 13)),
+      message: "There were 0 potential parses.\n" +
+        "Parse failed, next token is <end of file> at " + path + ", 3:1-3:1"
+    },
+    FS.read-file-string(path)
+  )
+  end
+
+check "well-formed: cannot-parse":
+  check-well-formed(P.file("unparsable.arr")) is some(expected-unparsable)
 end
 
 check "well-formed: wf":
-  check-well-formed(P.file("not-wf.arr"))
-    satisfies
+  res = check-well-formed(P.file("not-wf.arr"))
+  res satisfies
     {(x): cases(Option) x:
       | some(shadow x) =>
         cases(WFBlock) x:
@@ -56,4 +66,14 @@ check "well-formed: wf":
         | else => false
         end
       | else => false end}
+  print(to-repr(fmt-well-formed(res.value)) + "\n")
+end
+
+check "fmt-well-formed: smoke":
+  fmt-well-formed(path-doesnt-exist(
+    P.file("this/file-doesnt/exist/i/hope.arr"))) does-not-raise
+  fmt-well-formed(path-doesnt-exist(
+    P.file("this-file-doesnt-exist-i-hope.arr"))) does-not-raise
+  fmt-well-formed(path-isnt-file(P.file("dir"))) does-not-raise
+  fmt-well-formed(expected-unparsable) does-not-raise
 end

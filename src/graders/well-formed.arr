@@ -42,7 +42,7 @@ data WFBlock:
   | path-doesnt-exist(path :: String)
   | path-isnt-file(path :: String)
   | cannot-parse(inner :: CA.InternalParseError, content :: String)
-  | not-wf(x :: Any)
+  | not-wf(problems :: List<CS.CompileError>)
 end
 
 fun check-well-formed(filepath :: String) -> Option<WFBlock>:
@@ -94,7 +94,7 @@ fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
       "sure you submit a file, not a directory."
     | cannot-parse(inner, content) =>
       src-available = lam(x):
-        false # would be nice to embed with src-available
+        false # TODO: would be nice to embed with src-available
       end
       exn = inner.exn
       msg = inner.message
@@ -104,7 +104,14 @@ fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
       RED.display-to-string(exn.render-fancy-reason(src-available), to-repr, empty) # TODO: escape
       + "\n\n" + msg + "\n```"
 
-    | not-wf(_) => "TODO: not wf"
+    | not-wf(problems) =>
+      suf = if problems.length() == 1: "" else: "s" end
+      "The submitted file has problems. Please make sure that your file can run. " +
+      "Pyret reported the following problem" + suf + " about your submitted file." +
+      "\n```" +
+      for map(problem from problems):
+        RED.display-to-string(problem.render-fancy-reason(), to-repr, empty)
+      end.join-str("\n\n--------------------\n")
   end ^ G.output-markdown
   staff = none
   {student; staff}
