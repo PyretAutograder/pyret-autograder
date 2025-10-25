@@ -1,0 +1,3 @@
+dist/
+# instead of jarr
+*.cjs
