@@ -1,0 +1,12 @@
+{
+  "include": ["bin/**/*.ts"],
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true
+  }
+}

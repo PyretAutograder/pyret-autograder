@@ -1,0 +1,13 @@
+diff --git a/src/web/arr/trove/dcic2024.arr b/src/web/arr/trove/dcic2024.arr
+index ca06af52..51511476 100644
+--- a/src/web/arr/trove/dcic2024.arr
++++ b/src/web/arr/trove/dcic2024.arr
+@@ -11,7 +11,7 @@ include from BASIC: *, type *, data * end
+ # table methods in Pyret. This is for use with the DCIC textbook.
+ 
+ include tables
+-include chart 
++include charts
+ import statistics as S 
+ # import lists as L
+ import sets as ST

@@ -1,0 +1,6 @@
+node_modules/
+.direnv/
+.pyret/
+
+build/_pyret-work
+# don't ignore generated...
