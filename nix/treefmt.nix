@@ -3,11 +3,11 @@
   projectRootFile = "flake.nix";
   settings.global.excludes = [
     "COPYING"
+    "COPYING.LESSER"
     ".envrc"
     "**/.gitignore"
   ];
   programs = {
-    deadnix.enable = true;
     nixfmt.enable = true;
     mdformat.enable = true;
     prettier.enable = true;

@@ -1,0 +1,28 @@
+packages:
+  - pkgs/*
+
+catalog:
+  pyret-lang: npm:@ironm00n/pyret-lang@0.0.5
+  pyret-npm: npm:@ironm00n/pyret-npm@0.0.3
+  '@types/node': ^24.1.0
+  '@swc/cli': ^0.7.8
+  '@swc/core': ^1.13.21
+  yaml: ^2.8.1
+
+catalogs:
+  # NOTE(owen): be very careful to keep these in sync with pyret-lang/package.json
+  # This can lead to some incredibly nasty bugs otherwise.
+  pyret-runtime:
+    ascii-table: ^0.0.9
+    canvas: ^3.1.0
+    cross-fetch: ^4.1.0
+    error-stack-parser: ^2.1.4
+    fast-csv: ^5.0.2
+    js-md5: ^0.8.3
+    js-sha256: ^0.5.0
+    q: ~1.0.1
+    resolve: ^1.22.10
+    s-expression: ~2.2.0
+    seedrandom: ~2.3.10
+    source-map: ^0.5.7
+    vega: ^6.1.2

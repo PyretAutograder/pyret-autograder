@@ -2,6 +2,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     systems.url = "github:nix-systems/default";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -9,39 +11,30 @@
       self,
       nixpkgs,
       systems,
+      treefmt-nix,
     }:
     let
       inherit (nixpkgs) lib legacyPackages;
       eachSystem = f: lib.genAttrs (import systems) (system: f legacyPackages.${system});
+      treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix);
     in
     {
-      packages = eachSystem (pkgs: {
-        default = pkgs.buildFHSEnv {
-          name = "pyret-fhs-env";
+      packages = eachSystem (pkgs: { });
 
-          targetPkgs =
-            pkgs: with pkgs; [
-              nodejs_24
-              git
-              gnumake
-              bash
-              curl
-              python3
-            ];
+      formatter = eachSystem (pkgs: treefmtEval.${pkgs.system}.config.build.wrapper);
 
-          runScript = "bash";
-        };
+      checks = eachSystem (pkgs: {
+
       });
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          packages =
-            with pkgs;
-            [
-              nodejs_24
-              gnumake
-            ]
-            ++ lib.optionals stdenv.isDarwin [ git ];
+          packages = with pkgs; [
+            git
+            pnpm
+            nodejs_24
+            gnumake
+          ];
           shellHook = ''
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.libuuid ]}:''$LD_LIBRARY_PATH"
           '';

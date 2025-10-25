@@ -1,0 +1,33 @@
+{
+  "name": "pyret-autograder-pawtograder",
+  "version": "0.0.1-pre.39",
+  "description": "Pyret autograding adaptor for Pawtograder.",
+  "author": "Owen Duckham <me@ironmoon.dev>",
+  "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PyretAutograder/pyret-autograder"
+  },
+  "type": "module",
+  "main": "dist/schema.js",
+  "types": "lib/schema.ts",
+  "scripts": {
+    "build": "swc lib -d dist",
+    "prepare": "pnpm run build",
+    "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr -o .pyret/main.cjs && node --test tests/schema.js",
+    "test:shim:build": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/scripts/shim.arr -o .pyret/shim.cjs --norun",
+    "test:shim": "node ./.pyret/shim.cjs"
+  },
+  "dependencies": {
+    "zod": "^4.0.5"
+  },
+  "peerDependencies": {
+    "pyret-autograder": "workspace:^"
+  },
+  "devDependencies": {
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "pyret-autograder": "workspace:^",
+    "yaml": "catalog:"
+  }
+}

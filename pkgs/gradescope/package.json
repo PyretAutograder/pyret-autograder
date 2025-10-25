@@ -1,0 +1,16 @@
+{
+  "name": "pyret-autograder-gradescope",
+  "version": "0.0.1-pre.1",
+  "description": "Gradescope adaptor for pyret autograder.",
+  "author": "Owen Duckham <me@ironmoon.dev>",
+  "license": "LGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PyretAutograder/pyret-autograder"
+  },
+  "main": "src/main.arr",
+  "dependencies": {
+    "pyret-lang": "catalog:",
+    "pyret-npm": "catalog:"
+  }
+}

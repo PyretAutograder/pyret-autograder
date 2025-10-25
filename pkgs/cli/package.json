@@ -1,0 +1,47 @@
+{
+  "name": "pyret-autograder-cli",
+  "version": "0.0.1-pre.23",
+  "description": "A cli tool to test and run Pyret autograders, using the same configuration expected by an adaptor.",
+  "author": "Owen Duckham <me@ironmoon.dev>",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PyretAutograder/pyret-autograder.git"
+  },
+  "bin": {
+    "pyret-autograder": "dist/index.js",
+    "pyret-autograder-cli": "dist/index.js"
+  },
+  "scripts": {
+    "build": "pnpm run build_typescript && npm run build_pawtograder",
+    "build_typescript": "swc bin -d dist",
+    "build_pawtograder": "pnpm run build_pawtograder:prepare && pnpm run build_pawtograder:pyret",
+    "build_pawtograder:prepare": "./scripts/prepare.sh",
+    "build_pawtograder:pyret": "./scripts/compile-pawtograder.sh",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "pyret-autograder": "workspace:^",
+    "pyret-autograder-pawtograder": "workspace:^",
+    "yaml": "catalog:",
+    "canvas": "catalog:pyret-runtime",
+    "cross-fetch": "catalog:pyret-runtime",
+    "fast-csv": "catalog:pyret-runtime",
+    "js-md5": "catalog:pyret-runtime",
+    "js-sha256": "catalog:pyret-runtime",
+    "q": "catalog:pyret-runtime",
+    "resolve": "catalog:pyret-runtime",
+    "s-expression": "catalog:pyret-runtime",
+    "seedrandom": "catalog:pyret-runtime",
+    "source-map": "catalog:pyret-runtime",
+    "vega": "catalog:pyret-runtime"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:"
+  }
+}
