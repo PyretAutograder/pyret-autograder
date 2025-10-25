@@ -11,7 +11,8 @@
       systems,
     }:
     let
-      eachSystem = f: nixpkgs.lib.genAttrs (import systems) (s: f (import nixpkgs { system = s; }));
+      inherit (nixpkgs) lib legacyPackages;
+      eachSystem = f: lib.genAttrs (import systems) (system: f legacyPackages.${system});
     in
     {
       packages = eachSystem (pkgs: {

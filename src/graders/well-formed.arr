@@ -73,7 +73,6 @@ fun list-files(path :: String) -> Option<List<String>>:
 end
 
 fun fmt-well-formed(reason :: WFBlock) -> GB.ComboAggregate:
-  # TODO: finish formatting
   student = cases (WFBlock) reason block:
     | path-doesnt-exist(path) =>
       "Cannot find a submission to grade; expected to find a file at " +

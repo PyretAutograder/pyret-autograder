@@ -1,57 +1,57 @@
-name: Publish
-
-on:
-  workflow_dispatch:
-    inputs:
-      type:
-        description: "Release type"
-        required: true
-        type: choice
-        default: prerelease
-        options: [prerelease, patch, minor, major]
-
-permissions:
-  contents: write
-  id-token: write
-
-concurrency:
-  group: release
-  cancel-in-progress: false
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Bump version
-        id: bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ "${{ github.event.inputs.type }}" = "prerelease" ]; then
-            npm version prerelease --preid=pre -m "release: %s"
-            # TODO: temporarily publishing prereleases as 'latest', change after 0.0.1
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          else
-            npm version "${{ github.event.inputs.type }}" -m "release: %s"
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Push changes
-        run: git push --follow-tags
-
-      - name: Install
-        run: npm ci
-
-      - name: Publish to npm
-        run: npm publish --access public --provenance --tag "${{ steps.bump.outputs.tag }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+# name: Publish
+#
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       type:
+#         description: "Release type"
+#         required: true
+#         type: choice
+#         default: prerelease
+#         options: [prerelease, patch, minor, major]
+#
+# permissions:
+#   contents: write
+#   id-token: write
+#
+# concurrency:
+#   group: release
+#   cancel-in-progress: false
+#
+# jobs:
+#   release:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v5
+#
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 24
+#           registry-url: 'https://registry.npmjs.org'
+#
+#       - name: Bump version
+#         id: bump
+#         run: |
+#           git config user.name "github-actions[bot]"
+#           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+#           if [ "${{ github.event.inputs.type }}" = "prerelease" ]; then
+#             npm version prerelease --preid=pre -m "release: %s"
+#             # TODO: temporarily publishing prereleases as 'latest', change after 0.0.1
+#             echo "tag=latest" >> $GITHUB_OUTPUT
+#           else
+#             npm version "${{ github.event.inputs.type }}" -m "release: %s"
+#             echo "tag=latest" >> $GITHUB_OUTPUT
+#           fi
+#
+#       - name: Push changes
+#         run: git push --follow-tags
+#
+#       - name: Install
+#         run: npm ci
+#
+#       - name: Publish to npm
+#         run: npm publish --access public --provenance --tag "${{ steps.bump.outputs.tag }}"
+#         env:
+#           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
