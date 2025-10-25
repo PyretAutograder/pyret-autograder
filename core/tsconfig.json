@@ -1,6 +1,6 @@
 {
   "include": ["src/**/*.js", "tests/**/*.js", "src/**/*.d.ts"],
-  "exclude": ["playground/**/*", ".pyret/**/*", "node_modules"],
+  "exclude": [".pyret/**/*", "node_modules"],
   "compilerOptions": {
     "strict": true,
     "allowJs": true,

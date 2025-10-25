@@ -2,9 +2,6 @@ node_modules/
 .pyret/
 .direnv/
 
-# random testing stuff
-/playground/
-
 *.jarr
 
 
