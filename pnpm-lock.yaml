@@ -137,6 +137,10 @@ importers:
 
   pkgs/gradescope:
     dependencies:
+      pyret-autograder:
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
       pyret-lang:
         specifier: 'catalog:'
         version: '@ironm00n/pyret-lang@0.0.5(bufferutil@4.0.9)(utf-8-validate@5.0.10)'

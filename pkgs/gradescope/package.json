@@ -9,8 +9,11 @@
     "url": "https://github.com/PyretAutograder/pyret-autograder"
   },
   "main": "src/main.arr",
-  "dependencies": {
+  "devDependencies": {
     "pyret-lang": "catalog:",
     "pyret-npm": "catalog:"
+  },
+  "peerDependencies": {
+    "pyret-autograder": "workspace:^"
   }
 }
