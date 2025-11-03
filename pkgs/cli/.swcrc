@@ -1,4 +1,4 @@
-
+{
   "$schema": "https://swc.rs/schema.json",
   "jsc": {
     "parser": {

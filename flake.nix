@@ -23,6 +23,23 @@
 
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.system}.config.build.wrapper);
 
+      apps = eachSystem (
+        pkgs:
+        let
+          packages = self.packages.${pkgs.system};
+        in
+        {
+          default = {
+            type = "app";
+            program = "${packages.cli}/bin/cli";
+          };
+          pawtograder-pyret = {
+            type = "app";
+            program = "${packages.pawtograder-exec}/bin/pyret-pawtograder";
+          };
+        }
+      );
+
       checks = eachSystem (pkgs: {
 
       });

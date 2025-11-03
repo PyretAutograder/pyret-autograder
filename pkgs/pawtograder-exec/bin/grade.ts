@@ -52,8 +52,14 @@ class ExecErr extends Error {
 
 async function fail(error: ExecErr) {
   const stream = createWriteStream("", { fd });
+  let serialized;
+  try {
+    serialized = JSON.stringify(error.serialize());
+  } catch {
+    serialized = JSON.stringify({ code: "OtherErr", error });
+  }
   await new Promise((done, reject) =>
-    stream.end(JSON.stringify(error.serialize()), () => done(undefined)),
+    stream.end(serialized, () => done(undefined)),
   );
 
   process.exit(1);
@@ -91,6 +97,7 @@ async function grade(
     throw new ExecErr("InvalidSubmissionDir");
   }
 
+  // TODO: handle missing pawtograder error
   const _config = await readFile(
     path.join(solution_dir, "pawtograder.yml"),
     "utf8",
@@ -123,7 +130,7 @@ async function grade(
     fd3.setEncoding("utf8");
     fd3.on("data", (chunk: string) => (output += chunk));
 
-    console.log("test")
+    console.log("test");
 
     child.on("close", (code) => {
       console.log("grader ended");
@@ -156,6 +163,6 @@ try {
   const serialized = JSON.stringify(await grade(solution_dir, submission_dir));
   await write(serialized);
 } catch (error: any) {
-  console.error(error)
+  console.error(error);
   await fail(error as ExecErr);
 }

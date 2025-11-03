@@ -3,6 +3,7 @@
   nodejs,
   pnpm,
   pyret-autograder-src,
+  lib,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -21,7 +22,7 @@ stdenv.mkDerivation (finalAttrs: {
       inherit (finalAttrs) src;
       fetcherVersion = 2;
       # hash = lib.fakeHash;
-      hash = "sha256-MkD1/VpdvcIhIv9XxG05IA6DLwUVqAkFzGpGzyT8YDE=";
+      hash = "sha256-0imd3gMgbWmaqW1DHa5Ne/x0eQhQMi+qo4pL9Jx+xpQ=";
     }).overrideAttrs
       (old: {
         # HACK: we really shouldn't be doing this! but its tricky to update the lockfile for the overrides

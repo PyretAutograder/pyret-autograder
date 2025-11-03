@@ -17,6 +17,7 @@ let
     pyret-autograder-prepared = callPackage ./pyret-autograder-prepared/default.nix { };
     pawtograder-exec = callPackage ./pawtograder-exec/default.nix { };
     scc = callPackage ./scc/default.nix { };
+    cli = callPackage ./cli/default.nix { };
   };
 in
 packages

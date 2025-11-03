@@ -6,8 +6,6 @@
   compiled-builtins,
   makeWrapper,
   callPackage,
-  nodejs,
-  pnpm,
   ...
 }:
 let
