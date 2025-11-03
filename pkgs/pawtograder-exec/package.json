@@ -1,0 +1,26 @@
+{
+  "name": "pyret-autograder-pawtograder-exec",
+  "version": "0.0.1-pre.0",
+  "description": "Machine-facing executor for running pyret-autograder for pawtograder.",
+  "author": "Owen Duckham <me@ironmoon.dev>",
+  "license": "LGPL-3.0-or-later",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PyretAutograder/pyret-autograder.git"
+  },
+  "//": "building is handled by nix",
+  "dependencies": {
+    "pyret-autograder": "workspace:^",
+    "pyret-autograder-pawtograder": "workspace:^",
+    "yaml": "catalog:"
+  },
+  "devDependencies": {
+    "@rspack/cli": "^1.6.0",
+    "@rspack/core": "^1.6.0",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "@types/node": "catalog:",
+    "pyret-npm": "catalog:"
+  }
+}

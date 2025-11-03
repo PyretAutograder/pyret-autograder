@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "pnpm run build_typescript && npm run build_pawtograder",
-    "build_typescript": "swc bin -d dist",
+    "build_typescript": "swc bin -d dist --strip-leading-paths",
     "build_pawtograder": "pnpm run build_pawtograder:prepare && pnpm run build_pawtograder:pyret",
     "build_pawtograder:prepare": "./scripts/prepare.sh",
     "build_pawtograder:pyret": "./scripts/compile-pawtograder.sh",

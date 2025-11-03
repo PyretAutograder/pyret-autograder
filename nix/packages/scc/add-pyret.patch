@@ -1,0 +1,56 @@
+diff --git a/languages.json b/languages.json
+index 614138f..39240bd 100644
+--- a/languages.json
++++ b/languages.json
+@@ -8345,5 +8345,18 @@
+         "start": "」」"
+       }
+     ]
++  },
++  "Pyret": {
++    "complexitychecks": [
++      "if ",
++      "for ",
++      "==",
++      "or",
++      "and"
++    ],
++    "extensions": ["arr"],
++    "line_comment": ["#"],
++    "multi_line": [],
++    "quotes": []
+   }
+ }
+diff --git a/processor/constants.go b/processor/constants.go
+index 29448c7..38cfa99 100644
+--- a/processor/constants.go
++++ b/processor/constants.go
+@@ -8966,6 +8966,28 @@ var languageDatabase = map[string]Language{
+ 		FileNames:       []string{},
+ 		SheBangs:        []string{},
+ 	},
++	"Pyret": {
++		LineComment: []string{
++			"#",
++		},
++		ComplexityChecks: []string{
++			"if ",
++			"for ",
++			"==",
++			"or",
++			"and",
++		},
++		Extensions: []string{
++			"arr",
++		},
++		ExtensionFile:   false,
++		MultiLine:       [][]string{},
++		Quotes:          []Quote{},
++		NestedMultiLine: false,
++		Keywords:        []string{},
++		FileNames:       []string{},
++		SheBangs:        []string{},
++	},
+ 	"Python": {
+ 		LineComment: []string{
+ 			"#",

@@ -12,7 +12,7 @@
   "main": "dist/schema.js",
   "types": "lib/schema.ts",
   "scripts": {
-    "build": "swc lib -d dist",
+    "build": "swc lib -d dist --strip-leading-paths",
     "prepare": "pnpm run build",
     "test": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/main.arr -o .pyret/main.cjs && node --test tests/schema.js",
     "test:shim:build": "pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/ -p tests/scripts/shim.arr -o .pyret/shim.cjs --norun",
@@ -22,12 +22,14 @@
     "zod": "^4.0.5"
   },
   "peerDependencies": {
-    "pyret-autograder": "workspace:^"
+    "pyret-autograder": "workspace:^",
+    "pyret-lang": "catalog:"
   },
   "devDependencies": {
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "pyret-autograder": "workspace:^",
+    "pyret-lang": "catalog:",
     "yaml": "catalog:"
   }
 }

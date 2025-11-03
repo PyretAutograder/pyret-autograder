@@ -1,0 +1,11 @@
+{
+  "include": ["bin/*.ts"],
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "module": "nodenext",
+    "target": "esnext",
+    "noEmit": true
+  }
+}

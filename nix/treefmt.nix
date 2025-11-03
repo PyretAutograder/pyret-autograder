@@ -9,13 +9,13 @@
   ];
   programs = {
     nixfmt.enable = true;
-    mdformat.enable = true;
-    prettier.enable = true;
+    # mdformat.enable = true;
+    # prettier.enable = true;
   };
   settings.formatter = {
-    prettier.options = [
-      "--config"
-      (toString ../.prettierrc.json)
-    ];
+    # prettier.options = [
+    #   "--config"
+    #   (toString ../.prettierrc.json)
+    # ];
   };
 }

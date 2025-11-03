@@ -1,0 +1,22 @@
+diff --git a/src/js/trove/charts-lib.js b/src/js/trove/charts-lib.js
+index 649d18c..d73fc23 100644
+--- a/src/js/trove/charts-lib.js
++++ b/src/js/trove/charts-lib.js
+@@ -3134,7 +3134,7 @@
+       return RUNTIME.pauseStack(restarter => {
+         try {
+           if (canvasLib && canvasLib.Canvas) {
+-            console.log(JSON.stringify(processed, (k, v) => (v && (IMAGE.isImage(v) || (v instanceof canvasLib.Canvas))) ? v.ariaText : v, 2));
++            console.log("[PATCH] Prevented spamming JSON")
+           }
+           const width = toFixnum(globalOptions['width']);
+           const height = toFixnum(globalOptions['height']);
+@@ -3246,7 +3246,7 @@
+         // Make a local, mutable copy of the Pyret ChartWindow value, so we can
+         // edit the xmin/xmax/ymin/ymax/#samples fields as needed
+         const globalOptions = pyretObjToObj(rawGlobalOptions);
+-        const isInteractive = isTrue(globalOptions['interact']);
++        const isInteractive = false;
+         if (isInteractive) {
+           if (RUNTIME.hasParam('chart-port')) {
+             return RUNTIME.safeCall(() => f(globalOptions, rawData), (chart) => {

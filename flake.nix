@@ -19,7 +19,7 @@
       treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix);
     in
     {
-      packages = eachSystem (pkgs: { });
+      packages = eachSystem (pkgs: import ./nix/packages/default.nix { inherit pkgs; });
 
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.system}.config.build.wrapper);
 
@@ -29,12 +29,15 @@
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          packages = with pkgs; [
-            git
-            pnpm
-            nodejs_24
-            gnumake
-          ];
+          packages =
+            (with pkgs; [
+              git
+              gnumake
+            ])
+            ++ (with self.packages.${pkgs.system}; [
+              nodejs
+              pnpm
+            ]);
           shellHook = ''
             export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath [ pkgs.libuuid ]}:''$LD_LIBRARY_PATH"
           '';

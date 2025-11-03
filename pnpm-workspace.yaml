@@ -2,11 +2,11 @@ packages:
   - pkgs/*
 
 catalog:
-  pyret-lang: npm:@ironm00n/pyret-lang@0.0.5
-  pyret-npm: npm:@ironm00n/pyret-npm@0.0.3
-  '@types/node': ^24.1.0
   '@swc/cli': ^0.7.8
   '@swc/core': ^1.13.21
+  '@types/node': ^24.1.0
+  pyret-lang: npm:@ironm00n/pyret-lang@0.0.5
+  pyret-npm: npm:@ironm00n/pyret-npm@0.0.3
   yaml: ^2.8.1
 
 catalogs:
@@ -26,3 +26,6 @@ catalogs:
     seedrandom: ~2.3.10
     source-map: ^0.5.7
     vega: ^6.1.2
+
+onlyBuiltDependencies:
+  - '@ironm00n/pyret-lang'
