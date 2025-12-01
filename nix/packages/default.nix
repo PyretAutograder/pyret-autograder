@@ -18,6 +18,7 @@ let
     pawtograder-exec = callPackage ./pawtograder-exec/default.nix { };
     scc = callPackage ./scc/default.nix { };
     cli = callPackage ./cli/default.nix { };
+    cli-docker = callPackage ./cli-docker/default.nix {};
   };
 in
 packages
