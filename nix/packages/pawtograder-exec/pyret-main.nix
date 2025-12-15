@@ -1,9 +1,8 @@
 {
   stdenv,
   lib,
-  pnpm,
   nodejs,
-  pyret-lang-src,
+  pyret-lang,
   pyret-autograder-prepared,
 }:
 
@@ -19,17 +18,20 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     nodejs
-    pnpm
   ];
 
   buildPhase = ''
     set -eu
     pushd pkgs/pawtograder-exec
-    pnpm exec pyret \
-      --builtin-js-dir ${pyret-lang-src}/src/js/trove/ \
-      --program src/main.arr \
+
+    node ${pyret-lang}/build/phaseA/pyret.jarr \
+      --builtin-js-dir ${pyret-lang}/src/js/trove/ \
+      --builtin-arr-dir ${pyret-lang}/src/arr/trove/ \
+      --standalone-file ${pyret-lang}/src/js/base/handalone.js \
+      --build-runnable src/main.arr \
       --outfile src/main.cjs \
-      --no-check-mode --norun
+      -no-check-mode
+
     popd
   '';
 

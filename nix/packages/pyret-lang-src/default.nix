@@ -24,4 +24,9 @@ stdenv.mkDerivation {
     mkdir -p $out
     cp -r . $out
   '';
+
+  passthru = {
+    # npmDepsHash = lib.fakeHash;
+    npmDepsHash = "sha256-fYR/67nbU9hZTX9K8Oc8IVNe0RylKwJQK7rNwvTMISE=";
+  };
 }

@@ -11,8 +11,7 @@ buildNpmPackageCanvas {
   src = pyret-lang-src;
   needsCanvas = true;
 
-  # npmDepsHash = lib.fakeHash;
-  npmDepsHash = "sha256-fYR/67nbU9hZTX9K8Oc8IVNe0RylKwJQK7rNwvTMISE=";
+  inherit (pyret-lang-src.passthru) npmDepsHash;
 
   buildPhase = ''
     runHook preBuild
