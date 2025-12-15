@@ -1,4 +1,11 @@
-{ stdenv, fetchFromGitHub }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  charts-patch ? true,
+  symlinks-patch ? true,
+  reset-load-path-patch ? false,
+}:
 
 stdenv.mkDerivation {
   name = "pyret-lang-src";
@@ -15,10 +22,17 @@ stdenv.mkDerivation {
     sha256 = "sha256-WFn+FYqqK+D5WeL742oqu+4fCMFYSE8CyPunYYWmpX8=";
   };
 
-  patches = [
-    ./charts.patch
-    ./preserve-symlinks.patch
-  ];
+  patches =
+    [ ]
+    ++ lib.optionals charts-patch [
+      ./charts.patch
+    ]
+    ++ lib.optionals symlinks-patch [
+      ./preserve-symlinks.patch
+    ]
+    ++ lib.optionals reset-load-path-patch [
+      ./file-reset-load-path-specifier.patch
+    ];
 
   installPhase = ''
     mkdir -p $out

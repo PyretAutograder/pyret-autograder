@@ -6,7 +6,6 @@
   compiled-builtins,
   makeWrapper,
   callPackage,
-  ...
 }:
 let
   pyret-main = callPackage ./pyret-main.nix { };

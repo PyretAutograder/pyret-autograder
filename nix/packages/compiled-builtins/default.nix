@@ -2,7 +2,6 @@
   buildNpmPackageCanvas,
   pyret-lang-src,
   cpo-src,
-  ...
 }:
 # at runtime, the repl needs to have access to pre-compiled built-in modules
 buildNpmPackageCanvas {

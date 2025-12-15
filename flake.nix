@@ -46,7 +46,7 @@
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          packages =
+          nativeBuildInputs =
             (with pkgs; [
               git
               gnumake
