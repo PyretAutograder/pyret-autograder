@@ -1,5 +1,7 @@
 import npm("pyret-autograder", "main.arr") as A
-import prepare-for-gradescope from file("./output.arr")
+import prepare-for-gradescope from gradescope-output
+
+import json as J
 
 provide:
   grade-specification

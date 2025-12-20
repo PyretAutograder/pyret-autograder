@@ -2,6 +2,10 @@
   dockerTools,
   gradescope-build,
   bash,
+  coreutils,
+  file,
+  nodejs-slim-stripped,
+  makeWrapper
 }:
 dockerTools.streamLayeredImage {
   name = "pyret-autograder-gradescope-build";
@@ -10,6 +14,10 @@ dockerTools.streamLayeredImage {
   contents = [
     gradescope-build
     bash
+    coreutils
+    file
+    nodejs-slim-stripped
+    makeWrapper
   ];
   config = {
   };

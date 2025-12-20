@@ -22,6 +22,9 @@ import string-dict as SD
 import ast as AST
 import npm("pyret-autograder", "main.arr") as A
 
+include option
+include lists
+
 include from A:
   module grading-helpers
 end

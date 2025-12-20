@@ -5,7 +5,8 @@
   jq,
   nodejs,
   nodejs-slim-stripped,
-  ...
+  keep-additional ? [ ],
+  npmDepsHash ? "sha256-fYR/67nbU9hZTX9K8Oc8IVNe0RylKwJQK7rNwvTMISE=",
 }:
 # TODO: should make this a pnpm workspace
 let
@@ -22,7 +23,8 @@ let
     "resolve"
     "vega"
     "ascii-table"
-  ];
+  ]
+  ++ keep-additional;
   keepJSON = builtins.toJSON keep;
   src = runCommand "pyret-runtime-deps-src" { nativeBuildInputs = [ jq ]; } ''
     set -euo pipefail
@@ -41,11 +43,9 @@ let
 in
 buildNpmPackageCanvas {
   name = "pyret-runtime-deps";
-  inherit src;
+  inherit src npmDepsHash;
   needsCanvas = true;
 
-  # npmDepsHash = lib.fakeHash;
-  npmDepsHash = "sha256-fYR/67nbU9hZTX9K8Oc8IVNe0RylKwJQK7rNwvTMISE=";
   npmPruneFlags = [ "--omit=dev" ];
 
   buildPhase = ''
