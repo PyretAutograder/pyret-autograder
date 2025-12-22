@@ -58,10 +58,10 @@ COPY --from=build /run_autograder /autograder/run_autograder
 
 spec.arr:
 ```arr
-use context autograder
+include autograder
 include graders
 
-provide spec
+provide: spec end
 
 spec = [spec:
 
@@ -69,3 +69,9 @@ spec = [spec:
 ]
 
 ```
+
+```
+printf "include autograder\nprovide: spec end\nspec = [list:]\n" > specification.arr
+gen_autograder.sh -d .
+```
+

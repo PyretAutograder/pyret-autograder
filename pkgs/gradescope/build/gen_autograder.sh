@@ -23,15 +23,15 @@ done
 RUNTIME_SUBMSSION_DIR="${RUNTIME_SUBMSSION_DIR:-/autograder/submission}"
 AUTOGRADER_OUT="${AUTOGRADER_OUT:-/run_autograder}"
 
-# NOTE: we are relying on the fact that the `file` module finder is relative to
-# `current-load-path` rather than the location of the file. This allows us to
-# import `file("./specification.arr")` in $AUTOGRADER_IN which will resolve to
-# $SPEC_DIR/specification.arr when run under `env -C`
+# NOTE: we are relying on our custom `file-reset-load-path module specifier which
+# lets us import files relative to the CWD rather than the location of the file.
+# This allows us to import `"./specification.arr"` in $AUTOGRADER_IN which will 
+# resolve to $SPEC_DIR/specification.arr when run under `env -C`
 env -C "$SPEC_DIR" \
   wrapped-pyret \
     --build-runnable "$AUTOGRADER_IN" \
     --outfile "$AUTOGRADER_OUT"
 
-
+# makeWrapper 
 
 # chmod +x /run_autograder
