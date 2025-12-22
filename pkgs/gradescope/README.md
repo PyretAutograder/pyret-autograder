@@ -49,7 +49,7 @@ Dockerfile:
 FROM pyretautograder/gradescope-build:0.0.1-pre.1 as build
 
 COPY spec.arr /spec.arr
-RUN gen_autograder /spec.arr # outputs /run_autograder, /compiled.js
+RUN gen_autograder -d /spec.arr -o ??? # outputs /run_autograder, /compiled.js
 
 FROM pyretautograder/gradescope-run:0.0.1-pre.1 as run
 COPY --from=build /compiled.js /autograder/compiled.js
@@ -58,7 +58,7 @@ COPY --from=build /run_autograder /autograder/run_autograder
 
 spec.arr:
 ```arr
-include autograder
+use context autograder-spec
 include graders
 
 provide: spec end
@@ -67,11 +67,10 @@ spec = [spec:
 
 
 ]
-
 ```
 
 ```
-printf "include autograder\nprovide: spec end\nspec = [list:]\n" > specification.arr
+printf "use context autograder-spec\nprovide: spec end\nspec = [list:]\n" > specification.arr
 gen_autograder.sh -d .
 ```
 

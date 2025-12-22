@@ -11,6 +11,7 @@
 
 import autograder as _
 import graders as _
+import autograder-spec as _
 
 # not intended to be used in spec:
 import gradescope-support as _
