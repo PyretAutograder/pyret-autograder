@@ -209,7 +209,7 @@ end
 fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
   flattened = grading-helpers.aggregate-to-flat(output.aggregated)
   {tests; score; max-score} = for fold(
-    {acc-tests; acc-score; acc-max-score} as acc from [list:],
+    {acc-tests; acc-score; acc-max-score} as acc from {[list:]; 0; 0},
     {id; flat} from flattened
   ):
     cases (grading-helpers.FlatAggregateResult) flat:
@@ -257,15 +257,15 @@ fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
   # We repeat the score here since Gradescope won't show a student's score when
   # there are hidden tests (which are used to display staff-only output).
   tl-output = "**Score**: " +
-    num-to-string-digits(score) + "/" + num-to-string-digits(max-score)
+    num-to-string-digits(score, 3) + "/" + num-to-string-digits(max-score, 3)
 
   gradescope-feedback(
-    none, none,
+    some(score),
+    none,
     some(tl-output),
     some(md),
     some(text),
     some(text),
-    tests,
     some(visible),
     some(visible),
     none,

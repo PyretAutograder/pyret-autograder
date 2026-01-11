@@ -37,7 +37,7 @@ fun mk-examplar(fn, num, dep, path, constr, typ):
         P.example("tower-grading/" + fn + "/" + typ + "-" + suff + ".arr"),
         fn, points
       )
-    end, 
+    end,
     num
   )
 end
