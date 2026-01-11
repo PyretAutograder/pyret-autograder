@@ -5,7 +5,7 @@
   coreutils,
   file,
   nodejs-slim-stripped,
-  makeWrapper,
+  runtime-make-wrapper
 }:
 dockerTools.streamLayeredImage {
   name = "pyret-autograder-gradescope-build";
@@ -17,7 +17,7 @@ dockerTools.streamLayeredImage {
     coreutils
     file
     nodejs-slim-stripped
-    makeWrapper
+    runtime-make-wrapper
   ];
   config = {
   };

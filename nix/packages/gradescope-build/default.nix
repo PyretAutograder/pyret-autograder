@@ -1,6 +1,8 @@
+# FIXME: we should be able to have seperate compilation without needing to copy all the sources!
+# TODO: talk to Ben and Joe to see if this is currently possible when using `npm` or `file` specifiers!
 {
   callPackage,
-  stdenv,
+  runCommand,
   lib,
   makeWrapper,
   pyret-lang,
@@ -27,88 +29,75 @@ let
     phaseAOnly = true;
   };
 in
-stdenv.mkDerivation {
-  name = "pyret-autograder-gradescope-build";
+runCommand "pyret-autograder-gradescope-build" { nativeBuildInputs = [ makeWrapper ]; } ''
+  set -eu
+  BIN=$out/bin
+  mkdir -p $BIN
+  SHARE=$out/share/pyret-autograder
+  mkdir -p $SHARE
 
-  dontUnpack = true;
-  nativeBuildInputs = [
-    makeWrapper
-  ];
-  installPhase = ''
-    runHook preInstall
+  cp -r --no-preserve=mode,ownership ${autograder-lib}/compiled/. $SHARE/autograder-lib
+  cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/lib-compiled/. $SHARE/pyret-lib
+  cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/js/. $SHARE/js
+  cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/bundled-node-deps.js $SHARE/
+  cp ${pyret-lang-patched}/build/phaseA/pyret.jarr $SHARE/pyret.jarr
+  cp ${pyret-lang-patched}/src/js/base/handalone.js $SHARE/handalone.js
+  cp ${pyret-lang-patched}/src/scripts/standalone-configA.json $SHARE/standalone-configA.json
+  cp ${pyret-lang-patched}/build/phaseA/config.json $SHARE/
+  # TODO: `main` isn't a great name for this...
+  cp ${pyret-autograder-src}/pkgs/gradescope/src/main.arr $SHARE/main.arr
 
-    set -eu
-    BIN=$out/bin
-    mkdir -p $BIN
-    SHARE=$out/share/pyret-autograder
-    mkdir -p $SHARE
+  # FIXME: we want to have somthing like this:
+  # makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
+  #   --add-flags "$SHARE/pyret.jarr" \
+  #   --add-flags "--require-config $SHARE/standalone-configA.json" \
+  #   --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
+  #   --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
+  #   --add-flags "--standalone-file $SHARE/handalone.js" \
+  #   --add-flags "-no-check-mode"
 
-    cp -r --no-preserve=mode,ownership ${autograder-lib}/compiled/. $SHARE/autograder-lib
-    cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/lib-compiled/. $SHARE/pyret-lib
-    cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/js/. $SHARE/js
-    cp -r --no-preserve=mode,ownership ${pyret-lang-lib-a}/build/phaseA/bundled-node-deps.js $SHARE/
-    cp ${pyret-lang-patched}/build/phaseA/pyret.jarr $SHARE/pyret.jarr
-    cp ${pyret-lang-patched}/src/js/base/handalone.js $SHARE/handalone.js
-    cp ${pyret-lang-patched}/src/scripts/standalone-configA.json $SHARE/standalone-configA.json
-    cp ${pyret-lang-patched}/build/phaseA/config.json $SHARE/
-    # TODO: `main` isn't a great name for this...
-    cp ${pyret-autograder-src}/pkgs/gradescope/src/main.arr $SHARE/main.arr
+  # TODO: we shouldn't have to ship pyret library node_modules
 
-
-
-    # FIXME: we want to have somthing like this:
-    # makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
-    #   --add-flags "$SHARE/pyret.jarr" \
-    #   --add-flags "--require-config $SHARE/standalone-configA.json" \
-    #   --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
-    #   --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
-    #   --add-flags "--standalone-file $SHARE/handalone.js" \
-    #   --add-flags "-no-check-mode"
-
-    # TODO: we shouldn't have to ship pyret library node_modules
-
-    NODE_MODULES=$out/node_modules
-    mkdir -p $NODE_MODULES
-    cp -r --no-preserve=mode,ownership ${buildtime-deps}/node_modules/. $NODE_MODULES
+  NODE_MODULES=$out/node_modules
+  mkdir -p $NODE_MODULES
+  cp -r --no-preserve=mode,ownership ${buildtime-deps}/node_modules/. $NODE_MODULES
 
 
-    find $SHARE/autograder-lib -type f -name '*.js' -print0 \
-      | xargs -0 grep -lF '/build/workspace-prepared/pkgs/core/' \
-      | xargs sed -i "s|/build/workspace-prepared/pkgs/core/|$NODE_MODULES/pyret-autograder/|g"
+  find $SHARE/autograder-lib -type f -name '*.js' -print0 \
+    | xargs -0 grep -lF '/build/workspace-prepared/pkgs/core/' \
+    | xargs sed -i "s|/build/workspace-prepared/pkgs/core/|$NODE_MODULES/pyret-autograder/|g"
 
-    # FIXME: see if we can inline npm resolution inside the compiled files.
-    # HACK: temporarily we will just copy the pyret source files into node_modules
-    mkdir -p $NODE_MODULES/pyret-autograder/
-    cp -r ${pyret-autograder-src}/pkgs/core/. $NODE_MODULES/pyret-autograder/
-    mkdir -p $NODE_MODULES/pyret-lang/
-    cp -r ${pyret-lang-src}/src/ $NODE_MODULES/pyret-lang/
-    cp ${pyret-lang-src}/package.json $NODE_MODULES/pyret-lang/
-    # HACK: file referenced by the package's `main` should exist
-    mkdir -p $NODE_MODULES/pyret-lang/build/phase0
-    touch $NODE_MODULES/pyret-lang/build/phase0/main-wrapper.js
+  # FIXME: see if we can inline npm resolution inside the compiled files.
+  # HACK: temporarily we will just copy the pyret source files into node_modules
+  mkdir -p $NODE_MODULES/pyret-autograder/
+  cp -r ${pyret-autograder-src}/pkgs/core/. $NODE_MODULES/pyret-autograder/
+  mkdir -p $NODE_MODULES/pyret-lang/
+  cp -r ${pyret-lang-src}/src/ $NODE_MODULES/pyret-lang/
+  cp ${pyret-lang-src}/package.json $NODE_MODULES/pyret-lang/
+  # HACK: file referenced by the package's `main` should exist
+  mkdir -p $NODE_MODULES/pyret-lang/build/phase0
+  touch $NODE_MODULES/pyret-lang/build/phase0/main-wrapper.js
 
-    # makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
-    #   --add-flags "$SHARE/pyret.jarr" \
-    #   --add-flags "--builtin-js-dir $NODE_MODULES/pyret-lang/src/js/trove/" \
-    #   --add-flags "--builtin-arr-dir $NODE_MODULES/pyret-lang/src/arr/trove/" \
-    #   --add-flags "--builtin-js-dir $NODE_MODULES/pyret-autograder/trove/js/" \
-    #   --add-flags "--builtin-arr-dir $NODE_MODULES/pyret-autograder/trove/arr/" \
-    #   --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
-    #   --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
-    #   --add-flags "--standalone-file $SHARE/handalone.js" \
-    #   --add-flags "-no-check-mode"
+  # makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
+  #   --add-flags "$SHARE/pyret.jarr" \
+  #   --add-flags "--builtin-js-dir $NODE_MODULES/pyret-lang/src/js/trove/" \
+  #   --add-flags "--builtin-arr-dir $NODE_MODULES/pyret-lang/src/arr/trove/" \
+  #   --add-flags "--builtin-js-dir $NODE_MODULES/pyret-autograder/trove/js/" \
+  #   --add-flags "--builtin-arr-dir $NODE_MODULES/pyret-autograder/trove/arr/" \
+  #   --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
+  #   --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
+  #   --add-flags "--standalone-file $SHARE/handalone.js" \
+  #   --add-flags "-no-check-mode"
 
+  makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
+    --add-flags "$SHARE/pyret.jarr" \
+    --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
+    --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
+    --add-flags "--standalone-file $SHARE/handalone.js" \
+    --add-flags "-no-check-mode"
 
-    makeWrapper ${lib.getExe nodejs-slim-stripped} $BIN/wrapped-pyret \
-      --add-flags "$SHARE/pyret.jarr" \
-      --add-flags "--compiled-read-only-dir $SHARE/pyret-lib" \
-      --add-flags "--compiled-read-only-dir $SHARE/autograder-lib" \
-      --add-flags "--standalone-file $SHARE/handalone.js" \
-      --add-flags "-no-check-mode"
-
-    makeWrapper ${gen-autograder}/bin/gen_autograder.sh $BIN/gen_autograder.sh \
-      --set-default AUTOGRADER_IN "$SHARE/main.arr"
-
-    runHook postInstall
-  '';
-}
+  # TODO: nice name for what is currently called `main.arr`
+  makeWrapper ${gen-autograder}/bin/gen_autograder.sh $BIN/gen_autograder \
+    --set-default AUTOGRADER_IN "$SHARE/main.arr" \
+    --set-default MAKE_WRAPPER ${makeWrapper}
+''

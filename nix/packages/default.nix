@@ -16,11 +16,12 @@ let
     pyret-autograder-src = callPackage ./pyret-autograder-src { };
     pyret-autograder-prepared = callPackage ./pyret-autograder-prepared { };
     pawtograder-exec = callPackage ./pawtograder-exec { };
-    # pawtograder-docker = callPackage ./pawtograder-docker {};
+    # pawtograder-docker = callPackage ./pawtograder-docker { };
     cli = callPackage ./cli { };
-    # gradescope-run = callPackage ./gradescope-run {};
     gradescope-build = callPackage ./gradescope-build { };
     gradescope-build-docker = callPackage ./gradescope-build-docker { };
+    gradescope-run-docker = callPackage ./gradescope-run-docker { };
+    runtime-make-wrapper = callPackage ./runtime-make-wrapper {};
 
     scc = callPackage ./scc { };
   };

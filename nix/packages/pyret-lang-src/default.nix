@@ -5,6 +5,7 @@
   charts-patch ? true,
   symlinks-patch ? true,
   reset-load-path-patch ? false,
+  fix-absolute-outfile-patch ? true,
 }:
 
 stdenv.mkDerivation {
@@ -32,6 +33,9 @@ stdenv.mkDerivation {
     ]
     ++ lib.optionals reset-load-path-patch [
       ./file-reset-load-path-specifier.patch
+    ]
+    ++ lib.optionals fix-absolute-outfile-patch [
+      ./outfile-absolute.patch
     ];
 
   installPhase = ''

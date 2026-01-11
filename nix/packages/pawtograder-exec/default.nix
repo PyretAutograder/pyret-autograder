@@ -1,4 +1,5 @@
 {
+  runCommand,
   stdenv,
   lib,
   nodejs-slim-stripped,
@@ -12,30 +13,18 @@ let
   ts-bundle = callPackage ./ts-bundle.nix { };
 in
 
-stdenv.mkDerivation (finalAttrs: {
-  name = "pyret-autograder-pawtograder-exec";
+runCommand "pyret-autograder-pawtograder-exec" { nativeBuildInputs = [ makeWrapper ]; } ''
+  set -eu
+  mkdir -p $out/bin
 
-  dontUnpack = true;
-  nativeBuildInputs = [
-    makeWrapper
-  ];
-  installPhase = ''
-    runHook preInstall
+  cp -r ${ts-bundle}/dist $out/dist
+  cp -r ${pyret-main}/main.cjs $out/main.cjs
+  cp -r ${runtime-deps}/node_modules $out/node_modules
+  ln -s ${compiled-builtins} $out/compiled
 
-    set -eu
-    mkdir -p $out/bin
-
-    cp -r ${ts-bundle}/dist $out/dist
-    cp -r ${pyret-main}/main.cjs $out/main.cjs
-    cp -r ${runtime-deps}/node_modules $out/node_modules
-    ln -s ${compiled-builtins} $out/compiled
-
-    makeWrapper ${lib.getExe nodejs-slim-stripped} $out/bin/pyret-pawtograder \
-      --add-flags "--enable-source-maps" \
-      --add-flags "$out/dist/main.js" \
-      --set PA_PYRET_LANG_COMPILED_PATH "$out/compiled/lib-compiled:$out/compiled/cpo-compiled" \
-      --set PYRET_MAIN_PATH "$out/main.cjs"
-
-    runHook postInstall
-  '';
-})
+  makeWrapper ${lib.getExe nodejs-slim-stripped} $out/bin/pyret-pawtograder \
+    --add-flags "--enable-source-maps" \
+    --add-flags "$out/dist/main.js" \
+    --set PA_PYRET_LANG_COMPILED_PATH "$out/compiled/lib-compiled:$out/compiled/cpo-compiled" \
+    --set PYRET_MAIN_PATH "$out/main.cjs"
+''
