@@ -2,6 +2,7 @@ use context autograder-spec
 provide: spec end
 
 include graders
+import lists as L
 
 fun safe-divide(a :: Number, b :: Number, default :: Number) -> Number:
   doc: "Divide the numbers if b != 0, otherwise return default"
@@ -14,7 +15,7 @@ end
 
 fun mk-examplar(fn, num, dep, path, constr, typ):
   points = safe-divide(2, num, 0)
-  lists.build-list(
+  L.build-list(
     lam(i):
       suff = num-to-string(i + 1)
       constr(
