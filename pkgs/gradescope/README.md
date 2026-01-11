@@ -46,14 +46,17 @@ A minimal autograder example with the following structure:
 Dockerfile:
 ```dockerfile
 # NOTE: gradescope-build and gradescope-run should be kept in sync
-FROM pyretautograder/gradescope-build:0.0.1-pre.1 as build
+ARG TAG=0.0.1-pre.1
 
-COPY spec.arr /spec.arr
-RUN gen_autograder -d /spec.arr -o ??? # outputs /run_autograder, /compiled.js
+FROM pyretautograder/gradescope-build:${TAG} AS build
 
-FROM pyretautograder/gradescope-run:0.0.1-pre.1 as run
-COPY --from=build /compiled.js /autograder/compiled.js
-COPY --from=build /run_autograder /autograder/run_autograder
+COPY spec.arr /in/spec.arr
+
+RUN gen_autograder -d /in -o /out
+
+FROM pyretautograder/gradescope-run:${TAG} AS run
+
+COPY --from=build /out/. /autograder
 ```
 
 spec.arr:
@@ -63,14 +66,25 @@ include graders
 
 provide: spec end
 
-spec = [spec:
+# TODO: use custom `spec` constructor
+spec = [list:
 
 
 ]
 ```
 
-```
-printf "use context autograder-spec\nprovide: spec end\nspec = [list:]\n" > specification.arr
-gen_autograder.sh -d .
+## Building
+
+From project root:
+```sh
+$(nix build .#gradescope-build-docker --no-link --print-out-paths) | docker load
+$(nix build .#gradescope-run-docker --no-link --print-out-paths) | docker load
 ```
 
+## Examples
+
+There are examples in the ./examples directory. Some of these have symlinks to outside of the docker root, you can run from the project's root directory.
+
+```sh
+
+```
