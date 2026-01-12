@@ -3,9 +3,9 @@ index 17d8385..88f155f 100644
 --- a/pnpm-workspace.yaml
 +++ b/pnpm-workspace.yaml
 @@ -29,3 +29,7 @@ catalogs:
- 
  onlyBuiltDependencies:
    - '@ironm00n/pyret-lang'
+   - 'canvas'
 +
 +overrides:
 +  pyret-npm: "file:@PYRET_NPM@"
