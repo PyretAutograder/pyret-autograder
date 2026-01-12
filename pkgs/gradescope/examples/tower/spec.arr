@@ -19,7 +19,7 @@ fun mk-examplar(fn, num, dep, path, constr, typ):
     lam(i):
       suff = num-to-string(i + 1)
       constr(
-        fn + "-" + typ + "-" + suff, [list: dep], path, 
+        fn + "-" + typ + "-" + suff, [list: dep], path,
         fn + "/" + typ + "-" + suff + ".arr",
         fn, points
       )
@@ -51,8 +51,8 @@ fun test-design-recipe-for(
     mk-self-test(fn + "-self-test", [list: fn + "-def"], path, fn, 1),
     mk-test-diversity(fn + "-diversity", [list: fn + "-def"], path, fn, opts.min-in, opts.min-out),
     mk-functional(
-      fn + "-functional", [list: fn + "-def"], path, 
-      "functionality.arr", fn + ": functionality", 
+      fn + "-functional", [list: fn + "-def"], path,
+      "functionality.arr", fn + ": functionality",
       4, some(fn))]
   + mk-wheats(fn, opts.wheats, fn + "-diversity", path)
   + mk-chaffs(fn, opts.chaffs, fn + "-diversity", path)
@@ -84,4 +84,4 @@ fun build-graders(path :: String):
     }, [list: "tw"], path)
 end
 
-spec = build-graders("assignment.arr")
+spec = build-graders("submission/assignment.arr")
