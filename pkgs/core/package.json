@@ -10,11 +10,11 @@
   },
   "main": "src/main.arr",
   "scripts": {
-    "pyret-trove": "npx pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/",
-    "test": "npm run pyret-trove -- -p tests/main.arr",
-    "integration:gcd": "npm run pyret-trove -- -p tests/integration/inspect-gcd.arr",
-    "integration:fold": "npm run pyret-trove -- -p tests/integration/inspect-fold.arr",
-    "integration:tower": "npm run pyret-trove -- -p tests/integration/inspect-tower.arr",
+    "pyret-trove": "pnpm exec pyret --builtin-js-dir node_modules/pyret-lang/src/js/trove/",
+    "test": "pnpm run pyret-trove -- -p tests/main.arr",
+    "integration:gcd": "pnpm run pyret-trove -- -p tests/integration/inspect-gcd.arr",
+    "integration:fold": "pnpm run pyret-trove -- -p tests/integration/inspect-fold.arr",
+    "integration:tower": "pnpm run pyret-trove -- -p tests/integration/inspect-tower.arr",
     "clean": "rm -rf -- ./pyret"
   },
   "dependencies": {

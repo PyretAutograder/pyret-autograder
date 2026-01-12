@@ -1,12 +1,14 @@
 { pkgs }:
 let
-  callPackage = pkgs.lib.callPackageWith (pkgs // packages);
-  packages = {
+  callPackage = pkgs.lib.callPackageWith (pkgs // fakePackages // packages);
+  fakePackages = {
     inherit callPackage;
+    buildNpmPackageCanvas = callPackage ./build-npm-package-canvas { };
+  };
+  packages = {
     nodejs = pkgs.nodejs_24;
     pnpm = pkgs.pnpm_10;
     nodejs-slim-stripped = callPackage ./nodejs-slim-stripped { };
-    buildNpmPackageCanvas = callPackage ./build-npm-package-canvas { };
     pyret-lang-src = callPackage ./pyret-lang-src { };
     pyret-lang = callPackage ./pyret-lang { };
     pyret-npm = callPackage ./pyret-npm { };

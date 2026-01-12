@@ -1,0 +1,68 @@
+name: Continuous Integration
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pnpm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: (core) Run unit tests
+        working-directory: pkgs/core
+        run: pnpm run test
+
+      - name: (core) GCD integration test
+        working-directory: pkgs/core
+        run: pnpm run integration:gcd
+
+      - name: (core) fold integration test
+        working-directory: pkgs/core
+        run: pnpm run integration:fold
+
+      - name: "(core) 'The Tower Of Terror' integration test"
+        working-directory: pkgs/core
+        run: pnpm run integration:tower
+
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Nix Build Cli
+        run: nix build .#cli
+
+      - name: Nix Build Pawtograder Exec
+        run: nix build .#pawtograder-exec
+
+      - name: Nix Build Gradescope Build Docker
+        run: nix build .#gradescope-build-docker
+
+      - name: Nix Build Gradescope Run Docker
+        run: nix build .#gradescope-run-docker
+
+      - name: Flake Check
+        run: nix flake check
