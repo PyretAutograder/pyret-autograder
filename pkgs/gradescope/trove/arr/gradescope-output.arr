@@ -214,6 +214,11 @@ fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
   ):
     cases (grading-helpers.FlatAggregateResult) flat:
       | flat-agg-test(name, max-score, score, go, so, part) =>
+        tags = cases (Option) part:
+          | some(shadow part) => [list: part]
+          | none => [list:]
+        end
+
         # NOTE(owen): since Gradescope doesn't support instructor only output,
         # we create additional hidden dummy tests to show this info.
         shadow acc-tests = cases (Option) so:
@@ -225,7 +230,7 @@ fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
               some("[Staff Only] " + name), none,
               none,
               some(sos), some(sof),
-              [list: part],
+              tags,
               some(hidden),
               none
             )
@@ -239,8 +244,8 @@ fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
           none, # TODO: consider if overriding status would be useful
           some(name), none,
           none,
-          some(gof), some(gos),
-          [list: part],
+          some(gos), some(gof),
+          tags,
           some(visible),
           none
         )

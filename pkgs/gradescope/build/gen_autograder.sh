@@ -44,8 +44,7 @@ RUNTIME_OUTPATH="${RUNTIME_OUTPATH:-/autograder}"
 env -C "$SPEC_DIR" \
   wrapped-pyret \
     --build-runnable "$AUTOGRADER_IN" \
-    --outfile "$OUT_DIR/autograder.jarr" \
-    -no-module-eval
+    --outfile "$OUT_DIR/autograder.jarr"
 
 echo "Compiled Standalone..."
 

@@ -10,9 +10,9 @@ TAG=example-assignment-tower
 
 docker build --tag $TAG -f ./pkgs/gradescope/examples/tower/Dockerfile .
 
-echo Successfully build $TAG
+echo Successfully built $TAG
 
-docker run -it --entrypoint /usr/bin/bash $TAG:latest -lc \
-  'cd /autograder; ./run_autograder; cat results/results.json'
+# docker run -it --entrypoint /usr/bin/bash $TAG:latest -lc \
+#   'cd /autograder; ./run_autograder; cat results/results.json'
 popd
 
