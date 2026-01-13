@@ -101,7 +101,7 @@ improving error reporting and overall robustness.
 In order to do this, the execution of tests are determined by using a DAG using
 dependencies.
 
-### Grading
+<!-- ### Grading
 
 Both ...
 
@@ -112,3 +112,4 @@ Both ...
 > - different tests should be able to be weighted differently, easily (for example very basic tests might be weighted less than a more involved one)
 >
 > We need to also ensure that this doesn't result in unreasonable performance penalties.
+ -->
