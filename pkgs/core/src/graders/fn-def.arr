@@ -94,7 +94,7 @@ fun fmt-fn-def(reason :: FnDefGuardBlock) -> GB.ComboAggregate:
       # should never see this case if depends on wf
       "Cannot find your function definition because we cannot parse your file."
     | fn-not-defined(name, arity) =>
-      "Cannot find a function definiton named " + MD.escape-inline-code(name) +
+      "Cannot find a function definition named " + MD.escape-inline-code(name) +
       ". We expect a function " + MD.escape-inline-code(name) + " taking " +
       num-to-string(arity) + " arguments. Perhaps you mistyped the function name."
     | wrong-arity(name, expected, actual) =>
