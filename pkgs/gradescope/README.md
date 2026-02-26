@@ -86,7 +86,11 @@ Once the assignment specification is complete, one should build the docker image
 > [!WARNING]
 > Reminder that it is advised that assignment images are private so students can't inspect them.
 >
-> Docker Hub allows one free private repository per account, which is all that is needed. Each assignment can then be its own tag in said repository.
+> Unfortunately, Gradescope only supports pulling images from Docker Hub. To use a private image,
+> you must grant Gradescope’s Docker Hub account, `gradescopeecs`, access as a collaborator on
+> the repository, > which requires a paid Docker Hub plan.
+
+# - Examplar tests grouping
 
 ```sh
 docker build -t username/repository:tag .
