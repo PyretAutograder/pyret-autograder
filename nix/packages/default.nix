@@ -23,7 +23,7 @@ let
     gradescope-build = callPackage ./gradescope-build { };
     gradescope-build-docker = callPackage ./gradescope-build-docker { };
     gradescope-run-docker = callPackage ./gradescope-run-docker { };
-    runtime-make-wrapper = callPackage ./runtime-make-wrapper {};
+    runtime-make-wrapper = callPackage ./runtime-make-wrapper { };
 
     scc = callPackage ./scc { };
   };

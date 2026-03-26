@@ -2,16 +2,10 @@
   stdenv,
   nodejs,
   pnpm,
+  buildNpmPackageCanvas,
   pyret-autograder-src,
   pyret-lang,
   pyret-npm,
-  gnumake,
-  pkg-config,
-  python3,
-  pixman,
-  cairo,
-  pango,
-  lib,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -22,17 +16,10 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     nodejs
     pnpm.configHook
-    # needed for canvas native build
-    gnumake
-    pkg-config
-    python3
-  ];
+  ]
+  ++ buildNpmPackageCanvas.canvasNativeBuildInputs;
 
-  buildInputs = [
-    pixman
-    cairo
-    pango
-  ];
+  buildInputs = buildNpmPackageCanvas.canvasBuildInputs;
 
   pnpmDeps = pnpm.fetchDeps {
     pname = finalAttrs.name;
