@@ -4,9 +4,12 @@ let
   fakePackages = {
     inherit callPackage;
     buildNpmPackageCanvas = callPackage ./build-npm-package-canvas { };
+    fetchPnpmDeps = pkgs.fetchPnpmDeps.override { inherit (packages) pnpm; };
+    inherit (pkgs) pnpmConfigHook;
   };
   packages = {
     nodejs = pkgs.nodejs_24;
+    nodejs-slim = pkgs.nodejs-slim_24;
     pnpm = pkgs.pnpm_10;
     nodejs-slim-stripped = callPackage ./nodejs-slim-stripped { };
     pyret-lang-src = callPackage ./pyret-lang-src { };

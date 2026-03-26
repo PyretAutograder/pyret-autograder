@@ -2,6 +2,8 @@
   stdenv,
   nodejs,
   pnpm,
+  pnpmConfigHook,
+  fetchPnpmDeps,
   buildNpmPackageCanvas,
   pyret-autograder-src,
   pyret-lang,
@@ -15,13 +17,14 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     nodejs
-    pnpm.configHook
+    pnpm
+    pnpmConfigHook
   ]
   ++ buildNpmPackageCanvas.canvasNativeBuildInputs;
 
   buildInputs = buildNpmPackageCanvas.canvasBuildInputs;
 
-  pnpmDeps = pnpm.fetchDeps {
+  pnpmDeps = fetchPnpmDeps {
     pname = finalAttrs.name;
     inherit (finalAttrs) src;
     fetcherVersion = 2;

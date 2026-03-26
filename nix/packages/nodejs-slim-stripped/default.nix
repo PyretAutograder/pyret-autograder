@@ -1,7 +1,7 @@
 {
   runCommand,
   removeReferencesTo,
-  nodejs,
+  nodejs-slim,
   icu,
   openssl,
   sqlite,
@@ -9,9 +9,6 @@
   libuv,
   ...
 }:
-let
-  node-js-slim = nodejs.override { enableNpm = false; };
-in
 runCommand "nodejs-slim-stripped"
   {
     nativeBuildInputs = [ removeReferencesTo ];
@@ -21,11 +18,11 @@ runCommand "nodejs-slim-stripped"
       description = "Node.js with dev references stripped";
     };
 
-    disallowedReferences = [ node-js-slim ];
+    disallowedReferences = [ nodejs-slim ];
   }
   ''
     mkdir -p $out/bin
-    cp ${node-js-slim}/bin/node $out/bin/node
+    cp ${nodejs-slim}/bin/node $out/bin/node
 
     remove-references-to -t ${icu.dev} $out/bin/node
     remove-references-to -t ${openssl.dev} $out/bin/node
@@ -33,5 +30,5 @@ runCommand "nodejs-slim-stripped"
     remove-references-to -t ${zlib.dev} $out/bin/node
     remove-references-to -t ${libuv.dev} $out/bin/node
 
-    remove-references-to -t ${node-js-slim} $out/bin/node
+    remove-references-to -t ${nodejs-slim} $out/bin/node
   ''
