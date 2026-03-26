@@ -1,5 +1,6 @@
 {
   lib,
+  stdenv,
   buildNpmPackage,
   nodejs-slim-stripped,
   gnumake,
@@ -8,14 +9,32 @@
   pixman,
   cairo,
   pango,
+  giflib,
+  libjpeg,
   nodejs,
   ...
 }:
 let
   providedNodejs = nodejs;
+
+  canvasNativeBuildInputs = [
+    gnumake
+    pkg-config
+    python3
+  ];
+  canvasBuildInputs = [
+    pixman
+    cairo
+    pango
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [
+    giflib
+    libjpeg
+  ];
 in
 lib.extendMkDerivation {
   constructDrv = buildNpmPackage;
+
   excludeDrvArgNames = [
     "needsCanvas"
   ];
@@ -32,18 +51,6 @@ lib.extendMkDerivation {
       dontStrip ? false, # buildNpmPackage enabled this by default
       ...
     }:
-    let
-      canvasNativeBuildInputs = [
-        gnumake
-        pkg-config
-        python3
-      ];
-      canvasBuildInputs = [
-        pixman
-        cairo
-        pango
-      ];
-    in
     {
       inherit
         nodejs
@@ -56,4 +63,7 @@ lib.extendMkDerivation {
       nativeBuildInputs = nativeBuildInputs ++ lib.optionals needsCanvas canvasNativeBuildInputs;
       buildInputs = buildInputs ++ lib.optionals needsCanvas canvasBuildInputs;
     };
+}
+// {
+  inherit canvasNativeBuildInputs canvasBuildInputs;
 }
