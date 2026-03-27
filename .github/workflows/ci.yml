@@ -41,6 +41,10 @@ jobs:
         working-directory: pkgs/core
         run: pnpm run integration:tower
 
+      - name: (core) imports integration test
+        working-directory: pkgs/core
+        run: pnpm run integration:imports
+
   nix:
     strategy:
       fail-fast: false
