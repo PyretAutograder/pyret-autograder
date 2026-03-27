@@ -25,6 +25,7 @@ import file("./const-def.arr") as const-def
 import file("./test-diversity.arr") as test-diversity
 import file("./training-wheels.arr") as training-wheels
 import file("./image-artifact.arr") as image-artifact
+import file("./imports.arr") as imports
 
 # NOTE: only provides the functions, everything else should be an
 # implementation detail and can be imported directly from the module
@@ -38,3 +39,4 @@ provide from const-def: * end
 provide from test-diversity: * end
 provide from training-wheels: * end
 provide from image-artifact: * end
+provide from imports: * end
