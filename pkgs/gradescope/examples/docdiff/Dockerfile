@@ -2,7 +2,7 @@
 # ARG PKG_PREFIX=pyret-autograder-gradescope
 ARG PKG_PREFIX=pyretautograder/gradescope
 ARG TAG=0.0.1-pre.1
-ARG BASE=./pkgs/gradescope/examples/tower
+ARG BASE=./pkgs/gradescope/examples/docdiff
 
 FROM ${PKG_PREFIX}-build:${TAG} AS build
 ARG BASE
