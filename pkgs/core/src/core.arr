@@ -69,8 +69,8 @@ data Outcome<BlockReason, RanResult, Error>:
   # reason: the reason for the block
   | block(reason :: BlockReason)
 
-  # an internal issue occured in a runner
-  # err: the error which occured
+  # an internal issue occurred in a runner
+  # err: the error which occurred
   | internal-error(err :: Error)
 end
 
