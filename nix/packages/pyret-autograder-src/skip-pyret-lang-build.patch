@@ -1,0 +1,8 @@
+--- a/pnpm-workspace.yaml
++++ b/pnpm-workspace.yaml
+@@ -28,5 +28,4 @@
+     vega: ^6.1.2
+
+ onlyBuiltDependencies:
+-  - '@ironm00n/pyret-lang'
+   - 'canvas'

@@ -4,9 +4,12 @@ let
   fakePackages = {
     inherit callPackage;
     buildNpmPackageCanvas = callPackage ./build-npm-package-canvas { };
+    fetchPnpmDeps = pkgs.fetchPnpmDeps.override { inherit (packages) pnpm; };
+    inherit (pkgs) pnpmConfigHook;
   };
   packages = {
     nodejs = pkgs.nodejs_24;
+    nodejs-slim = pkgs.nodejs-slim_24;
     pnpm = pkgs.pnpm_10;
     nodejs-slim-stripped = callPackage ./nodejs-slim-stripped { };
     pyret-lang-src = callPackage ./pyret-lang-src { };
@@ -23,7 +26,7 @@ let
     gradescope-build = callPackage ./gradescope-build { };
     gradescope-build-docker = callPackage ./gradescope-build-docker { };
     gradescope-run-docker = callPackage ./gradescope-run-docker { };
-    runtime-make-wrapper = callPackage ./runtime-make-wrapper {};
+    runtime-make-wrapper = callPackage ./runtime-make-wrapper { };
 
     scc = callPackage ./scc { };
   };
