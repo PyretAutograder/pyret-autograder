@@ -1,9 +1,11 @@
 import equality as Eq
 
 # Note: we already have implicit:
+#
 # import lists as lists
 # import sets as sets
-# This means you have to explicitly tack `lists.` and `sets.` in front of functions
+#
+# This means you have to explicitly prefix `lists.` and `sets.` in front of functions
 # from these modules
 
 data File:
@@ -34,7 +36,6 @@ data BookPair:
       end
     end
 end
-
 
 data Recommendation<A>:
   | recommendation(count :: Number, content :: List<A>)
