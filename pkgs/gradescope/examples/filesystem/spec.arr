@@ -20,7 +20,7 @@ fun build-graders(path :: String):
     mk-chaff("filesystem-chaff-2", empty, path, "filesystem/filesystem-chaff-can-find-doesnt-check-root.arr", "can-find", 1),
     mk-chaff("filesystem-chaff-3", empty, path, "filesystem/filesystem-chaff-du-dir-only-file-and-dir-size.arr", "du-dir", 1),
     mk-chaff("filesystem-chaff-4", empty, path, "filesystem/filesystem-chaff-fynd-dir-when-cannot-find.arr", "fynd", 1),
-    mk-chaff("filesystem-chaff-6", empty, path, "filesystem/filesystem-chaff-how-many-counts-dirs-and-files.arr", "how-many", 1),
+    mk-chaff("filesystem-chaff-5", empty, path, "filesystem/filesystem-chaff-how-many-counts-dirs-and-files.arr", "how-many", 1),
 
     ]
 end
