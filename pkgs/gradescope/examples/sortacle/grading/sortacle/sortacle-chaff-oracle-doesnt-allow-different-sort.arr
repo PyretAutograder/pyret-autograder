@@ -54,17 +54,19 @@ fun is-valid(input :: List<Person>, output :: List<Person>) -> Boolean:
   end
 end
 
-fun correct-sorter(people :: List<Person>) -> List<Person>:
-  doc: ```Consumes a list of people and produces a list of people
-       that are sorted by age in ascending order.```
-  lists.sort-by(people,
-    lam(p1 :: Person, p2 :: Person): p1.age < p2.age end,
-    lam(p1 :: Person, p2 :: Person): p1.age == p2.age end)
-end
 
 
 fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
   doc: "Checks whether sorter is a valid sorter."
+
+  fun correct-sorter(people :: List<Person>) -> List<Person>:
+    doc: ```Consumes a list of people and produces a list of people
+         that are sorted by age in ascending order.```
+    lists.sort-by(people,
+      lam(p1 :: Person, p2 :: Person): p1.age < p2.age end,
+      lam(p1 :: Person, p2 :: Person): p1.age == p2.age end)
+  end
+
   fun is-valid-bad(input :: List<Person>, output :: List<Person>) -> Boolean:
     doc: "Checks whether output is a valid sorting of input."
     output == correct-sorter(input)
