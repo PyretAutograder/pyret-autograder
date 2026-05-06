@@ -1,5 +1,4 @@
 provide: search end
-provide: search end
 
 include file("submission/assignment-support.arr")
 
