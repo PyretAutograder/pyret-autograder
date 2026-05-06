@@ -1,3 +1,5 @@
+provide: generate-input, is-valid, oracle end
+
 include file("submission/assignment-support.arr")
 
 

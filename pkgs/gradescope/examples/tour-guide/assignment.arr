@@ -1,3 +1,4 @@
+provide: dijkstra, campus-tour end
 
 include file("submission/assignment-support.arr")
 
