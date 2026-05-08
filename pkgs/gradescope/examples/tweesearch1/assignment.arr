@@ -281,6 +281,50 @@ fun search(
       _)
   end
 
+  # "Properly handles dirty data"
+  block:
+    fun dirtify(str :: String) -> String:
+      doc: ```Inserts non-alphanumeric+space characters into string.```
+      # Get list of characters
+      chars :: List<String> = string-explode(str)
+
+      # Make list of characters that should be filtered out
+      dirty-chars :: List<String> =
+        # non-keyboard characters
+        range(500, 600).map(string-from-code-point)
+        # keyboard characters that are to be filtered
+        + string-explode("~`!@#$%^&*()_+=-\\][{}|';:\"?><,./")
+
+      # Insert dirty-chars before string, between characters, and after string
+      new-chars :: List<String> = lists.shuffle(dirty-chars).drop(20) +
+      for fold(shadow chars from empty, char from chars):
+        link(char, lists.shuffle(dirty-chars).drop(10) + chars)
+      end
+
+      # Turn back into a string
+      new-chars.join-str("")
+    end
+
+    tweet-1 = tweet("1", dirtify("A B C D"))   # 4 / 6
+    tweet-2 = tweet("2", dirtify("B C D E"))   # 2 / 6
+    tweet-3 = tweet("3", dirtify("B B C C"))   # 4 / 8
+    tweet-4 = tweet("4", dirtify("C C D"))     # 2 / 6
+    tweet-5 = tweet("5", dirtify("D E F G H")) # 0 / 6
+    tweet-6 = tweet("6", dirtify("A A"))       # 4 / 6
+    search-tweet-t = tweet("search", dirtify("A A B C"))
+
+    sol = search(
+      search-tweet-t,
+      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
+      1 / 6)
+
+    sol satisfies oracle([list:
+        [list: tweet-1, tweet-6],
+        [list: tweet-3],
+        [list: tweet-2, tweet-4]],
+      _)
+  end
+
   # "Properly handles multi-character and no-character words"
   block:
     tweet-1 = tweet("1", "4lph4 B3t4  D3lt4")   # 4 / 6
