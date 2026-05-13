@@ -1,9 +1,10 @@
 
-provide: map-reduce end
+provide: map-reduce, anagram-map, anagram-reduce, recommend, popular-pairs end
 # END HEADER
 
 #| chaff (mheller6, Aug 31, 2020):
-    Runs map-reduce on each file separately then combines results. |#
+    Runs map-reduce on each file separately then combines results.
+    The bug in map-reduce cascades to all functions that call it. |#
 
 # CHAFF DIFFERENCE: processes each file in isolation, missing cross-file grouping.
 fun map-reduce<A, B, M, N, O>(
@@ -28,4 +29,28 @@ fun map-reduce<A, B, M, N, O>(
   for fold(acc from empty, file from input):
     acc + map-reduce-correct([list: file], mapper, reducer)
   end
+end
+
+fun anagram-map(input :: Tv-pair<String, String>) -> List<Tv-pair<String, String>>:
+  map({(word): tv(alphabetize(word), word)}, parse(input.value, " "))
+end
+
+fun anagram-reduce(input :: Tv-pair<String, List<String>>) -> Tv-pair<String, List<String>>:
+  tv(input.tag, lists.distinct(input.value))
+end
+
+fun recommend(title :: String, book-records :: List<Tv-pair<String, List<String>>>)
+  -> Tv-pair<Number, List<String>>:
+  fun rec-map(file :: Tv-pair<String, List<String>>) -> List<Tv-pair<String, Number>>:
+    books = file.value
+    contains-title = books.member(title)
+    books.map({(book): tv(book, if contains-title and (book <> title): 1 else: 0 end)})
+  end
+  result = max-by-val(map-reduce(book-records, rec-map, rec-reduce))
+  if result.tag > 0: result else: tv(0, empty) end
+end
+
+fun popular-pairs(book-records :: List<Tv-pair<String, List<String>>>)
+  -> Tv-pair<Number, List<BookPair>>:
+  max-by-val(map-reduce(book-records, popular-map, rec-reduce))
 end

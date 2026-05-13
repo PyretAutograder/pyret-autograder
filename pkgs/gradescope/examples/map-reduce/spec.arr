@@ -18,7 +18,11 @@ fun build-graders(path :: String):
     mk-wheat("map-reduce-wheat-2d", empty, path, "map-reduce/map-reduce-wheat-2.arr", "recommend", 1),
     mk-wheat("map-reduce-wheat-2e", empty, path, "map-reduce/map-reduce-wheat-2.arr", "popular-pairs", 1),
 
-    mk-chaff("map-reduce-chaff-1", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "map-reduce", 1),
+    mk-chaff("map-reduce-chaff-1a", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "map-reduce", 1),
+    mk-chaff("map-reduce-chaff-1b", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "anagram-map", 1),
+    mk-chaff("map-reduce-chaff-1c", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "anagram-reduce", 1),
+    mk-chaff("map-reduce-chaff-1d", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "recommend", 1),
+    mk-chaff("map-reduce-chaff-1e", empty, path, "map-reduce/map-reduce-chaff-each-file-separate.arr", "popular-pairs", 1),
     mk-chaff("map-reduce-chaff-2", empty, path, "map-reduce/map-reduce-chaff-nile-adds-all-books.arr", "recommend", 1),
     mk-chaff("map-reduce-chaff-3", empty, path, "map-reduce/map-reduce-chaff-nile-recommend-only-returns-one-book.arr", "recommend", 1),
     mk-chaff("map-reduce-chaff-4", empty, path, "map-reduce/map-reduce-chaff-with-duplicates.arr", "anagram-reduce", 1),
