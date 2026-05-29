@@ -140,14 +140,16 @@ fun make-program-prepender(expr):
 end
 
 # ---------------------------------------------------------------------------
-# merge-impl-stmts: merge alt-impl statements into student statements.
+# merge-impl-stmts: merge alt-impl (wheat/chaff) statements into student statements.
 #
-# For each top-level named definition in alt-impl:
-#   - If the name already exists in student → replace student's stmt with
-#     alt-impl's stmt (stripping any top-level shadow flag).
-#   - If the name is new → it is a helper; prepend it before student stmts.
-# Unnamed stmts (check blocks, bare expressions) are kept from student as-is;
-# unnamed stmts from alt-impl are ignored.
+# Result order:
+#   1. ALL alt-impl stmts (shadow-stripped) — nothing removed, helpers like
+#      gen-rand pass through untouched; alt-impl overrides student for same names.
+#   2. Student-only stmts — named stmts whose name does NOT appear in alt-impl,
+#      plus all unnamed stmts (standalone check blocks, bare expressions).
+#   3. Extracted where-blocks — for each student s-fun overridden by alt-impl
+#      that has a where: block, a standalone s-check node is appended here so
+#      that all helper functions are in scope when the tests execute.
 # ---------------------------------------------------------------------------
 
 fun bind-name(bind :: A.Bind) -> Option<String>:
@@ -234,7 +236,7 @@ fun merge-impl-stmts(
                     | some(loc) => loc
                     | none => check-body.l
                   end
-                  link(A.s-check(l, some(sname), check-body, true), acc)
+                  link(A.s-check(l, some(sname), check-body, false), acc)
                 | none => acc
               end
             | else => acc
