@@ -99,9 +99,6 @@ fun tmp-fmt-ai-err(err) -> String:
         "Cannot parse student's file:\n" + to-repr(err)
       | ai-cannot-parse-alt-impl(shadow err) =>
         "Cannot parse specified alt-implementation file:\n" + to-repr(err)
-      | ai-missing-replacement-fun(fun-name) =>
-        "Cannot find alternate implementation of `" + fun-name +
-        "` to use as a replacement."
       | ai-run-err(shadow err) => tmp-fmt-runtime-err(err)
     end
   end

@@ -228,9 +228,9 @@ fun merge-impl-stmts(
         if alt-impl-dict.has-key(n):
           alt-stmt = strip-top-level-shadow(alt-impl-dict.get-value(n))
           cases (A.Expr) stmt:
-            | s-fun(_, _, _, _, _, _, _, _, _, student-check, _) =>
+            | s-fun(_, _, _, _, _, _, _, _, student-check, _) =>
               cases (A.Expr) alt-stmt:
-                | s-fun(al, aname, aparams, aargs, aann, adoc, abody, ack-loc, _, _, ablocky) =>
+                | s-fun(al, aname, aparams, aargs, aann, adoc, abody, ack-loc, _, ablocky) =>
                   A.s-fun(al, aname, aparams, aargs, aann, adoc, abody, ack-loc, student-check, ablocky)
                 | else => alt-stmt
               end

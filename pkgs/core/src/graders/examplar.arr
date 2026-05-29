@@ -50,9 +50,10 @@ end
 
 fun fmt-examplar-test(
   score :: G.NormalizedNumber, info :: Info, fun-name :: String,
-  adjective :: String, good-str :: String, bad-str :: String
+  adjective :: String, good-str :: String, bad-str :: String,
+  filename :: String
 ):
-  desc = "your tests for `" + fun-name + "` against our " + adjective + " implementation"
+  desc = "your tests for `" + fun-name + "` against our " + adjective + " Implementation (" + filename + ")"
   general = output-markdown(cases(Either) info:
     | left(_) =>
       "Something went wrong while trying to run " + desc + ".\n\n" +
@@ -77,13 +78,14 @@ end
 fun mk-examplar(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number, name :: String, decider :: Decider,
-  adjective :: String, good-str :: String, bad-str :: String
+  adjective :: String, good-str :: String, bad-str :: String,
+  filename :: String
 ):
   scorer = lam():
     score-examplar(student-path, alt-impl-path, fun-name, decider)
   end
   calc = GB.simple-calculator
-  fmter = fmt-examplar-test(_, _, fun-name, adjective, good-str, bad-str)
+  fmter = fmt-examplar-test(_, _, fun-name, adjective, good-str, bad-str, filename)
   part = some(fun-name)
   get-rp = AAAA.tmp-extract-ai-ran-program(_, G.rp-staff)
   GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, part, get-rp)
@@ -94,13 +96,14 @@ fun mk-wheat(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number
 ):
-  name = "Your tests for " + fun-name + " against our correct implementation"
+  filename = string-split-all(alt-impl-path, "/").last()
+  name = "Your tests for " + fun-name + " against our correct Implementation (" + filename + ")"
   decider = _ == _
-  good-str = "all of your tests passed, as they should, since our implementation is correct."
-  bad-str = "at least one of your tests failed, which means your tests contain mistakes, since our implementation is correct."
+  good-str = "all of your tests passed, as they should, since our Implementation (" + filename + ") is correct."
+  bad-str = "at least one of your tests failed, which means your tests contain mistakes, since our Implementation (" + filename + ") is correct."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
-    "correct", good-str, bad-str
+    "correct", good-str, bad-str, filename
   )
 end
 
@@ -108,12 +111,13 @@ fun mk-chaff(
   id :: Id, deps :: List<Id>, student-path :: String, alt-impl-path :: String,
   fun-name :: String, points :: Number
 ):
-  name = "Your tests for " + fun-name + " against our incorrect implementation"
+  filename = string-split-all(alt-impl-path, "/").last()
+  name = "Your tests for " + fun-name + " against our incorrect Implementation (" + filename + ")"
   decider = _ <> _
-  good-str = "at least one of your tests successfully identified the mistake in our incorrect implementation."
-  bad-str = "all of your tests passed, which means they were not thorough enough to identify the mistake in our incorrect implementation."
+  good-str = "at least one of your tests successfully identified the mistake in our incorrect Implementation (" + filename + ")."
+  bad-str = "all of your tests passed, which means they were not thorough enough to identify the mistake in our incorrect Implementation (" + filename + ")."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
-    "incorrect", good-str, bad-str
+    "incorrect", good-str, bad-str, filename
   )
 end
