@@ -192,42 +192,35 @@ fun merge-impl-stmts(
   student-stmts :: List<A.Expr>,
   alt-impl-stmts :: List<A.Expr>
 ) -> List<A.Expr> block:
-  # Build dict: name -> stmt for all named top-level stmts in alt-impl
-  alt-impl-dict = SD.make-mutable-string-dict()
-  for each(stmt from alt-impl-stmts):
-    cases (Option) stmt-top-level-name(stmt):
-      | some(n) => alt-impl-dict.set(n, stmt)
-      | none => nothing
-    end
-  end
-
-  # Collect all names defined at the top level of the student's program
-  student-names = SD.make-mutable-string-dict()
+  # Build dict: name -> stmt for all named top-level stmts in student
+  # (used to transfer the student's where-check block to alt-impl funs)
+  student-dict = SD.make-mutable-string-dict()
   for each(stmt from student-stmts):
     cases (Option) stmt-top-level-name(stmt):
-      | some(n) => student-names.set(n, true)
+      | some(n) => student-dict.set(n, stmt)
       | none => nothing
     end
   end
 
-  # New stmts: named alt-impl stmts whose name does NOT appear in student,
-  # preserved in their original order from alt-impl.
-  new-stmts = for filter(stmt from alt-impl-stmts):
+  # Build set of names defined in alt-impl (to know what the student adds)
+  alt-impl-names = SD.make-mutable-string-dict()
+  for each(stmt from alt-impl-stmts):
     cases (Option) stmt-top-level-name(stmt):
-      | some(n) => not(student-names.has-key(n))
-      | none => false
+      | some(n) => alt-impl-names.set(n, true)
+      | none => nothing
     end
   end
 
-  # Merged student stmts: replace student stmts that have an alt-impl version.
-  # When both student and alt-impl define a fun with the same name, transfer the
-  # student's where-check block to the alt-impl's fun so student tests survive.
-  merged-stmts = for map(stmt from student-stmts):
-    cases (Option) stmt-top-level-name(stmt):
+  # Alt-impl stmts come first, in their original order.
+  # For each named stmt that also exists in student, transfer the student's
+  # where-check block so student tests run against the alt implementation.
+  alt-stmts = for map(stmt from alt-impl-stmts):
+    alt-stmt = strip-top-level-shadow(stmt)
+    cases (Option) stmt-top-level-name(alt-stmt):
       | some(n) =>
-        if alt-impl-dict.has-key(n):
-          alt-stmt = strip-top-level-shadow(alt-impl-dict.get-value(n))
-          cases (A.Expr) stmt:
+        if student-dict.has-key(n):
+          student-stmt = student-dict.get-value(n)
+          cases (A.Expr) student-stmt:
             | s-fun(_, _, _, _, _, _, _, _, student-check, _) =>
               cases (A.Expr) alt-stmt:
                 | s-fun(al, aname, aparams, aargs, aann, adoc, abody, ack-loc, _, ablocky) =>
@@ -237,11 +230,21 @@ fun merge-impl-stmts(
             | else => alt-stmt
           end
         else:
-          stmt
+          alt-stmt
         end
-      | none => stmt
+      | none => alt-stmt
     end
   end
 
-  new-stmts + merged-stmts
+  # Append student stmts not covered by alt-impl:
+  # - named stmts whose name does not appear in alt-impl
+  # - unnamed stmts (standalone check blocks, bare expressions)
+  student-only-stmts = for filter(stmt from student-stmts):
+    cases (Option) stmt-top-level-name(stmt):
+      | some(n) => not(alt-impl-names.has-key(n))
+      | none => true
+    end
+  end
+
+  alt-stmts + student-only-stmts
 end
