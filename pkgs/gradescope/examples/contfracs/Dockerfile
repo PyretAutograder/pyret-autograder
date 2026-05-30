@@ -1,4 +1,4 @@
-ARG PKG_PREFIX=pyretautograder/gradescope
+ARG PKG_PREFIX=pyret-autograder-gradescope
 ARG TAG=0.0.1-pre.1
 ARG BASE=./pkgs/gradescope/examples/contfracs
 
