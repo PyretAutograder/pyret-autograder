@@ -145,11 +145,11 @@ end
 # Result order:
 #   1. ALL alt-impl stmts (shadow-stripped) — nothing removed, helpers like
 #      gen-rand pass through untouched; alt-impl overrides student for same names.
+#      For each overriding s-fun: the student's where: block (if any) is attached
+#      to the alt-impl function so it runs in the function's scope (which allows
+#      rec/let bindings inside where:).
 #   2. Student-only stmts — named stmts whose name does NOT appear in alt-impl,
 #      plus all unnamed stmts (standalone check blocks, bare expressions).
-#   3. Extracted where-blocks — for each student s-fun overridden by alt-impl
-#      that has a where: block, a standalone s-check node is appended here so
-#      that all helper functions are in scope when the tests execute.
 # ---------------------------------------------------------------------------
 
 fun bind-name(bind :: A.Bind) -> Option<String>:
@@ -194,59 +194,68 @@ fun merge-impl-stmts(
   student-stmts :: List<A.Expr>,
   alt-impl-stmts :: List<A.Expr>
 ) -> List<A.Expr> block:
-  # Build set of names defined in alt-impl (to know what the student adds)
-  alt-impl-names = SD.make-mutable-string-dict()
-  for each(stmt from alt-impl-stmts):
+  # Collect names defined in the student program.
+  student-names = SD.make-mutable-string-dict()
+  for each(stmt from student-stmts):
     cases (Option) stmt-top-level-name(stmt):
-      | some(n) => alt-impl-names.set-now(n, true)
+      | some(n) => student-names.set-now(n, true)
       | none => nothing
     end
   end
 
-  # Alt-impl stmts come first, in their original order.
-  # We do NOT embed the student's _check here; it is extracted as a standalone
-  # check block below so that all helpers are in scope when the tests run.
-  alt-stmts = for map(stmt from alt-impl-stmts):
-    strip-top-level-shadow(stmt)
-  end
-
-  # Append student stmts not covered by alt-impl:
-  # - named stmts whose name does not appear in alt-impl
-  # - unnamed stmts (standalone check blocks, bare expressions)
-  student-only-stmts = for filter(stmt from student-stmts):
-    cases (Option) stmt-top-level-name(stmt):
-      | some(n) => not(alt-impl-names.has-key-now(n))
-      | none => true
+  # Build a map from alt-impl function name → stripped alt-impl s-fun (no check).
+  # This lets us look up the replacement body for each student s-fun.
+  alt-funs = SD.make-mutable-string-dict()
+  for each(stmt from alt-impl-stmts):
+    cases (A.Expr) strip-top-level-shadow(stmt):
+      | s-fun(l, name, params, args, ann, doc, body, _check-loc, _, blocky) =>
+        alt-funs.set-now(name, A.s-fun(l, name, params, args, ann, doc, body, _check-loc, none, blocky))
+      | else => nothing
     end
   end
 
-  # For each student s-fun replaced by alt-impl that has a where-block (_check),
-  # extract it as a standalone named check block appended at the very end.
-  # This ensures all helper functions (like is-repeating-partial-sequence) are
-  # in scope when the tests execute, regardless of letrec group boundaries.
-  extracted-checks = for fold(acc from empty, stmt from student-stmts):
+  # Alt-impl-only stmts: helpers in the wheat/chaff that are NOT defined in
+  # the student program (e.g. gen-rand in wheat-2).  Prepend them so they
+  # land in the SAME letrec group as the student's top-level functions.
+  alt-only-stmts = for filter(stmt from alt-impl-stmts):
     cases (Option) stmt-top-level-name(stmt):
-      | some(n) =>
-        if alt-impl-names.has-key-now(n):
-          cases (A.Expr) stmt:
-            | s-fun(_, sname, _, _, _, _, _, check-loc, student-check, _) =>
-              cases (Option) student-check:
-                | some(check-body) =>
-                  l = cases (Option) check-loc:
-                    | some(loc) => loc
-                    | none => check-body.l
-                  end
-                  link(A.s-check(l, some(sname), check-body, false), acc)
-                | none => acc
-              end
-            | else => acc
+      | some(n) => not(student-names.has-key-now(n))
+      | none => false
+    end
+  end
+  alt-only-processed = for map(stmt from alt-only-stmts):
+    cases (A.Expr) strip-top-level-shadow(stmt):
+      | s-fun(l, name, params, args, ann, doc, body, _check-loc, _, blocky) =>
+        A.s-fun(l, name, params, args, ann, doc, body, _check-loc, none, blocky)
+      | else => strip-top-level-shadow(stmt)
+    end
+  end
+
+  # Process student stmts in their ORIGINAL ORDER.
+  # - For each student s-fun that has an alt-impl version: replace the body
+  #   (and params/ann/blocky) with the alt-impl's, keeping the student's
+  #   location (sl) so check results are attributed to the student's file, and
+  #   keeping the student's where: block so tests run in the function's scope.
+  # - All other student stmts (s-let, s-rec, check blocks, etc.) pass through
+  #   unchanged.  This is critical: s-let bindings like cf-e or cf-phi-opt are
+  #   sequentially bound in their original positions, so where: blocks of
+  #   functions that come later (like fraction-stream) can reference them.
+  merged-stmts = for map(stmt from student-stmts):
+    cases (A.Expr) stmt:
+      | s-fun(sl, name, params, args, ann, doc, body, check-loc, student-check, blocky) =>
+        if alt-funs.has-key-now(name):
+          cases (A.Expr) alt-funs.get-value-now(name):
+            | s-fun(_, _, a-params, a-args, a-ann, a-doc, a-body, _, _, a-blocky) =>
+              A.s-fun(sl, name, a-params, a-args, a-ann, a-doc, a-body,
+                check-loc, student-check, a-blocky)
+            | else => stmt
           end
         else:
-          acc
+          stmt
         end
-      | none => acc
+      | else => stmt
     end
-  end.reverse()
+  end
 
-  alt-stmts + student-only-stmts + extracted-checks
+  alt-only-processed + merged-stmts
 end
