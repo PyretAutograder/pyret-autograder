@@ -64,7 +64,7 @@ runCommand "pyret-autograder-gradescope-build" { nativeBuildInputs = [ makeWrapp
 
   find $SHARE/autograder-lib -type f -name '*.js' -print0 \
     | xargs -0 grep -lE '.*/workspace-prepared/pkgs/core/' \
-    | xargs -r sed -i "s|.*/workspace-prepared/pkgs/core/|$NODE_MODULES/pyret-autograder/|g"
+    | xargs -r sed -i "s|[^\"]*workspace-prepared/pkgs/core/|$NODE_MODULES/pyret-autograder/|g"
 
   # FIXME: see if we can inline npm resolution inside the compiled files.
   # HACK: temporarily we will just copy the pyret source files into node_modules

@@ -2,5 +2,12 @@ node_modules/
 .pyret/
 .direnv/
 /result
+/nix-out/
+/out/
 
 *.jarr
+
+# Pyret build cache in example dirs
+pkgs/gradescope/examples/*/compiled/
+# editor/backup copies (filename.ext.YYYY-MM-DD-hh-mm-ss)
+*.20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9]
