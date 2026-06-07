@@ -68,11 +68,6 @@ RUN gen_autograder -d /in -o /out
 COPY ${BASE}/patch-jarr.js /patch-jarr.js
 RUN node /patch-jarr.js /out/autograder.jarr
 
-RUN mv /out/run_autograder /out/run_autograder_real && \
-    printf '#!/usr/bin/env bash\nexec /autograder/run_autograder_real "$@"\n' \
-      > /out/run_autograder && \
-    chmod +x /out/run_autograder
-
 FROM ${PKG_PREFIX}-run:${TAG} AS run
 ARG BASE
 
