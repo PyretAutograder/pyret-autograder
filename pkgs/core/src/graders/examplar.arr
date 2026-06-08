@@ -53,7 +53,7 @@ fun fmt-examplar-test(
   adjective :: String, good-str :: String, bad-str :: String,
   filename :: String
 ):
-  desc = "your tests for `" + fun-name + "` against our " + adjective + " Implementation (" + filename + ")"
+  desc = "your tests for `" + fun-name + "` against our " + adjective + " implementation (" + filename + ")"
   general = output-markdown(cases(Either) info:
     | left(_) =>
       "Something went wrong while trying to run " + desc + ".\n\n" +
