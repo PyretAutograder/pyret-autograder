@@ -1,4 +1,3 @@
-
 provide: search end
 # END HEADER
 # chaff (tdelvecc): 
@@ -9,6 +8,8 @@ provide: search end
 #    - Pyret built-in sort order.
 #   Search "CHAFF DIFFERENCE" for changed code.
 
+import list-to-set from sets
+import lists as lists
 
 ###############################
 ###### Utility Functions ######
@@ -52,8 +53,8 @@ fun compare(doc1 :: String, doc2 :: String) -> Number:
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
   
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
   
   fun make-vector(words :: List<String>) -> List<Number>:
@@ -97,7 +98,7 @@ fun search(
   # CHAFF DIFFERENCE: Raise an error when two tweets have same relevance,
   #                   but only if they both pass the threshold.
   relevances = output.map({(t): relevance(t, search-tweet)})
-  when relevances.length() <> sets.list-to-set(relevances).size():
+  when relevances.length() <> list-to-set(relevances).size():
     raise("Two tweets have the same threshold!")
   end
   

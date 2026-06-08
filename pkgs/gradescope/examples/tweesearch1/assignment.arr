@@ -1,7 +1,9 @@
 provide: search end
+# END HEADER
 
 include file("submission/assignment-support.arr")
 
+import list-to-set from sets
 
 ###############################
 ###### Utility Functions ######
@@ -10,14 +12,22 @@ include file("submission/assignment-support.arr")
 fun count<A>(item :: A, lis :: List<A>) -> Number:
   doc: ```Finds the frequency of item in lis.```
   lis.foldl({(ele, acc): if ele == item: acc + 1 else: acc end}, 0)
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+  #|
+where:
+  count("A", empty) is 0
+  count("A", [list: "A"]) is 1
+  count("A", [list: "B", "A", "C"]) is 1
+  count("A", [list: "B", "A", "C", "A", "A"]) is 3
+  count("A", [list: "B", "C", "D"]) is 0
+  |#
 end
 
+# Note that this is used here so that another wheat can
+# change the output order for ties.
 fun stable-sort-by<A>(
-    lis :: List<A>,
-    lt :: (A, A -> Boolean),
-    eq :: (A, A -> Boolean))
+    lis :: List<A>, 
+    lt :: (A, A -> Boolean), 
+    eq :: (A, A -> Boolean)) 
   -> List<A>:
   doc: ```Sorts stably... why doesn't Pyret do this?```
   cases (List) lis:
@@ -32,8 +42,6 @@ fun stable-sort-by<A>(
         .append(link(f, eq-list)
           .append(stable-sort-by(gt-list, lt, eq)))
   end
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
 end
 
 fun sort-by-key<A>(lis :: List<A>, key :: (A -> Number)) -> List<A>:
@@ -42,52 +50,62 @@ fun sort-by-key<A>(lis :: List<A>, key :: (A -> Number)) -> List<A>:
     lis,
     {(ele1, ele2): key(ele1) < key(ele2)},
     {(ele1, ele2): key(ele1) == key(ele2)})
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
 end
 
 ###############################
 ###### DocDiff Functions ######
 ###############################
 
+# Note that this is an adjusted version of docdiff! 
+# Uses String instead of List<String>, split on space.
+# And first strips all punctuation.
 fun compare(doc1 :: String, doc2 :: String) -> Number:
   doc: ```Compares two docs for similarity by word frequency.
        Splits words by space.```
-
+  
   # Convert to lower and filter so only alphanumeric+space
   alphanumspace = " abcdefghijklmnopqrstuvwxyz1234567890"
-
+  
   prep = lam(doc): string-explode(string-to-lower(doc)).filter(
     lam(x): string-contains(alphanumspace, x) end).join-str("") end
-
+  
   doc1-prepped = prep(doc1)
   doc2-prepped = prep(doc2)
-
+  
   # Split by space
   words1 :: List<String> = string-split-all(doc1-prepped, " ")
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
-
+  
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
-
+  
   fun make-vector(words :: List<String>) -> List<Number>:
     doc: ```Makes a frequency vector.```
     all-words.map(count(_, words))
   end
-
+  
   vector1 :: List<Number> = make-vector(words1)
   vector2 :: List<Number> = make-vector(words2)
-
+  
   fun dot(v1 :: List<Number>, v2 :: List<Number>) -> Number:
     doc: ```Finds the dot product of two vectors.```
     fold2({(acc, ele1, ele2): acc + (ele1 * ele2)}, 0, v1, v2)
   end
-
+  
   dot(vector1, vector2) / num-max(dot(vector1, vector1), dot(vector2, vector2))
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+  #|
+where:
+  compare("Hi", "Bye") is 0
+  compare("Hi", "Hi") is 1
+  compare("Hi Bye", "Bye Hi") is 1
+  compare("Hi Bye", "Bye Hello") is 0.5
+  compare("Hi Bye", "Hi") is 0.5
+  compare("Hi Hi Bye Bye Yo", "Hi Bye Me") is 4 / 9
+  compare("Hi Hi Hi", "Hi Hi Bye") is 6 / 9
+  compare("hi", "HI") is 1
+  |#
 end
 
 ###############################
@@ -97,8 +115,49 @@ end
 fun relevance(current-tweet :: Tweet, search-tweet :: Tweet) -> Number:
   doc: ```Relevance function for tweet search.```
   compare(current-tweet.content, search-tweet.content)
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+end
+
+# Test helper: checks a result respects relevance ordering while allowing
+# any order within a tie (equivalence) class.
+fun oracle(
+    format :: List<List<String>>, 
+    possibility :: List<String>)
+  -> Boolean:
+  doc: ```Checks if possibility is a valid solution based on format.
+       Each List in format is an equivalence class.```
+  # Check if no more format list left
+  cases (List) format:
+    | empty => is-empty(possibility)
+    | link(format-f, format-r) =>
+      # Check if no more possibility left
+      cases (List) possibility:
+        | empty => format.all(is-empty)
+        | link(poss-f, poss-r) =>
+          # Check if first element in format is empty
+          cases (List) format-f:
+            | empty => oracle(format-r, possibility)
+            | link(_, _) =>
+              format-f.member(poss-f)
+              and oracle(
+                link(format-f.remove(poss-f), format-r), 
+                poss-r)
+          end
+      end
+  end
+  #|
+where:
+  oracle([list: [list: "A", "B", "C"], [list: "D", "E", "F"]],
+    [list: "C", "B", "A", "E", "F", "D"]) is true
+  oracle([list: empty, empty, [list: "A", "B"], [list: "C"], empty],
+    [list: "B", "A", "C"]) is true
+  
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "B", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "B", "B", "C", "D"]) is false
+  |#
 end
 
 fun search(
@@ -108,264 +167,37 @@ fun search(
   -> List<Tweet>:
   doc: ```Finds the most relevant tweets. Returns any with a relevance
        of at least threshold, sorted from most to least relevant.```
-
-  # Sort and filter tweets by relevance
   sort-by-key(alot, relevance(_, search-tweet))
-    .reverse() # Descending instead of ascending
+    .reverse()
     .filter({(t): relevance(t, search-tweet) >= threshold})
-  where:
-  # "Basic test for functionality"
-  block:
-    tweet-1 = tweet("1", "A B C D")   # 4 / 6
-    tweet-2 = tweet("2", "B C D E")   # 2 / 6
-    tweet-3 = tweet("3", "B B C C")   # 4 / 8
-    tweet-4 = tweet("4", "C C D")     # 2 / 6
-    tweet-5 = tweet("5", "D E F G H") # 0 / 6
-    tweet-6 = tweet("6", "A A")       # 4 / 6
-    search-tweet-t = tweet("search", "A A B C")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
-
-  # "Empty list of tweets should return empty"
-  search(tweet("", "content"), empty, 0) is empty
-
-  # "Threshold of 1 should only include exact match on content"
-  block:
-    tweet-1 = tweet("1", "A")
-    tweet-2 = tweet("2", "B")
-    tweet-3 = tweet("3", "C")
-    search-tweet-t = tweet("search", "A")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3],
-      1)
-
-    sol is [list: tweet-1]
-  end
-
-  # "Threshold of 0 should include everything"
-  block:
-    tweet-1 = tweet("1", "A")
-    tweet-2 = tweet("2", "B")
-    tweet-3 = tweet("3", "C")
-    search-tweet-t = tweet("search", "A")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3],
-      0)
-
-    sol satisfies oracle([list:
-        [list: tweet-1],
-        [list: tweet-2, tweet-3]],
-      _)
-  end
-
-  # "All tweets are tied"
-  block:
-    tweet-1 = tweet("1", "A B C D")
-    tweet-2 = tweet("2", "B C D E")
-    tweet-3 = tweet("3", "C D E F")
-    tweet-4 = tweet("4", "D E F G")
-    tweet-5 = tweet("5", "E F G H")
-    tweet-6 = tweet("6", "F G H I")
-    search-tweet-t = tweet("search", "D H")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 5)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6]],
-      _)
-  end
-
-  # "All tweets 0 relevance"
-  block:
-    tweet-1 = tweet("1", "A B C D")
-    tweet-2 = tweet("2", "B C D E")
-    tweet-3 = tweet("3", "B B C C")
-    tweet-4 = tweet("4", "C C D")
-    tweet-5 = tweet("5", "D E F G H")
-    tweet-6 = tweet("6", "A A")
-    search-tweet-t = tweet("search", "I J K L M N")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      2 / 6)
-
-    sol is empty
-  end
-
-  # "Threshold should be inclusive"
-  block:
-    tweet-1 = tweet("1", "A B C D")   # 4 / 6
-    tweet-2 = tweet("2", "B C D E")   # 2 / 6
-    tweet-3 = tweet("3", "B B C C")   # 4 / 8
-    tweet-4 = tweet("4", "C C D")     # 2 / 6
-    tweet-5 = tweet("5", "D E F G H") # 0 / 6
-    tweet-6 = tweet("6", "A A")       # 4 / 6
-    search-tweet-t = tweet("search", "A A B C")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      2 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
-
-  # "Doesn't care about duplicates"
-  block:
-    tweet-1  = tweet("1",  "A B C D")   # 4 / 6
-    tweet-1a = tweet("1a", "A B C D")   # 4 / 6
-    tweet-1b = tweet("1b", "A B C D")   # 4 / 6
-    tweet-2  = tweet("2",  "B C D E")   # 2 / 6
-    tweet-2a = tweet("2a", "B C D E")   # 2 / 6
-    tweet-2b = tweet("2b", "B C D E")   # 2 / 6
-    tweet-3  = tweet("3",  "B B C C")   # 4 / 8
-    tweet-4  = tweet("4",  "C C D")     # 2 / 6
-    tweet-5  = tweet("5",  "D E F G H") # 0 / 6
-    tweet-6  = tweet("6",  "A A")       # 4 / 6
-    search-tweet-t = tweet("search", "A A B C")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-1a, tweet-1b, tweet-2, tweet-2a, tweet-2b,
-        tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-1a, tweet-1b, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-2a, tweet-2b, tweet-4]],
-      _)
-  end
-
-  # "DocDiff is case insensitive"
-  block:
-    tweet-1 = tweet("1", "A b C D")   # 4 / 6
-    tweet-2 = tweet("2", "B C D E")   # 2 / 6
-    tweet-3 = tweet("3", "B B C C")   # 4 / 8
-    tweet-4 = tweet("4", "C c D")     # 2 / 6
-    tweet-5 = tweet("5", "D E F G H") # 0 / 6
-    tweet-6 = tweet("6", "A a")       # 4 / 6
-    search-tweet-t = tweet("search", "a A B C")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
-
-  # "Properly handles dirty data"
-  block:
-    fun dirtify(str :: String) -> String:
-      doc: ```Inserts non-alphanumeric+space characters into string.```
-      # Get list of characters
-      chars :: List<String> = string-explode(str)
-
-      # Make list of characters that should be filtered out
-      dirty-chars :: List<String> =
-        # non-keyboard characters
-        range(500, 600).map(string-from-code-point)
-        # keyboard characters that are to be filtered
-        + string-explode("~`!@#$%^&*()_+=-\\][{}|';:\"?><,./")
-
-      # Insert dirty-chars before string, between characters, and after string
-      new-chars :: List<String> = lists.shuffle(dirty-chars).drop(20) +
-      for fold(shadow chars from empty, char from chars):
-        link(char, lists.shuffle(dirty-chars).drop(10) + chars)
-      end
-
-      # Turn back into a string
-      new-chars.join-str("")
-    end
-
-    tweet-1 = tweet("1", dirtify("A B C D"))   # 4 / 6
-    tweet-2 = tweet("2", dirtify("B C D E"))   # 2 / 6
-    tweet-3 = tweet("3", dirtify("B B C C"))   # 4 / 8
-    tweet-4 = tweet("4", dirtify("C C D"))     # 2 / 6
-    tweet-5 = tweet("5", dirtify("D E F G H")) # 0 / 6
-    tweet-6 = tweet("6", dirtify("A A"))       # 4 / 6
-    search-tweet-t = tweet("search", dirtify("A A B C"))
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
-
-  # "Properly handles multi-character and no-character words"
-  block:
-    tweet-1 = tweet("1", "4lph4 B3t4  D3lt4")   # 4 / 6
-    tweet-2 = tweet("2", "B3t4  D3lt4 3ps1l0n")  # 2 / 6
-    tweet-3 = tweet("3", "B3t4 B3t4  ")           # 4 / 8
-    tweet-4 = tweet("4", "  D3lt4")               # 2 / 6
-    tweet-5 = tweet("5", "D3lt4 3ps1l0n z3t4 3t4 Th3t4") # 0 / 6
-    tweet-6 = tweet("6", "4lph4 4lph4")           # 4 / 6
-    search-tweet-t = tweet("search", "4lph4 4lph4 B3t4 ")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
-
-  # "Does not remove numbers"
-  block:
-    tweet-1 = tweet("1", "A1 A2 A3 A4")    # 4 / 6
-    tweet-2 = tweet("2", "A2 A3 A4 A5")    # 2 / 6
-    tweet-3 = tweet("3", "A2 A2 A3 A3")    # 4 / 8
-    tweet-4 = tweet("4", "A3 A3 A4")       # 2 / 6
-    tweet-5 = tweet("5", "A4 A5 A6 A7 A8") # 0 / 6
-    tweet-6 = tweet("6", "A1 A1")          # 4 / 6
-    search-tweet-t = tweet("search", "A1 A1 A2 A3")
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-1, tweet-2, tweet-3, tweet-4, tweet-5, tweet-6],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-1, tweet-6],
-        [list: tweet-3],
-        [list: tweet-2, tweet-4]],
-      _)
-  end
+where:
+  st = tweet("search", "A")
+  # empty list of tweets -> empty
+  search(st, empty, 0) is empty
+  # threshold is inclusive: relevance exactly 1 with threshold 1 is kept
+  search(st, [list: tweet("1", "A")], 1) is [list: tweet("1", "A")]
+  # threshold is inclusive for a fractional threshold too: relevance 0.5 at
+  # threshold 0.5 is kept (catches an off-by-epsilon exclusive threshold)
+  search(st, [list: tweet("1", "A B")], 0.5) is [list: tweet("1", "A B")]
+  # case-insensitive: lowercase "a" still matches "A"
+  search(st, [list: tweet("1", "a")], 1) is [list: tweet("1", "a")]
+  # punctuation stripped: "A!" still matches "A"
+  search(st, [list: tweet("1", "A!")], 1) is [list: tweet("1", "A!")]
+  # unicode stripped: "Aé" still matches "A"
+  search(st, [list: tweet("1", "Aé")], 1) is [list: tweet("1", "Aé")]
+  # numbers are significant: "A 1" vs "A 2" -> relevance 1/2, below 0.9
+  search(tweet("search", "A 1"), [list: tweet("1", "A 2")], 0.9) is empty
+  # extra spaces are significant: "A B" vs "A  B" -> relevance 2/3, below 0.9
+  search(tweet("search", "A B"), [list: tweet("1", "A  B")], 0.9) is empty
+  # threshold filters out low relevance
+  search(tweet("search", "A B"),
+    [list: tweet("1", "A B"), tweet("2", "C")], 0.5)
+    is [list: tweet("1", "A B")]
+  # results are sorted from most to least relevant
+  search(tweet("search", "A B"),
+    [list: tweet("2", "A"), tweet("1", "A B")], 0)
+    is [list: tweet("1", "A B"), tweet("2", "A")]
+  # ties: both kept, any order within the tie class
+  search(st, [list: tweet("1", "A"), tweet("2", "A")], 1)
+    satisfies oracle([list: [list: tweet("1", "A"), tweet("2", "A")]], _)
 end

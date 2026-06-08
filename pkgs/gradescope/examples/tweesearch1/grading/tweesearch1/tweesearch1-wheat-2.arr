@@ -1,4 +1,3 @@
-
 provide: search end
 # END HEADER
 #| wheat (tdelvecc, Aug 31, 2020): 
@@ -8,6 +7,7 @@ provide: search end
     Seach "WHEAT DIFFERENCE" for changed code.
 |#
 
+import list-to-set from sets
 
 ###############################
 ###### Utility Functions ######
@@ -86,8 +86,8 @@ fun compare(doc1 :: String, doc2 :: String) -> Number block:
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
   
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
   
   fun make-vector(words :: List<String>) -> List<Number>:
@@ -146,3 +146,49 @@ fun search(
     .filter({(t): relevance(t, search-tweet) >= threshold})
 end
 
+###########################
+########## TESTS ##########
+###########################
+
+#|
+check ```Basic test for functionality```:
+  compare(
+    "Instead of taking the crate, say \"It's far too heavy to lift.\"",
+    "Instead of taking the crate, say \"It's far too heavy to lift.\"") is 1
+end
+
+check ```Empty list of tweets should return empty```:
+  search(tweet("", "content"), empty, 0) is empty
+end
+
+check ```Threshold of 1 should only include exact match on content```:
+  tweet-a = tweet("1", "A")
+  tweet-b = tweet("2", "B")
+  tweet-c = tweet("3", "C")
+  search-tweet = tweet("", "A")
+  
+  sol = search(
+    search-tweet, 
+    [list: tweet-a, tweet-b, tweet-c],
+    1)
+
+  sol is [list: tweet-a]
+end
+
+check ```Threshold of 0 should include everything```:
+  tweet-a = tweet("1", "A")
+  tweet-b = tweet("2", "B")
+  tweet-c = tweet("3", "C")
+  search-tweet = tweet("", "A")
+  
+  sol = search(
+    search-tweet, 
+    [list: tweet-a, tweet-b, tweet-c],
+    0)
+  
+  sol.first is tweet-a
+  sol.member(tweet-b) is true
+  sol.member(tweet-c) is true
+  sol.length() is 3
+end
+|#
