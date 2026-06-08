@@ -1,4 +1,3 @@
-
 provide: is-valid, oracle end
 # END HEADER
 #| chaff (tdelvecc, Sep 7, 2020)
@@ -7,8 +6,10 @@ provide: is-valid, oracle end
 |#
 # Updated 2022 by srajesh1 to remove generate-input
 
-# shadow set = sets.set
-# type Set<T> = sets.Set<T>
+import lists as lists
+import sets as sets
+shadow set = sets.set
+type Set<T> = sets.Set<T>
 
 fun index-of<A>(lst :: List<A>, ele :: A) -> Number:
   doc: "Finds the index of ele in lst, or raises error if not present."
@@ -74,6 +75,55 @@ fun is-valid(
   end
 end
 
+fun is-valid-bad(
+    companies :: List<List<Number>>,
+    candidates :: List<List<Number>>,
+    hires :: Set<Hire>)
+  -> Boolean block:
+  doc: ```Consumes a preference list for each company and candidate
+       and a set of Hire's, and produces whether the proposed
+       set of Hire's is a valid solution.```
+  
+  problem-size = companies.length()
+  expected = lists.repeat(problem-size, range(0, problem-size))
+  when (companies.map(lists.sort) <> expected) or (candidates.map(lists.sort) <> expected):
+    raise("Invalid input.")
+  end
+  
+  fun is-stable(hire1 :: Hire, hire2 :: Hire) -> Boolean:
+    doc: ```Consumes two Hires and produces whether
+       the company of hire1 and the candidate of
+       hire2 do not both prefer each other over
+       their current pairing.```
+    company1-preferences = companies.get(hire1.company)
+    candidate2-preferences = candidates.get(hire2.candidate)
+    
+    # No need to check when same Hire passed in for both
+    (hire1 == hire2) or
+    # Check if company1 prefers candidate1 over candidate2
+    (index-of(company1-preferences, hire1.candidate) < 
+      index-of(company1-preferences, hire2.candidate)) or
+    # Check if company2 prefers candidate2 over candidate1
+    (index-of(candidate2-preferences, hire2.company) <
+      index-of(candidate2-preferences, hire1.company))
+
+  end
+  
+  num-hires = hires.size()
+  hire-list = hires.to-list()
+  
+  (hire-list.map(_.company).sort() == range(0, num-hires)) and
+  (hire-list.map(_.candidate).sort() == range(0, num-hires)) and
+  # CHAFF DIFFERENCE
+  # Check number of pairs is correct
+  # (num-hires == problem-size) and
+  # Check every pair of hires is stable
+  for lists.all(hire1 from hire-list):
+    for lists.all(hire2 from hire-list):
+      is-stable(hire1, hire2)
+    end
+  end
+end
 
 fun oracle(a-matchmaker :: (List<List<Number>>, List<List<Number>> 
       -> Set<Hire>))
@@ -81,57 +131,6 @@ fun oracle(a-matchmaker :: (List<List<Number>>, List<List<Number>>
   doc: ```Consumes a purported matchmaking algorithm and
        produces whether it produces the correct output for
        every test case provided.```
-
-  fun is-valid-bad(
-      companies :: List<List<Number>>,
-      candidates :: List<List<Number>>,
-      hires :: Set<Hire>)
-    -> Boolean block:
-    doc: ```Consumes a preference list for each company and candidate
-         and a set of Hire's, and produces whether the proposed
-         set of Hire's is a valid solution.```
-    
-    problem-size = companies.length()
-    expected = lists.repeat(problem-size, range(0, problem-size))
-    when (companies.map(lists.sort) <> expected) or (candidates.map(lists.sort) <> expected):
-      raise("Invalid input.")
-    end
-    
-    fun is-stable(hire1 :: Hire, hire2 :: Hire) -> Boolean:
-      doc: ```Consumes two Hires and produces whether
-         the company of hire1 and the candidate of
-         hire2 do not both prefer each other over
-         their current pairing.```
-      company1-preferences = companies.get(hire1.company)
-      candidate2-preferences = candidates.get(hire2.candidate)
-      
-      # No need to check when same Hire passed in for both
-      (hire1 == hire2) or
-      # Check if company1 prefers candidate1 over candidate2
-      (index-of(company1-preferences, hire1.candidate) < 
-        index-of(company1-preferences, hire2.candidate)) or
-      # Check if company2 prefers candidate2 over candidate1
-      (index-of(candidate2-preferences, hire2.company) <
-        index-of(candidate2-preferences, hire1.company))
-
-    end
-    
-    num-hires = hires.size()
-    hire-list = hires.to-list()
-    
-    (hire-list.map(_.company).sort() == range(0, num-hires)) and
-    (hire-list.map(_.candidate).sort() == range(0, num-hires)) and
-    # CHAFF DIFFERENCE
-    # Check number of pairs is correct
-    # (num-hires == problem-size) and
-    # Check every pair of hires is stable
-    for lists.all(hire1 from hire-list):
-      for lists.all(hire2 from hire-list):
-        is-stable(hire1, hire2)
-      end
-    end
-  end
-
   # For size two case
   s0 = [list: 0, 1]
   s1 = [list: 1, 0]

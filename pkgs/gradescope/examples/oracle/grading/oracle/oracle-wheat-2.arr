@@ -1,4 +1,3 @@
-
 provide: is-valid, oracle end
 # END HEADER
 #| wheat (tdelvecc, Sep 7, 2020)
@@ -8,9 +7,10 @@ provide: is-valid, oracle end
 |#
 # Updated 2022 by srajesh1 to remove generate-input
 
-# shadow set = sets.set
-# type Set<T> = sets.Set<T>
-
+import lists as lists
+import sets as sets
+shadow set = sets.set
+type Set<T> = sets.Set<T>
 
 fun index-of<A>(lst :: List<A>, ele :: A) -> Number:
   doc: "Finds the index of ele in lst, or raises error if not present."

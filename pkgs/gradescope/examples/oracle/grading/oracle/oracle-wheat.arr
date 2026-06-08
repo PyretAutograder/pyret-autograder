@@ -1,4 +1,3 @@
-
 provide: is-valid, oracle end
 # END HEADER
 #| wheat (tdelvecc, Sep 7, 2020)
@@ -8,8 +7,10 @@ provide: is-valid, oracle end
 |#
 # Updated 2022 by srajesh1 to remove generate-input
 
-# shadow set = sets.set
-# type Set<T> = sets.Set<T>
+import lists as lists
+import sets as sets
+shadow set = sets.set
+type Set<T> = sets.Set<T>
 
 fun index-of<A>(lst :: List<A>, ele :: A) -> Number:
   doc: "Finds the index of ele in lst, or raises error if not present."
@@ -35,7 +36,7 @@ fun is-valid(
 
   problem-size = companies.length()
   expected = repeat(problem-size, range(0, problem-size))
-  when (companies.map(lists.sort) <> expected) or (candidates.map(lists.sort) <> expected):
+  when (companies.map(sort) <> expected) or (candidates.map(sort) <> expected):
     raise("Invalid input.")
   end
 
@@ -68,8 +69,8 @@ fun is-valid(
   # Check number of pairs is correct
   (num-hires == problem-size) and
   # Check every pair of hires is stable
-  for lists.all(hire1 from hire-list):
-    for lists.all(hire2 from hire-list):
+  for all(hire1 from hire-list):
+    for all(hire2 from hire-list):
       is-stable(hire1, hire2)
     end
   end
@@ -140,11 +141,11 @@ fun oracle(a-matchmaker :: (List<List<Number>>, List<List<Number>>
   ]
 
   # Run against manual tests
-  for lists.all({companies; candidates} from manual-inputs):
+  for all({companies; candidates} from manual-inputs):
     is-valid(companies, candidates, a-matchmaker(companies, candidates))
   end and
   # Run against 50 randomly generated situations with sizes 3 to 50.
-  for lists.all(problem-size from range(0, 50)):
+  for all(problem-size from range(0, 50)):
     companies = generate-input(problem-size)
     candidates = generate-input(problem-size)
     is-valid(companies, candidates, a-matchmaker(companies, candidates))

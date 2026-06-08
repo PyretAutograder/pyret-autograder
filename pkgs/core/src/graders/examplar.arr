@@ -97,10 +97,10 @@ fun mk-wheat(
   fun-name :: String, points :: Number
 ):
   filename = string-split-all(alt-impl-path, "/").last()
-  name = "Your tests for " + fun-name + " against our correct Implementation (" + filename + ")"
+  name = "Your tests for " + fun-name + " against our correct implementation (" + filename + ")"
   decider = _ == _
-  good-str = "all of your tests passed, as they should, since our Implementation (" + filename + ") is correct."
-  bad-str = "at least one of your tests failed, which means your tests contain mistakes, since our Implementation (" + filename + ") is correct."
+  good-str = "all of your tests passed, as they should, since our implementation (" + filename + ") is correct."
+  bad-str = "at least one of your tests failed, which means your tests contain mistakes, since our implementation (" + filename + ") is correct."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
     "correct", good-str, bad-str, filename
@@ -112,10 +112,10 @@ fun mk-chaff(
   fun-name :: String, points :: Number
 ):
   filename = string-split-all(alt-impl-path, "/").last()
-  name = "Your tests for " + fun-name + " against our incorrect Implementation (" + filename + ")"
+  name = "Your tests for " + fun-name + " against our incorrect implementation (" + filename + ")"
   decider = _ <> _
-  good-str = "at least one of your tests successfully identified the mistake in our incorrect Implementation (" + filename + ")."
-  bad-str = "all of your tests passed, which means they were not thorough enough to identify the mistake in our incorrect Implementation (" + filename + ")."
+  good-str = "at least one of your tests successfully identified the mistake in our incorrect implementation (" + filename + ")."
+  bad-str = "all of your tests passed, which means they were not thorough enough to identify the mistake in our incorrect implementation (" + filename + ")."
   mk-examplar(
     id, deps, student-path, alt-impl-path, fun-name, points, name, decider,
     "incorrect", good-str, bad-str, filename
