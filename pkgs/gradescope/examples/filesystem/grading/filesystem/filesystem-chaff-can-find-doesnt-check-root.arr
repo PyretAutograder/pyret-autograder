@@ -1,5 +1,3 @@
-provide: how-many, du-dir, can-find, fynd end
-
 #| Doesn't obey: Checks the ‘top level’ directory
     Instead only checks sub directories of root
 |#
@@ -25,40 +23,40 @@ fun du-dir(directory :: Dir) -> Number:
   end
 end
 
+
 fun can-find(directory :: Dir, name :: String) -> Boolean:
   doc: "Determines whether a file with given name is in the directory tree."
-
-  fun can-find-inner(directory :: Dir, name :: String) -> Boolean:
-    doc: "Determines whether a file with given name is in the directory tree."
-    # Check if it's in current directory
-    for lists.any(a-file from directory.fs):
-      a-file.name == name
-    end
-    or
-    # Check if it's in sub-directories
-    for lists.any(a-dir from directory.ds):
-      can-find-inner(a-dir, name)
-    end
-  end
-
   # Check if it's in sub-directories
-  for lists.any(a-dir from directory.ds):
+  for any(a-dir from directory.ds):
     can-find-inner(a-dir, name)
   end
 end
 
 
+fun can-find-inner(directory :: Dir, name :: String) -> Boolean:
+  doc: "Determines whether a file with given name is in the directory tree."
+  # Check if it's in current directory
+  for any(a-file from directory.fs):
+    a-file.name == name
+  end
+  or
+  # Check if it's in sub-directories
+  for any(a-dir from directory.ds):
+    can-find-inner(a-dir, name)
+  end
+end
+
 fun fynd(directory :: Dir, name :: String) -> List<Path>:
   doc: "Finds all instances of files with given name in the directory tree."
   sub-dir-paths :: List<Path> =
     directory.ds
-    ^ lists.map(fynd(_, name), _) # Recur on sub-dirs
+    ^ map(fynd(_, name), _) # Recur on sub-dirs
     ^ lists.foldl(lists.append, empty, _) # Combine results into one list
-    ^ lists.map(lists.link(directory.name, _), _) # Add current directory to paths
+    ^ map(link(directory.name, _), _) # Add current directory to paths
   
   # If file is in current directory, add new path
   if directory.fs.map(_.name).member(name):
-    lists.link([list: directory.name], sub-dir-paths)
+    link([list: directory.name], sub-dir-paths)
   else:
     sub-dir-paths
   end

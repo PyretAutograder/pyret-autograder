@@ -1,5 +1,3 @@
-provide: how-many, du-dir, can-find, fynd end
-
 #| Doesn't obey: Returns false if no file found
     Instead only returns true
 |#
@@ -7,7 +5,7 @@ provide: how-many, du-dir, can-find, fynd end
 fun how-many(directory :: Dir) -> Number:
   doc: "Finds the number of files in the directory tree."
   # Fold over sub-directories, starting with number of files in current directory
-  for lists.fold(num-files from directory.fs.length(), sub-dir from directory.ds):
+  for fold(num-files from directory.fs.length(), sub-dir from directory.ds):
     num-files + how-many(sub-dir)
   end
 end
@@ -15,7 +13,7 @@ end
 fun du-dir(directory :: Dir) -> Number:
   doc: "Finds the total size of the directory tree."
   # Find size of files in current directory
-  for lists.fold(files-size from directory.fs.length(), a-file from directory.fs):
+  for fold(files-size from directory.fs.length(), a-file from directory.fs):
     files-size + a-file.size()
   end
   +
@@ -36,13 +34,13 @@ fun fynd(directory :: Dir, name :: String) -> List<Path>:
   doc: "Finds all instances of files with given name in the directory tree."
   sub-dir-paths :: List<Path> =
     directory.ds
-    ^ lists.map(fynd(_, name), _) # Recur on sub-dirs
+    ^ map(fynd(_, name), _) # Recur on sub-dirs
     ^ lists.foldl(lists.append, empty, _) # Combine results into one list
-    ^ lists.map(lists.link(directory.name, _), _) # Add current directory to paths
+    ^ map(link(directory.name, _), _) # Add current directory to paths
   
   # If file is in current directory, add new path
   if directory.fs.map(_.name).member(name):
-    lists.link([list: directory.name], sub-dir-paths)
+    link([list: directory.name], sub-dir-paths)
   else:
     sub-dir-paths
   end
