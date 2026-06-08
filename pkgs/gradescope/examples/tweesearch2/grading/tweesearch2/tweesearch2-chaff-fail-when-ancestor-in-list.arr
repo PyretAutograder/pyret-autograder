@@ -1,6 +1,3 @@
-use context essentials2021
-include shared-gdrive("tweesearch2-definitions.arr", "196_3kepy6WuLKf5sQvzIW8kbZHkqzNwx")
-
 provide: search end
 # END HEADER
 # chaff (tdelvecc): 
@@ -10,6 +7,8 @@ provide: search end
 #    - Pyret built-in sort order.
 #   Search "CHAFF DIFFERENCE" for changed code.
 
+import list-to-set from sets
+import lists as lists
 
 ###############################
 ###### Utility Functions ######
@@ -53,8 +52,8 @@ fun compare(doc1 :: String, doc2 :: String) -> Number:
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
   
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
   
   fun make-vector(words :: List<String>) -> List<Number>:
@@ -117,6 +116,28 @@ fun find-tweets-and-relevance(start-tweet :: Tweet, search-tweet :: Tweet)
   helper(start-tweet)
 end
 
+fun is-fail(alot :: List<Tweet>) -> Boolean:
+  doc: ```Returns whether any ancestors of tweets also appear
+       in the given list.```
+
+  fun contains-identical<A>(ele :: A, lis :: List<A>) -> Boolean:
+    doc: ```Checks if there are any values in lis identical to ele.```
+    for any(ele2 from lis):
+      ele <=> ele2
+    end
+  end
+
+  fun recur-on-ancestors(parent :: Option<Tweet>) -> Boolean:
+    cases (Option<Tweet>) parent:
+      | none => false
+      | some(twt) => 
+        contains-identical(twt, alot) or 
+        recur-on-ancestors(twt.parent)
+    end
+  end
+
+  alot.map(_.parent).any(recur-on-ancestors)
+end
 
 fun search(
     search-tweet :: Tweet, 
@@ -125,29 +146,6 @@ fun search(
   -> List<Tweet> block:
   doc: ```Finds the most relevant tweets. Returns any with a relevance
        of at least threshold, sorted from most to least relevant.```
-
-  fun is-fail(alot :: List<Tweet>) -> Boolean:
-    doc: ```Returns whether any ancestors of tweets also appear
-         in the given list.```
-
-    fun contains-identical<A>(ele :: A, lis :: List<A>) -> Boolean:
-      doc: ```Checks if there are any values in lis identical to ele.```
-      for any(ele2 from lis):
-        ele <=> ele2
-      end
-    end
-
-    fun recur-on-ancestors(parent :: Option<Tweet>) -> Boolean:
-      cases (Option<Tweet>) parent:
-        | none => false
-        | some(twt) => 
-          contains-identical(twt, alot) or 
-          recur-on-ancestors(twt.parent)
-      end
-    end
-
-    alot.map(_.parent).any(recur-on-ancestors)
-  end
   
   # CHAFF DIFFERENCE: Raises error when ancestor tweet is in alot.
   when is-fail(alot):

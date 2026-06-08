@@ -1,6 +1,3 @@
-use context essentials2021
-include shared-gdrive("tweesearch2-definitions.arr", "196_3kepy6WuLKf5sQvzIW8kbZHkqzNwx")
-
 provide: search end
 # END HEADER
 # wheat (tdelvecc): 
@@ -10,6 +7,7 @@ provide: search end
 #    - Reverse stable sort order of ties.
 #   Search "WHEAT DIFFERENCE" for changed code.
 
+import list-to-set from sets
 
 ###############################
 ###### Utility Functions ######
@@ -88,8 +86,8 @@ fun compare(doc1 :: String, doc2 :: String) -> Number block:
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
   
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
   
   fun make-vector(words :: List<String>) -> List<Number>:

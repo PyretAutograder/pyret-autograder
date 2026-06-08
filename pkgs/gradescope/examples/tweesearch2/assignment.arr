@@ -1,7 +1,13 @@
 provide: search end
+# END HEADER
 
 include file("submission/assignment-support.arr")
 
+# Bare (non-method) list functions used by some grading implementations.
+# Only the non-global ones are imported, to avoid shadowing the builtins
+# `map`/`filter`.
+import append, reverse, foldl, sort-by, member-identical from lists
+import list-to-set from sets
 
 ###############################
 ###### Utility Functions ######
@@ -10,14 +16,22 @@ include file("submission/assignment-support.arr")
 fun count<A>(item :: A, lis :: List<A>) -> Number:
   doc: ```Finds the frequency of item in lis.```
   lis.foldl({(ele, acc): if ele == item: acc + 1 else: acc end}, 0)
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+  #|
+where:
+  count("A", empty) is 0
+  count("A", [list: "A"]) is 1
+  count("A", [list: "B", "A", "C"]) is 1
+  count("A", [list: "B", "A", "C", "A", "A"]) is 3
+  count("A", [list: "B", "C", "D"]) is 0
+  |#
 end
 
+# Note that this is used here so that another wheat can
+# change the output order for ties.
 fun stable-sort-by<A>(
-    lis :: List<A>,
-    lt :: (A, A -> Boolean),
-    eq :: (A, A -> Boolean))
+    lis :: List<A>, 
+    lt :: (A, A -> Boolean), 
+    eq :: (A, A -> Boolean)) 
   -> List<A>:
   doc: ```Sorts stably... why doesn't Pyret do this?```
   cases (List) lis:
@@ -32,8 +46,6 @@ fun stable-sort-by<A>(
         .append(link(f, eq-list)
           .append(stable-sort-by(gt-list, lt, eq)))
   end
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
 end
 
 fun sort-by-key<A>(lis :: List<A>, key :: (A -> Number)) -> List<A>:
@@ -42,63 +54,79 @@ fun sort-by-key<A>(lis :: List<A>, key :: (A -> Number)) -> List<A>:
     lis,
     {(ele1, ele2): key(ele1) < key(ele2)},
     {(ele1, ele2): key(ele1) == key(ele2)})
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
 end
 
 ###############################
 ###### DocDiff Functions ######
 ###############################
 
+# Note that this is an adjusted version of docdiff! 
+# Uses String instead of List<String>, split on space.
+# And first strips all punctuation.
 fun compare(doc1 :: String, doc2 :: String) -> Number:
   doc: ```Compares two docs for similarity by word frequency.
        Splits words by space.```
-
+  
   # Convert to lower and filter so only alphanumeric+space
   alphanumspace = " abcdefghijklmnopqrstuvwxyz1234567890"
-
+  
   prep = lam(doc): string-explode(string-to-lower(doc)).filter(
     lam(x): string-contains(alphanumspace, x) end).join-str("") end
-
+  
   doc1-prepped = prep(doc1)
   doc2-prepped = prep(doc2)
-
+  
   # Split by space
   words1 :: List<String> = string-split-all(doc1-prepped, " ")
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
-
+  
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
-
+  
   fun make-vector(words :: List<String>) -> List<Number>:
     doc: ```Makes a frequency vector.```
     all-words.map(count(_, words))
   end
-
+  
   vector1 :: List<Number> = make-vector(words1)
   vector2 :: List<Number> = make-vector(words2)
-
+  
   fun dot(v1 :: List<Number>, v2 :: List<Number>) -> Number:
     doc: ```Finds the dot product of two vectors.```
     fold2({(acc, ele1, ele2): acc + (ele1 * ele2)}, 0, v1, v2)
   end
-
+  
   dot(vector1, vector2) / num-max(dot(vector1, vector1), dot(vector2, vector2))
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+  #|
+where:
+  compare("Hi", "Bye") is 0
+  compare("Hi", "Hi") is 1
+  compare("Hi Bye", "Bye Hi") is 1
+  compare("Hi Bye", "Bye Hello") is 0.5
+  compare("Hi Bye", "Hi") is 0.5
+  compare("Hi Hi Bye Bye Yo", "Hi Bye Me") is 4 / 9
+  compare("Hi Hi Hi", "Hi Hi Bye") is 6 / 9
+  compare("hi", "HI") is 1
+  |#
 end
 
 ###############################
 #### TweeSearch Functions #####
 ###############################
 
-fun find-tweets-and-relevance(start-tweet :: Tweet, search-tweet :: Tweet)
+data Tv-pair<A, B>:
+  | tv-pair(tag :: A, value :: B)
+end
+
+type Relevance = Number
+
+fun find-tweets-and-relevance(start-tweet :: Tweet, search-tweet :: Tweet) 
   -> List<Tv-pair<Tweet, Relevance>>:
   doc: ```Relevance function for tweet search.```
 
-  fun helper(current-tweet :: Tweet)
+  fun helper(current-tweet :: Tweet) 
     -> List<Tv-pair<Tweet, Relevance>>:
     doc: ```Recurs on parent tweets; further away means less relevant.```
 
@@ -106,19 +134,19 @@ fun find-tweets-and-relevance(start-tweet :: Tweet, search-tweet :: Tweet)
     similarity :: Number = compare(current-tweet.content, search-tweet.content)
 
     cases (Option<Tweet>) current-tweet.parent:
-      | none =>
+      | none => 
         # If there are no more parents, only use docdiff similarity
         link(tv-pair(current-tweet, similarity), empty)
       | some(parent) =>
         # If there are parents, find their relevance and recur
         ancestors :: List<Tv-pair<Tweet, Relevance>> = helper(parent)
-        parent-relevance :: Relevance =
+        parent-relevance :: Relevance = 
           cases (List<Tv-pair<Tweet, Relevance>>) ancestors:
             | empty => raise("`helper` should never return empty list.")
             | link(f, _) => f.value
           end
-        current-pair :: Tv-pair<Tweet, Relevance> =
-          tv-pair(current-tweet,
+        current-pair :: Tv-pair<Tweet, Relevance> = 
+          tv-pair(current-tweet, 
             (0.75 * similarity) + (0.25 * parent-relevance))
 
         ancestors.push(current-pair)
@@ -126,28 +154,70 @@ fun find-tweets-and-relevance(start-tweet :: Tweet, search-tweet :: Tweet)
   end
 
   helper(start-tweet)
-  where:
-    1 is 1 # bogus test. This is not exported. However, a whaff can replace it.
+end
+
+
+# Test helper: checks a result respects relevance ordering while allowing
+# any order within a tie (equivalence) class.
+fun oracle(
+    format :: List<List<String>>, 
+    possibility :: List<String>)
+  -> Boolean:
+  doc: ```Checks if possibility is a valid solution based on format.
+       Each List in format is an equivalence class.```
+  # Check if no more format list left
+  cases (List) format:
+    | empty => is-empty(possibility)
+    | link(format-f, format-r) =>
+      # Check if no more possibility left
+      cases (List) possibility:
+        | empty => format.all(is-empty)
+        | link(poss-f, poss-r) =>
+          # Check if first element in format is empty
+          cases (List) format-f:
+            | empty => oracle(format-r, possibility)
+            | link(_, _) =>
+              format-f.member(poss-f)
+              and oracle(
+                link(format-f.remove(poss-f), format-r), 
+                poss-r)
+          end
+      end
+  end
+  #|
+where:
+  oracle([list: [list: "A", "B", "C"], [list: "D", "E", "F"]],
+    [list: "C", "B", "A", "E", "F", "D"]) is true
+  oracle([list: empty, empty, [list: "A", "B"], [list: "C"], empty],
+    [list: "B", "A", "C"]) is true
+  
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "B", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "B", "B", "C", "D"]) is false
+  |#
 end
 
 fun search(
-    search-tweet :: Tweet,
-    alot :: List<Tweet>,
-    threshold :: Number)
+    search-tweet :: Tweet, 
+    alot :: List<Tweet>, 
+    threshold :: Number) 
   -> List<Tweet>:
   doc: ```Finds the most relevant tweets. Returns any with a relevance
        of at least threshold, sorted from most to least relevant.```
-
+  
   # Find all tweets and associated relevance
   all-tweets :: List<Tv-pair<Tweet, Relevance>> =
     for fold(tweets from empty, current-tweet from alot):
       tweets.append(find-tweets-and-relevance(current-tweet, search-tweet))
     end
-
+  
   # Remove duplicates
   unique-tweets :: List<Tv-pair<Tweet, Relevance>> =
     for fold(unique-tweets from empty, current-tweet from all-tweets):
-      if unique-tweets.any({(other-tweet :: Tv-pair<Tweet, Relevance>):
+      if unique-tweets.any({(other-tweet :: Tv-pair<Tweet, Relevance>): 
             current-tweet.tag <=> other-tweet.tag}):
         unique-tweets
       else:
@@ -160,362 +230,89 @@ fun search(
     .reverse() # Descending instead of ascending
     .filter({(t :: Tv-pair<Tweet, Relevance>): t.value >= threshold})
     .map({(t :: Tv-pair<Tweet, Relevance>): t.tag})
-  where:
-  # "Basic test for functionality"
+where:
+  none-st = tweet("search", "A", none)
+  # empty list -> empty
+  search(none-st, empty, 0) is empty
+  # threshold inclusive at 1: relevance exactly 1 is kept
+  search(none-st, [list: tweet("1", "A", none)], 1) is [list: tweet("1", "A", none)]
+  # threshold inclusive at 0.5: relevance exactly 0.5 is kept
+  # (catches an off-by-epsilon exclusive threshold)
+  search(tweet("search", "A", none), [list: tweet("1", "A B", none)], 0.5)
+    is [list: tweet("1", "A B", none)]
+  # case-insensitive: lowercase "a" still matches "A"
+  search(none-st, [list: tweet("1", "a", none)], 1) is [list: tweet("1", "a", none)]
+  # punctuation stripped: "A!" still matches "A"
+  search(none-st, [list: tweet("1", "A!", none)], 1) is [list: tweet("1", "A!", none)]
+  # extra spaces are significant: "A B" vs "A  B" -> relevance 2/3, below 0.9
+  search(tweet("search", "A B", none), [list: tweet("1", "A  B", none)], 0.9) is empty
+  # threshold filters out low relevance
+  search(tweet("search", "A B", none),
+    [list: tweet("1", "A B", none), tweet("2", "C", none)], 0.5)
+    is [list: tweet("1", "A B", none)]
+  # results sorted from most to least relevant
+  search(tweet("search", "A B", none),
+    [list: tweet("2", "A", none), tweet("1", "A B", none)], 0)
+    is [list: tweet("1", "A B", none), tweet("2", "A", none)]
+
+  # parent chains: searching a tweet returns it and all its ancestors,
+  # sorted by relevance (parent relevance discounted).  All relevances here
+  # are distinct, so the order is determined.
   block:
-    # 2 / 3 = 0.666 = 4 / 6
+    tweet-a1 = tweet("a1", "A B C D", none)        # 0.666
+    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1)) # 0.416
+    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2)) # 0.479
+    tweet-a4 = tweet("a4", "C C D", some(tweet-a3))   # 0.369
+    tweet-b1 = tweet("b1", "D E F G H", none)      # 0.000
+    tweet-b2 = tweet("b2", "A A", some(tweet-b1))     # 0.500
+    tweet-c1 = tweet("c1", "B C D E", none)        # 0.333
+    s = tweet("search", "A A B C", none)
+    search(s, [list: tweet-a4, tweet-b2, tweet-c1], 1 / 6)
+      is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
+  end
+
+  # duplicates: a tweet reachable via the list AND as an ancestor appears once
+  block:
     tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
     tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
     tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
     tweet-a4 = tweet("a4", "C C D", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
     tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
     tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
     tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
+    s = tweet("search", "A A B C", none)
+    search(s,
+      [list: tweet-a1, tweet-a2, tweet-a3, tweet-a4, tweet-b1, tweet-b2, tweet-c1],
       1 / 6)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
+      is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
   end
 
-  # "Dealing with duplicates"
+  # uniqueness is by identity, not by structural equality: distinct tweets
+  # that happen to be structurally equal (a shallow copy) are NOT merged.
   block:
-    # 2 / 3 = 0.666 = 4 / 6
+    fun copy-tweet(t :: Tweet) -> Tweet: tweet(t.author, t.content, t.parent) end
     tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "C C D", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a1, tweet-a2, tweet-a3, tweet-a4,
-        tweet-b1, tweet-b2,
-        tweet-c1],
-      1 / 6)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
-  end
-
-  # "Two tweets share a parent"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a21 = tweet("a21", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a31 = tweet("a31", "B B C C", some(tweet-a21))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a41 = tweet("a41", "C C D", some(tweet-a31))
-    # 7 / 24 = 0.291 = ((1 / 6) * (3 / 4)) + ((2 / 3) * (1 / 4))
-    tweet-a22 = tweet("a22", "C D F G", some(tweet-a1))
-    # 43 / 96 = 0.447 = ((5 / 10) * (3 / 4)) + ((7 / 24) * (1 / 4))
-    tweet-a32 = tweet("a32", "A B B B", some(tweet-a22))
-    # 91 / 384 = 0.236 = ((1 / 6) * (3 / 4)) + ((43 / 96) * (1 / 4))
-    tweet-a42 = tweet("a42", "C D", some(tweet-a32))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a41, tweet-a42, tweet-b2, tweet-c1],
-      1 / 6)
-
-    sol is [list:
-      tweet-a1,
-      tweet-b2,
-      tweet-a31,
-      tweet-a32,
-      tweet-a21,
-      tweet-a41,
-      tweet-c1,
-      tweet-a22,
-      tweet-a42]
-  end
-
-  # "Uniqueness is case-sensitive"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-a4 = tweet("a4", "C C D", some(tweet-a3))
-    tweet-b1 = tweet("b1", "a B c D", none)
-    tweet-b2 = tweet("b2", "b C d E", some(tweet-b1))
-    tweet-b3 = tweet("b3", "b B c C", some(tweet-b2))
-    tweet-b4 = tweet("b4", "c C d", some(tweet-b3))
-    tweet-c1 = tweet("c1", "A b C d", none)
-    tweet-c2 = tweet("c2", "B c D e", some(tweet-c1))
-    tweet-c3 = tweet("c3", "B b C c", some(tweet-c2))
-    tweet-c4 = tweet("c4", "C c D", some(tweet-c3))
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b4, tweet-c4],
-      1 / 6)
-
-    sol satisfies oracle([list:
-        [list: tweet-a1, tweet-b1, tweet-c1],
-        [list: tweet-a3, tweet-b3, tweet-c3],
-        [list: tweet-a2, tweet-b2, tweet-c2],
-        [list: tweet-a4, tweet-b4, tweet-c4]],
-      _)
-  end
-
-  # "Checks uniqueness by identical, not equal-always"
-  block:
-    fun copy-tweet(t :: Tweet) -> Tweet:
-      doc: ```Makes a shallow copy of a tweet.```
-      tweet(t.author, t.content, t.parent)
-    end
-
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
     tweet-a2 = tweet("a2", "B C D E", some(copy-tweet(tweet-a1)))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
     tweet-a3 = tweet("a3", "B B C C", some(copy-tweet(tweet-a2)))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
     tweet-a4 = tweet("a4", "C C D", some(copy-tweet(tweet-a3)))
-    # 0 / 1 = 0.000 = 0 / 6
     tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
     tweet-b2 = tweet("b2", "A A", some(copy-tweet(tweet-b1)))
-    # 1 / 3 = 0.333 = 2 / 6
     tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a1, tweet-a2, tweet-a3, tweet-a4,
-        tweet-b1, tweet-b2,
-        tweet-c1],
+    s = tweet("search", "A A B C", none)
+    search(s,
+      [list: tweet-a1, tweet-a2, tweet-a3, tweet-a4, tweet-b1, tweet-b2, tweet-c1],
       1 / 6)
-
-    sol is [list: tweet-a1, tweet-a1, tweet-b2, tweet-a3, tweet-a3,
-      tweet-a2, tweet-a2, tweet-a4, tweet-c1]
+      is [list: tweet-a1, tweet-a1, tweet-b2, tweet-a3, tweet-a3,
+        tweet-a2, tweet-a2, tweet-a4, tweet-c1]
   end
 
-  # "Empty list of tweets should return empty"
-  search(tweet("empty", "content", none), empty, 0) is empty
-
-  # "Threshold of 1 should only include exact match on content"
+  # ties: equally-relevant tweets all appear, any order within the tie class
   block:
     tweet-a1 = tweet("a1", "A", none)
     tweet-a2 = tweet("a2", "A", some(tweet-a1))
-    tweet-a3 = tweet("a3", "B", some(tweet-a2))
     tweet-b1 = tweet("b1", "A", none)
-    tweet-b2 = tweet("b2", "B", some(tweet-b1))
-    tweet-b3 = tweet("b3", "A", some(tweet-b2))
-    search-tweet-t = tweet("search", "A", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a3, tweet-b3],
-      1)
-
-    sol satisfies oracle([list:
-        [list: tweet-a1, tweet-a2, tweet-b1]],
-      _)
-  end
-
-  # "Threshold of 0 should include everything"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "C C D", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
-      0)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3,
-      tweet-a2, tweet-a4, tweet-c1, tweet-b1]
-  end
-
-  # "All tweets are tied"
-  block:
-    tweet-a1 = tweet("a1", "A", none)
-    tweet-a2 = tweet("a2", "A", some(tweet-a1))
-    tweet-a3 = tweet("a3", "A", some(tweet-a2))
-    tweet-b1 = tweet("b1", "A", none)
-    tweet-b2 = tweet("b2", "A", some(tweet-b1))
-    tweet-b3 = tweet("b3", "A", some(tweet-b2))
-    search-tweet-t = tweet("search", "A B", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a3, tweet-b3],
-      1 / 4)
-
-    sol satisfies oracle([list:
-        [list:
-          tweet-a1, tweet-a2, tweet-a3,
-          tweet-b1, tweet-b2, tweet-b3]],
-      _)
-  end
-
-  # "All tweets 0 relevance"
-  block:
-    tweet-a1 = tweet("a1", "A B C D", none)
-    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    tweet-b1 = tweet("b1", "C C D", none)
-    tweet-b2 = tweet("b2", "D E F G H", some(tweet-b1))
-    tweet-c1 = tweet("c1", "A A", none)
-    search-tweet-t = tweet("search", "I J K L M N", none)
-
-    sol = search(
-      search-tweet-t,
-      [list:
-        tweet-a1, tweet-a2, tweet-a3,
-        tweet-b1, tweet-b2, tweet-c1],
-      2 / 6)
-
-    sol is empty
-  end
-
-  # "Threshold should be inclusive"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B C D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B B C C", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "C C D", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B C D E", none)
-    search-tweet-t = tweet("search", "A A B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
-      5 / 12)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2]
-  end
-
-  # "DocDiff is case insensitive"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "a B C D", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B c D E", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B b c C", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "c C D", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D E F G H", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A A", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B c D E", none)
-    search-tweet-t = tweet("search", "A a B C", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
-      1 / 6)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
-  end
-
-  # "Properly handles multi-character and no-character words"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "4lph4 B3t4  D3lt4", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "B3t4  D3lt4 3ps1l0n", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "B3t4 B3t4  ", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "  D3lt4", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "D3lt4 3ps1l0n Z3t4 3t4 Th3t4", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "4lph4 4lph4", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "B3t4  D3lt4 3ps1l0n", none)
-    search-tweet-t = tweet("search", "4lph4 4lph4 B3t4 ", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
-      1 / 6)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
-  end
-
-  # "Does not remove numbers"
-  block:
-    # 2 / 3 = 0.666 = 4 / 6
-    tweet-a1 = tweet("a1", "A1 A2 A3 A4", none)
-    # 5 / 12 = 0.416 = ((2 / 6) * (3 / 4)) + ((4 / 6) * (1 / 4))
-    tweet-a2 = tweet("a2", "A2 A3 A4 A5", some(tweet-a1))
-    # 23 / 48 = 0.479 = ((4 / 8) * (3 / 4)) + ((5 / 12) * (1 / 4))
-    tweet-a3 = tweet("a3", "A2 A2 A3 A3", some(tweet-a2))
-    # 71 / 192 = 0.369 = ((2 / 6) * (3 / 4)) + ((23 / 48) * (1 / 4))
-    tweet-a4 = tweet("a4", "A3 A3 A4", some(tweet-a3))
-    # 0 / 1 = 0.000 = 0 / 6
-    tweet-b1 = tweet("b1", "A4 A5 A6 A7 A8", none)
-    # 1 / 2 = 0.500 = ((4 / 6) * (3 / 4)) + ((0 / 6) * (1 / 4))
-    tweet-b2 = tweet("b2", "A1 A1", some(tweet-b1))
-    # 1 / 3 = 0.333 = 2 / 6
-    tweet-c1 = tweet("c1", "A2 A3 A4 A5", none)
-    search-tweet-t = tweet("search", "A1 A1 A2 A3", none)
-
-    sol = search(
-      search-tweet-t,
-      [list: tweet-a4, tweet-b2, tweet-c1],
-      1 / 6)
-
-    sol is [list: tweet-a1, tweet-b2, tweet-a3, tweet-a2, tweet-a4, tweet-c1]
+    s = tweet("search", "A", none)
+    search(s, [list: tweet-a2, tweet-b1], 1)
+      satisfies oracle([list: [list: tweet-a1, tweet-a2, tweet-b1]], _)
   end
 end
