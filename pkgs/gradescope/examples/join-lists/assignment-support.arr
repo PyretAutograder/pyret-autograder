@@ -1,5 +1,14 @@
-provide: *, type * end
 
+provide:
+  data JoinList,
+  type ManyJoinList,
+  list-to-join-list,
+  join-list-to-list,
+  is-non-empty-jl,
+  join-list
+end
+
+import length from lists
 import equality as EQ
 import valueskeleton as VS
 
