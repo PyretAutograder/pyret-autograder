@@ -1,10 +1,13 @@
-provide: * end
-provide: type * end
+provide: 
+  to-graph,
+  type Graph, data Point, data Place, data Tour, type Path,
+  type String as Name 
+end
 
 import string-dict as SD
 provide from SD: *, type * end
 import valueskeleton as VS
-# import lists as L
+import lists as L
 
 string-dict = SD.string-dict
 mutable-string-dict = SD.mutable-string-dict
@@ -110,7 +113,7 @@ fun to-graph(vertices :: Set<Place>) -> Graph:
     doc: ```Returns true if all of the names of Places in the input Set<Place> 
          are unique; otherwise, returns false.```
     place-names  = vertices.to-list().map(_.name)
-    set-of-names = lists.distinct(place-names)
+    set-of-names = L.distinct(place-names)
     place-names.length() == set-of-names.length()
   end
   
@@ -139,7 +142,7 @@ fun to-graph(vertices :: Set<Place>) -> Graph:
         p.neighbors.fold(
           lam(shadow d, n): d.set(n, d.get-value(n).add(p.name)) end,
         d) end, init-dict)
-    lists.all(lam(p): expected-sets.get-value(p.name) == p.neighbors end, vertices.to-list())
+    L.all(lam(p): expected-sets.get-value(p.name) == p.neighbors end, vertices.to-list())
   end
 
   if not(are-place-names-unique()) 
@@ -172,13 +175,84 @@ fun to-graph(vertices :: Set<Place>) -> Graph:
   end
 end
 
+#|
+check "to-graph works on valid Set<Place>s":
+  to-graph(empty-set) does-not-raise
+  to-graph(
+    [set:
+      place("A", point(0, 0), empty-set)]) does-not-raise
 
-## data used in tests
+  to-graph(empty-set).names() is empty-set
+  to-graph(
+    [set:
+      place("A", point(0, 0), empty-set)]).names()
+    is [set: "A"]
+  to-graph(
+    [set:
+      place("A", point(0, 0), [set: "B"]),
+      place("B", point(1, 0), [set: "A", "C"]),
+      place("C", point(0, 1), [set: "B"])]).names()
+    is [set: "A", "B", "C"]
+end
 
-tg-loc-A = place("tg-loc-A", point(0, 0), [set: "tg-loc-B"])
-tg-loc-B = place("tg-loc-B", point(0, 1), [set: "tg-loc-A", "tg-loc-C"])
-tg-loc-C = place("tg-loc-C", point(0, 2), [set: "tg-loc-B", "tg-loc-D"])
-tg-loc-D = place("tg-loc-D", point(0, 3), [set: "tg-loc-C", "tg-loc-E"])
-tg-loc-E = place("tg-loc-E", point(0, 4), [set: "tg-loc-D"])
+check "to-graph asserts uniqueness of Place names":
+  to-graph(
+    [set: 
+      place("A", point(0, 0), empty-set), 
+      place("A", point(1, 0), empty-set)])
+    raises "Invalid graph"
+  to-graph(
+    [set: 
+      place("B", point(0, 0), empty-set), 
+      place("A", point(1, 0), empty-set),
+      place("B", point(0, 1), [set: "A"])])
+    raises "Invalid graph"
+end
 
-# graph = [list: tg-loc-A,tg-loc-B,tg-loc-C,tg-loc-D,tg-loc-E]
+check "to-graph disallows Places that have edges to themselves":
+  to-graph(
+    [set:
+      place("A", point(0, 0), [set: "A"])])
+    raises "Invalid graph"
+  to-graph(
+    [set: 
+      place("A", point(1, 0), [set: "B"]),
+      place("B", point(1, 1), [set: "A", "B"])])
+    raises "Invalid graph"
+end
+
+check "to-graph asserts biconnected edges between Places":
+  to-graph(
+    [set: 
+      place("B", point(0, 0), [set: "A"]), 
+      place("A", point(1, 0), empty-set)])
+      raises "Invalid graph"
+  to-graph(
+    [set: place("A", point(0, 0), [set: "B", "C"]),
+      place("B", point(0, 0), [set: "C"]),
+      place("C", point(0, 0), [set: "A", "B"])])
+    raises "Invalid graph!"
+end
+
+check "to-graph asserts connectedness":
+    to-graph(
+    [set: 
+      place("B", point(0, 0), empty-set), 
+      place("A", point(1, 0), empty-set)])
+    raises "Invalid graph"
+  to-graph([set: 
+      place("C", point(0, 0), empty-set),
+      place("B", point(0, 0), [set: "A"]), 
+      place("A", point(1, 0), [set: "B"])]) 
+    raises "Invalid graph!"
+  to-graph([set: place("C", point(0, 0), empty-set),
+      place("B", point(0, 0), [set: "A"]), 
+      place("A", point(1, 0), [set: "B"])])
+    raises "Invalid graph!"
+  to-graph([set: place("a", point(0, 0), [set: "b"]),
+      place("b", point(1, 1), [set: "a"]),
+      place("c", point(1, 2), [set: "d"]),
+      place("d", point(2, 1), [set: "c"])])
+    raises "Invalid graph!"
+end
+|#

@@ -1,4 +1,3 @@
-
 provide: dijkstra, campus-tour end
 # END HEADER
 #| wheat (mheller6, Sep 3, 2020): 
@@ -48,7 +47,7 @@ end
 
 fun dijkstra(start :: Name, graph :: Graph) -> Set<Path>:
 
-  fun helper(queue :: Heap<HeapPath>, finalized-paths :: SD.StringDict<Path>) -> Set<Path>:
+  fun helper(queue :: Heap<HeapPath>, finalized-paths :: StringDict<Path>) -> Set<Path>:
 
     cases (Heap) queue:
       | mt =>
@@ -72,7 +71,7 @@ fun dijkstra(start :: Name, graph :: Graph) -> Set<Path>:
         else:
           # If the Loc's distance from the root has not been finalized,
           # finalize it with this LocPath by adding it to the
-          # finalized-locpaths SD.StringDict:
+          # finalized-locpaths StringDict:
           shadow finalized-paths = finalized-paths.set(current-name, min-heap-path.path)
 
           # Update the queue's "distance from start" estimates for all of the
@@ -99,10 +98,10 @@ fun update-estimates-in-heap(
     queue :: Heap<HeapPath>,
     graph :: Graph,
     heap-path-to-update-with :: HeapPath,
-    finalized-paths :: SD.StringDict<Path>)
+    finalized-paths :: StringDict<Path>)
   -> Heap<HeapPath>:
   doc: ```consumes a Heap queue representing the current state of the Heap, a
-         SD.StringDict<LocPath> finalized-locpaths where each of its keys
+         StringDict<LocPath> finalized-locpaths where each of its keys
          correspond to the names of the Locs whose shortest distances from the
          start are known, and a LocPath path-loc-to-update-with that contains
          the Loc whose neighbors's estimates need to be updated; returns the
