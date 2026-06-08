@@ -1,3 +1,15 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| Does not obey: Provide the book(s) that are paired most frequently with the book the user bought along with a count of how frequent this is.
+    Instead: Does not return frequency. Instead, returns length of list.
+
+    
+|#
+import lists as lists
+
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records

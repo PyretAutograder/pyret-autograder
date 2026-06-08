@@ -1,3 +1,17 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| 
+ Does not obey: Could return multiple pairs if they have the same count
+    Instead: Chooses just one pair, with freq preserved
+
+  TODO: Check me.
+    
+|#
+import lists as lists
+
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records

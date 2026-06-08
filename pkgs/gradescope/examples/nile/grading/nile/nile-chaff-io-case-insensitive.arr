@@ -1,3 +1,13 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| Does not obey: Each book has a unique and unambiguous description. 
+    Instead: Is case insensitive.
+|#
+import lists as lists
+
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records

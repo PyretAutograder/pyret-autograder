@@ -1,3 +1,14 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| wheat (tdelvecc, Aug 26, 2020): 
+    Basic wheat; follows specs without additional features.
+|#
+
+include lists
+
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records

@@ -1,3 +1,20 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| wheat (tdelvecc, Aug 26, 2020): 
+    Flips the order of the contents list in the resulting recommendation.
+    Flips the order of books in book pairs.
+    Raises error on invalid inputs:
+     - contents list doesn't contain at least two books
+     - contents list contains duplicate books
+     - a book title is the empty string
+    Search "WHEAT DIFFERENCE" for changed code.
+|#
+
+include lists
+
 fun get-all-books(records :: List<File>) -> List<String> block:
   doc: ```Gets all of the books out of a list of records.```
   # WHEAT DIFFERENCE: Raises an error if any contents lists are too small.

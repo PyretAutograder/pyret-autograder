@@ -1,90 +1,26 @@
-import equality as Eq
+provide: recommend, popular-pairs end
+# END HEADER
 
-# Note: we already have implicit:
-#
-# import lists as lists
-# import sets as sets
-#
-# This means you have to explicitly prefix `lists.` and `sets.` in front of functions
-# from these modules
+include file("submission/assignment-support.arr")
+import append, distinct, foldl from lists
 
-data File:
-  | file(name :: String, content :: List<String>)
-end
-
-data BookPair:
-  | pair(book1 :: String, book2 :: String)
-    with:
-    method _equals(
-        self :: BookPair,
-        other :: BookPair,
-        equal-rec :: (Any, Any -> Eq.EqualityResult))
-      -> Eq.EqualityResult:
-      cases (BookPair) self:
-        | pair(sb1, sb2) =>
-          cases (BookPair) other:
-            | pair(ob1, ob2) =>
-              if ((Eq.is-Equal(equal-rec(sb1, ob1)) 
-                    and Eq.is-Equal(equal-rec(sb2, ob2))) or
-                  (Eq.is-Equal(equal-rec(sb1, ob2)) 
-                    and Eq.is-Equal(equal-rec(sb2, ob1)))):
-                Eq.Equal
-              else:
-                Eq.NotEqual("different books", self, other)
-              end
-          end
-      end
-    end
-end
-
-data Recommendation<A>:
-  | recommendation(count :: Number, content :: List<A>)
-    with:
-    method _equals(
-        self :: Recommendation<A>,
-        other :: Recommendation<A>, 
-        equal-rec :: (Any, Any -> Eq.EqualityResult))
-      -> Eq.EqualityResult:
-
-      fun names-to-set(names :: List<A>) -> sets.Set<A>:
-        sets.list-to-list-set(names)
-      end
-      cases (Recommendation<A>) self:
-        | recommendation(sc, scont) =>
-          cases (Recommendation<A>) other:
-            | recommendation(oc, ocont) =>
-              if self.count <> other.count:
-                Eq.NotEqual("inequal counts", self.count, other.count)
-              else if not(self.content.length() == other.content.length()):
-                Eq.NotEqual("inequal content length", 
-                  self.content.length(), other.content.length())
-              else:
-                equal-rec(
-                  names-to-set(self.content),
-                  names-to-set(other.content))
-              end
-          end
-      end
-    end
-end
-
+# ---- reference implementation ----
 #| wheat (tdelvecc, Aug 26, 2020): 
     Basic wheat; follows specs without additional features.
 |#
 
-# include lists
 
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records
     .map(_.content)
-    .foldl(lists.append, empty)
+    .foldl(append, empty)
 end
 
 fun gather-recos<A>(recos :: List<Recommendation<A>>) -> Recommendation<A>:
   doc: ```Takes a list of recommendation and combines the largest ones
        into a single recommendation.```
-  for lists.foldl(
+  for foldl(
       best-reco :: Recommendation<A> from recommendation(0, empty),
       book-reco :: Recommendation<A> from recos):
     ask:
@@ -95,23 +31,10 @@ fun gather-recos<A>(recos :: List<Recommendation<A>>) -> Recommendation<A>:
       | (book-reco.count == 0) and (best-reco.count == 0) then: best-reco
       | book-reco.count == best-reco.count then: 
         # Take the total-reco and add the contents of book-reco, except duplicates.
-        recommendation(best-reco.count, lists.distinct(best-reco.content + book-reco.content))
+        recommendation(best-reco.count, distinct(best-reco.content + book-reco.content))
     end
   end
 end
-
-fun same-rec(t1 :: Recommendation, t2 :: Recommendation) -> Boolean:
-  t1 == t2
-end
-
-bl1 = file("1", [list: "aa", "bb", "cc", "dd", "ee", "ff", "gg"])
-bl2 = file("2", [list: "aa", "bb"])
-bl3 = file("3", [list: "aa", "bb", "cc", "dd"])
-bl4 = file("4", [list: "ff", "dd", "ee"])
-bl5 = file("5", [list: "bb", "aa"])
-
-x = file("x", [list: "a", "b"])
-y = file("y", [list: "A", "b"])
 
 fun recommend(title :: String, book-records :: List<File>) 
   -> Recommendation<String>:
@@ -130,40 +53,6 @@ fun recommend(title :: String, book-records :: List<File>)
           .length(),
         [list: book])}, _)
     ^ gather-recos
-    where:
-  # recommend on a file with two elements when one 
-  # is the input should return a recommendation for the other
-  same-rec(recommend("aa",[list: bl2]),recommendation(1,[list: "bb"])) is true
-
-  # recommend when there are multiple other books on the 
-  # file should return a recommendation with those others
-  same-rec(recommend("dd",[list: bl4]),recommendation(1,[list: "ff","ee"]))
-    is true
-
-  # recommend on two files when one element is in
-  # both files should return that element
-  same-rec(recommend("aa",[list: bl3,bl2]),recommendation(2,[list: "bb"]))
-    is true
-
-  # recommend on three files when one element is in
-  # all three should return that element
-  same-rec(recommend("aa",[list: bl5,bl2,bl2]),recommendation(3,[list: "bb"]))
-    is true
-
-  # recommend on multiple files when one file does not have the input 
-  # should just return the closest recommendation from files with that input
-  same-rec(recommend("aa",[list: bl2,bl4]),recommendation(1,[list: "bb"]))
-    is true
-
-  # recommend on a file where the inputted element does not exist 
-  # should return an empty recommendation
-  same-rec(recommend("cc",[list: bl2]),recommendation(0,empty)) is true
-
-  # recommend with no files returns an empty recommendation
-  same-rec(recommend("aa",empty),recommendation(0,empty)) is true
-
-  same-rec(recommend("b", [list: x, y]), recommendation(1, [list: "a", "A"])) 
-    is true
 end
 
 fun popular-pairs(book-records :: List<File>) -> Recommendation<BookPair>:
@@ -175,36 +64,132 @@ fun popular-pairs(book-records :: List<File>) -> Recommendation<BookPair>:
       reco = recommend(book, book-records)
       recommendation(reco.count, reco.content.map(pair(_, book)))}, _)
     ^ gather-recos
-    where:
-  # popular-pairs when only one file is given
-  same-rec(popular-pairs([list: bl4]), 
-      recommendation(1, [list: pair("ff","dd"), pair("ee","ff"), pair("dd","ee")])) is true
+end
 
-  # simple popular-pairs with one pair represented on both files
-  same-rec(popular-pairs([list: bl1,bl2]),
-      recommendation(2,[list: pair("bb","aa")])) is true
+# ---- test fixtures and helpers ----
+fun index-of(n :: String, ch :: String) -> Number:
+  doc: "returns index of ch in n, returns length of n if ch not found"
+  if string-equal(n, "") or string-equal(string-char-at(n,0), ch):
+    0
+  else:
+    1 + index-of(string-substring(n, 1, string-length(n)), ch)
+  end
+end
 
-  # popular-pairs between two files where three pairs are represented on both
-  same-rec(popular-pairs([list: bl4,bl1]),
-      recommendation(2,[list: pair("ff","dd"),pair("ee","ff"),pair("dd","ee")])) is true
+fun same-rec(t1 :: Recommendation, t2 :: Recommendation) -> Boolean:
+  t1 == t2
+end
 
-  # popular-pairs with duplicates of one file that 
-  # has one pair of books repreated four times
-  same-rec(popular-pairs([list: bl2,bl2,bl1,bl2]),
-      recommendation(4,[list: pair("aa","bb")])) is true
+bl1 = file("1", [list: "aa", "bb", "cc", "dd", "ee", "ff", "gg"])
+bl2 = file("2", [list: "aa", "bb"])
+bl3 = file("3", [list: "aa", "bb", "cc", "dd"])
+bl4 = file("4", [list: "ff", "dd", "ee"])
+bl5 = file("5", [list: "bb", "aa"])
 
-  # popular-pairs with five files should successfully generate the most 
-  # popular pair (in this case repeated four times)
-  same-rec(popular-pairs([list: bl1,bl2,bl3,bl4,bl5]),
-      recommendation(4,[list: pair("bb","aa")])) is true
+# recommend
 
-  same-rec(popular-pairs([list: bl2,bl4]),
-      recommendation(1,[list: pair("bb","aa"), pair("ff","dd"), pair("dd","ee"), pair("ee","ff")])) 
-    is true
+# ---- tests ----
+check "recommend":
+  block:
+    # normal-recommend:: Normal operational conditions for recommend":
+    # recommend on a file with two elements when one 
+    # is the input should return a recommendation for the other
+    same-rec(recommend("aa",[list: bl2]),recommendation(1,[list: "bb"])) is true
 
-  # popular-pairs when no files are given return empty recommendations
-  same-rec(popular-pairs(empty), recommendation(0, empty)) is true
+    # recommend when there are multiple other books on the 
+    # file should return a recommendation with those others
+    same-rec(recommend("dd",[list: bl4]),recommendation(1,[list: "ff","ee"]))
+      is true
 
-  same-rec(popular-pairs([list: x, y]), 
-    recommendation(1, [list: pair("a", "b"), pair("A", "b")])) is true
+    # recommend on two files when one element is in
+    # both files should return that element
+    same-rec(recommend("aa",[list: bl3,bl2]),recommendation(2,[list: "bb"]))
+      is true
+
+    # recommend on three files when one element is in
+    # all three should return that element
+    same-rec(recommend("aa",[list: bl5,bl2,bl2]),recommendation(3,[list: "bb"]))
+      is true
+
+    # recommend on multiple files when one file does not have the input 
+    # should just return the closest recommendation from files with that input
+    same-rec(recommend("aa",[list: bl2,bl4]),recommendation(1,[list: "bb"]))
+      is true
+  end
+  block:
+    # no-recommend-match:: Confirms recommend can handle a call where     the title is
+    # recommend on a file where the inputted element does not exist 
+    # should return an empty recommendation
+    same-rec(recommend("cc",[list: bl2]),recommendation(0,empty)) is true
+  end
+  block:
+    # empty:: Confirms functions handle empty inputs":
+    # recommend with no files returns an empty recommendation
+    same-rec(recommend("aa",empty),recommendation(0,empty)) is true
+
+    # popular-pairs when no files are given return empty recommendations
+    same-rec(popular-pairs(empty), recommendation(0, empty)) is true
+  end
+  block:
+    # recommend and popular-pairs: case sensitivity checks":
+    x = file("x", [list: "a", "b"])
+    y = file("y", [list: "A", "b"])
+  
+    same-rec(recommend("b", [list: x, y]), recommendation(1, [list: "a", "A"])) 
+      is true
+    same-rec(popular-pairs([list: x, y]), 
+      recommendation(1, [list: pair("a", "b"), pair("A", "b")])) is true
+  end
+end
+
+check "popular-pairs":
+  block:
+    # normal-popular-pairs:: Normal operational conditions for popular-pairs":
+    # popular-pairs when only one file is given
+    same-rec(popular-pairs([list: bl4]), 
+        recommendation(1, [list: pair("ff","dd"), pair("ee","ff"), pair("dd","ee")])) is true
+
+    # simple popular-pairs with one pair represented on both files
+    same-rec(popular-pairs([list: bl1,bl2]),
+        recommendation(2,[list: pair("bb","aa")])) is true
+
+    # popular-pairs between two files where three pairs are represented on both
+    same-rec(popular-pairs([list: bl4,bl1]),
+        recommendation(2,[list: pair("ff","dd"),pair("ee","ff"),pair("dd","ee")])) is true
+
+    # popular-pairs with duplicates of one file that 
+    # has one pair of books repreated four times
+    same-rec(popular-pairs([list: bl2,bl2,bl1,bl2]),
+        recommendation(4,[list: pair("aa","bb")])) is true
+
+    # popular-pairs with five files should successfully generate the most 
+    # popular pair (in this case repeated four times)
+    same-rec(popular-pairs([list: bl1,bl2,bl3,bl4,bl5]),
+        recommendation(4,[list: pair("bb","aa")])) is true
+  end
+  block:
+    # no-pair-overlap:: Confirms popular-pairs can       handle files with no overlap`
+    # popular-pairs when there is no overlap between book files
+    same-rec(popular-pairs([list: bl2,bl4]),
+        recommendation(1,[list: pair("bb","aa"), pair("ff","dd"), pair("dd","ee"), pair("ee","ff")])) 
+      is true
+  end
+  block:
+    # empty:: Confirms functions handle empty inputs":
+    # recommend with no files returns an empty recommendation
+    same-rec(recommend("aa",empty),recommendation(0,empty)) is true
+
+    # popular-pairs when no files are given return empty recommendations
+    same-rec(popular-pairs(empty), recommendation(0, empty)) is true
+  end
+  block:
+    # recommend and popular-pairs: case sensitivity checks":
+    x = file("x", [list: "a", "b"])
+    y = file("y", [list: "A", "b"])
+  
+    same-rec(recommend("b", [list: x, y]), recommendation(1, [list: "a", "A"])) 
+      is true
+    same-rec(popular-pairs([list: x, y]), 
+      recommendation(1, [list: pair("a", "b"), pair("A", "b")])) is true
+  end
 end

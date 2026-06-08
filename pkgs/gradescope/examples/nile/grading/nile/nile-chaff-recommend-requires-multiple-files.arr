@@ -1,3 +1,15 @@
+provide:
+  recommend, recommend-in-ok, recommend-out-ok,
+  popular-pairs, popular-pairs-in-ok, popular-pairs-out-ok
+end
+# END HEADER
+#| Does not strictly obey: A book is paired with another book if both books are listed in the same file.
+    Instead: A book is paired with another book if both books are listed in the same file, across multiple files.
+
+    TODO: Work in progress
+|#
+import lists as lists
+
 fun get-all-books(records :: List<File>) -> List<String>:
   doc: ```Gets all of the books out of a list of records.```
   records
