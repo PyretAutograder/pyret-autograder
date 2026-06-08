@@ -1,4 +1,3 @@
-
 provide: generate-input, is-valid, oracle end
 # END HEADER
 #| chaff (tdelvecc, Sep 6, 2020): 
@@ -6,8 +5,8 @@ provide: generate-input, is-valid, oracle end
     Search "CHAFF DIFFERENCE" for changed code.
 |#
 
-# import range from lists
-# import lists as lists
+import range from lists
+import lists as lists
 
 fun generate-input(n :: Number) -> List<Person> block:
   doc: "Generates n random Persons."
@@ -18,13 +17,13 @@ fun generate-input(n :: Number) -> List<Person> block:
   
   fun generate-name(shadow length :: Number) -> String:
     doc: "Generates a random name of given length."
-    for lists.map(_ from lists.range(0, length)):
+    for lists.map(_ from range(0, length)):
       num-random(65535)
     end
       ^ string-from-code-points
   end
   
-  for lists.map(_ from lists.range(0, n)):
+  for lists.map(_ from range(0, n)):
     person(
       generate-name(num-random(100)), 
       (num-random(1e6) - 5e5) + (num-random(100) / 100))
@@ -54,13 +53,13 @@ fun is-valid(input :: List<Person>, output :: List<Person>) -> Boolean:
 end
 
 
+fun is-valid-bad(input :: List<Person>, output :: List<Person>) -> Boolean:
+  doc: "Checks whether output is a valid sorting of input."
+  input.map(_.age).sort() == output
+end
 
 fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
   doc: "Checks whether sorter is a valid sorter."
-  fun is-valid-bad(input :: List<Person>, output :: List<Person>) -> Boolean:
-    doc: "Checks whether output is a valid sorting of input."
-    input.map(_.age).sort() == output
-  end
   interesting-inputs :: List<List<Person>> = [list:
     [list: ], # empty
     [list: person("A Person", 0)], # one person
@@ -72,10 +71,10 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
     lists.repeat(20, person("A Person", 5)),
     
     # same name, diff age
-    lists.range(0, 10).map(person("A Person", _)), 
+    range(0, 10).map(person("A Person", _)), 
     
     # repeat ages, so many valid sorts
-    lists.range(0, 100).map({(n): 
+    range(0, 100).map({(n): 
         person(
           [list: "A", "B", "C"].get(num-modulo(n, 3)), 
           num-modulo(n, 4))}),
@@ -90,7 +89,7 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
     [list: person("a", 20), person("b", 10), person("a", 20)],
     
     # long and reverse sorted
-    lists.map2({(p, age): person(p.name, age)}, generate-input(150), lists.range(0, 150))
+    lists.map2({(p, age): person(p.name, age)}, generate-input(150), range(0, 150))
       .reverse()
   ]
   
@@ -101,7 +100,7 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
   end
   and 
   # Automated inputs
-  for lists.all(n from lists.range(3, 30)):
+  for lists.all(n from range(3, 30)):
     input = generate-input(n)
     is-valid-bad(input, sorter(input))
   end

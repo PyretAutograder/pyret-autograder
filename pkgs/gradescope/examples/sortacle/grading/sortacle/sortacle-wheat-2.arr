@@ -1,4 +1,3 @@
-
 provide: generate-input, is-valid, oracle end
 # END HEADER
 #| wheat (tdelvecc, Sep 6, 2020): 
@@ -10,8 +9,8 @@ provide: generate-input, is-valid, oracle end
     Search "WHEAT DIFFERENCE" for changed code.
 |#
 
-# import range from lists
-# import lists as lists
+import range from lists
+import lists as lists
 
 fun generate-input(n :: Number) -> List<Person> block:
   doc: "Generates n random Persons."
@@ -19,7 +18,7 @@ fun generate-input(n :: Number) -> List<Person> block:
     # WHEAT DIFFERENCE: returns empty when n < 0
     empty
   else:
-    for lists.map(_ from lists.range(0, n)):
+    for lists.map(_ from range(0, n)):
       # WHEAT DIFFERENCE: age always 0
       # WHEAT DIFFERENCE: name always ""
       person("", 0)
@@ -27,6 +26,27 @@ fun generate-input(n :: Number) -> List<Person> block:
   end
 end
 
+fun generate-input-good(n :: Number) -> List<Person> block:
+  doc: "Generates n random Persons."
+  
+  when n < 0:
+    raise("Invalid n provided.")
+  end
+  
+  fun generate-name(shadow length :: Number) -> String:
+    doc: "Generates a random name of given length."
+    for lists.map(_ from range(0, length)):
+      num-random(65535)
+    end
+      ^ string-from-code-points
+  end
+  
+  for lists.map(_ from range(0, n)):
+    person(
+      generate-name(num-random(100)), 
+      (num-random(1e6) - 5e5) + (num-random(100) / 100))
+  end
+end
 
 fun sort-uniquely(lst :: List<Person>) -> List<Person>:
   doc: "Sorts the given list of people so that therer is only one correct order."
@@ -53,27 +73,6 @@ end
 
 fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
   doc: "Checks whether sorter is a valid sorter."
-  fun generate-input-good(n :: Number) -> List<Person> block:
-    doc: "Generates n random Persons."
-    
-    when n < 0:
-      raise("Invalid n provided.")
-    end
-    
-    fun generate-name(shadow length :: Number) -> String:
-      doc: "Generates a random name of given length."
-      for lists.map(_ from lists.range(0, length)):
-        num-random(65535)
-      end
-        ^ string-from-code-points
-    end
-    
-    for lists.map(_ from lists.range(0, n)):
-      person(
-        generate-name(num-random(100)), 
-        (num-random(1e6) - 5e5) + (num-random(100) / 100))
-    end
-  end
   interesting-inputs :: List<List<Person>> = [list:
     [list: ], # empty
     [list: person("A Person", 0)], # one person
@@ -85,10 +84,10 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
     lists.repeat(20, person("A Person", 5)),
     
     # same name, diff age
-    lists.range(0, 10).map(person("A Person", _)), 
+    range(0, 10).map(person("A Person", _)), 
     
     # repeat ages, so many valid sorts
-    lists.range(0, 100).map({(n): 
+    range(0, 100).map({(n): 
         person(
           [list: "A", "B", "C"].get(num-modulo(n, 3)), 
           num-modulo(n, 4))}),
@@ -103,7 +102,7 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
     [list: person("a", 20), person("b", 10), person("a", 20)],
     
     # long and reverse sorted
-    lists.map2({(p, age): person(p.name, age)}, generate-input-good(150), lists.range(0, 150))
+    lists.map2({(p, age): person(p.name, age)}, generate-input-good(150), range(0, 150))
       .reverse()
   ]
   
@@ -113,7 +112,7 @@ fun oracle(sorter :: (List<Person> -> List<Person>)) -> Boolean:
   end
   and 
   # Automated inputs
-  for lists.all(n from lists.range(3, 30)):
+  for lists.all(n from range(3, 30)):
     input = generate-input-good(n)
     is-valid(input, sorter(input))
   end
