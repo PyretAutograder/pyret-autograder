@@ -1,4 +1,3 @@
-
 provide: search end
 # END HEADER
 # wheat (tdelvecc): 
@@ -9,6 +8,8 @@ provide: search end
 #    - Reverse stable sort order of ties.
 #   Search "WHEAT DIFFERENCE" for changed code.
 
+import list-to-set from sets
+import lists as lists
 
 ###############################
 ###### Utility Functions ######
@@ -85,8 +86,8 @@ fun compare(doc1 :: String, doc2 :: String) -> Number block:
   words2 :: List<String> = string-split-all(doc2-prepped, " ")
   
   # Get list of all unique words
-  all-words :: List<String> = sets.list-to-set(words1)
-    .union(sets.list-to-set(words2))
+  all-words :: List<String> = list-to-set(words1)
+    .union(list-to-set(words2))
     .to-list()
   
   fun make-vector(words :: List<String>) -> List<Number>:
@@ -172,6 +173,26 @@ fun find-tweets-and-relevance(
   helper(start-tweet, none)
 end
 
+fun all-roots(alot :: List<Tweet>) -> Boolean:
+  doc: ```Checks if the given twt is a desendent tweet of any
+       tweet in alot.```
+  fun flatten-tree(twt :: Tweet) -> List<Tweet>:
+    twt.children.foldl({(ele, acc): flatten-tree(ele) + acc}, [list: twt])
+  end
+  
+  fun no-duplicates(twts :: List<Tweet>) -> Boolean:
+    cases (List<Tweet>) twts:
+      | empty => true
+      | link(twt1, r) =>
+        r.all({(twt2): not(twt1 <=> twt2)}) and
+        no-duplicates(r)
+    end
+  end
+  
+  
+  flattened = alot.foldl({(ele, acc): flatten-tree(ele) + acc}, empty)
+  no-duplicates(flattened)
+end
 
 fun search(
     search-tweet :: Tweet, 
@@ -185,33 +206,11 @@ fun search(
   when not((0 <= threshold) and (threshold <= 1)):
     raise("Invalid threshold.")
   end
-
-  fun all-roots(alot :: List<Tweet>) -> Boolean:
-    doc: ```Checks if the given twt is a desendent tweet of any
-         tweet in alot.```
-    fun flatten-tree(twt :: Tweet) -> List<Tweet>:
-      twt.children.foldl({(ele, acc): flatten-tree(ele) + acc}, [list: twt])
-    end
-    
-    fun no-duplicates(twts :: List<Tweet>) -> Boolean:
-      cases (List<Tweet>) twts:
-        | empty => true
-        | link(twt1, r) =>
-          r.all({(twt2): not(twt1 <=> twt2)}) and
-          no-duplicates(r)
-      end
-    end
-    
-    
-    flattened = alot.foldl({(ele, acc): flatten-tree(ele) + acc}, empty)
-    no-duplicates(flattened)
-  end
   
   # WHEAT DIFFERENCE: Ensures only root tweets present.
   when not(all-roots(alot)):
     raise("Got a tweet that was not a root.")
   end
-
 
   # Find the total number of tweets in alot (and associated trees)
   total-tweets :: Number = alot.map(find-size).foldl(_ + _, 0)
@@ -236,3 +235,148 @@ fun search(
     .map({(t :: Tv-pair<Tweet, Relevance>): t.tag})
 end
 
+###########################
+########## TESTS ##########
+###########################
+
+#|
+check ```No tweets```:
+  search(tweet("1", "A B C D E F", [list: ]), empty, 3)
+    is empty
+end
+
+check ```Threshold of 1```:
+  tweet111 = tweet("111", "B B C C D D", [list: ])
+  tweet112 = tweet("112", "C C D D D E", [list: ])
+  tweet11 = tweet("11", "D E F G H I", [list: tweet111, tweet112])
+  tweet12 = tweet("12", "A B C G H I", [list: ])
+  tweet13 = tweet("13", "A A A B C D", [list: ])
+  tweet1 = tweet("1", "A B C D E F", [list: tweet11, tweet12, tweet13])
+
+  search(tweet111, [list: tweet1], 1)
+    is empty
+end
+
+check ```One tweet thread```:
+  tweet111 = tweet("111", "B B C C D D", [list: ])
+  tweet112 = tweet("112", "C C D D D E", [list: ])
+  tweet11 = tweet("11", "D E F G H I", [list: tweet111, tweet112])
+  tweet12 = tweet("12", "A B C G H I", [list: ])
+  tweet13 = tweet("13", "A A A B C D", [list: ])
+  tweet1 = tweet("1", "A B C D E F", [list: tweet11, tweet12, tweet13])
+
+  search(tweet111, [list: tweet1], 0)
+    is [list: tweet111, tweet1, tweet112, tweet13, tweet12, tweet11]
+  search(tweet111, [list: tweet1], 0.5)
+    is [list: tweet111, tweet1, tweet112]
+end
+
+check ```Two tweet threads```:
+  tweet111 = tweet("111", "B B C C D D", [list: ])
+  tweet112 = tweet("112", "C C D D D E", [list: ])
+  tweet11 = tweet("11", "D E F G H I", [list: tweet111, tweet112])
+  tweet12 = tweet("12", "A B C G H I", [list: ])
+  tweet13 = tweet("13", "A A A B C D", [list: ])
+  tweet1 = tweet("1", "A B C D E F", [list: tweet11, tweet12, tweet13])
+
+  tweet213 = tweet("213", "A C D D E E", [list: ])
+  tweet212 = tweet("212", "B C D E E E", [list: ])
+  tweet211 = tweet("211", "B B B C C C", [list: ])
+  tweet21 = tweet("21", "A B B C C D", [list:  tweet211, tweet212, tweet213])
+  tweet2 = tweet("2", "A B C C C C", [list: tweet21])
+
+  search(tweet213, [list: tweet1, tweet2], 0.6) is [list: tweet213]
+end
+
+fun oracle(
+    format :: List<List<String>>, 
+    possibility :: List<String>)
+  -> Boolean:
+  doc: ```Checks if possibility is a valid solution based on format.
+       Each List in format is an equivalence class.```
+  # Check if no more format list left
+  cases (List) format:
+    | empty => is-empty(possibility)
+    | link(format-f, format-r) =>
+      # Check if no more possibility left
+      cases (List) possibility:
+        | empty => format.all(is-empty)
+        | link(poss-f, poss-r) =>
+          # Check if first element in format is empty
+          cases (List) format-f:
+            | empty => oracle(format-r, possibility)
+            | link(_, _) =>
+              format-f.member(poss-f)
+              and oracle(
+                link(format-f.remove(poss-f), format-r), 
+                poss-r)
+          end
+      end
+  end
+where:
+  oracle([list: [list: "A", "B", "C"], [list: "D", "E", "F"]],
+    [list: "C", "B", "A", "E", "F", "D"]) is true
+  oracle([list: empty, empty, [list: "A", "B"], [list: "C"], empty],
+    [list: "B", "A", "C"]) is true
+  
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "C", "B", "D"]) is false
+  oracle([list: [list: "A", "B"], [list: "C", "D"]],
+    [list: "A", "B", "B", "C", "D"]) is false
+end
+
+check ```Ties present```:
+  # 5 / 14 = 0.357 = (0.60 * (5 / 14)) + (0.20 * (9 / 14)) + (0.20 * (1 / 14))
+  tweet-a3 = tweet("a3", "A A B D D D", empty)
+  # 1377 / 3500 = 0.393 = (0.60 * (3 / 6)) + (0.20 * (277 / 700)) + (0.20 * (1 / 14))
+  tweet-a221 = tweet("a221", "B B C", empty)
+  # 277 / 700 = 0.395 = (0.60 * (3 / 6)) + (0.20 * (47 / 140)) + (0.20 * (2 / 14))
+  tweet-a22 = tweet("a22", "B B C D", [list: tweet-a221])
+  # 267 / 700 = 0.381 = (0.60 * (8 / 16)) + (0.20 * (47 / 140)) + (0.20 * (1 / 14))
+  tweet-a21 = tweet("a21", "A A A A", empty)
+  # 47 / 140 = 0.335 = (0.60 * (2 / 8)) + (0.20 * (9 / 14)) + (0.20 * (4 / 14))
+  tweet-a2 = tweet("a2", "C C D D", [list: tweet-a21, tweet-a22])
+  # 24 / 35 = 0.685 = (0.60 * (6 / 6)) + (0.20 * (5 / 14)) + (0.20 * (1 / 14))
+  tweet-a11 = tweet("a11", "A A B C", empty)
+  # 5 / 14 = 0.357 = (0.60 * (2 / 6)) + (0.20 * (9 / 14)) + (0.20 * (2 / 14))
+  tweet-a1 = tweet("a1", "B C D", [list: tweet-a11])
+  # 9 / 14 = 0.642 = (0.75 * (4 / 6)) + (0.25 * (8 / 14))
+  tweet-a = tweet("a", "A B C D", [list: tweet-a1, tweet-a2, tweet-a3])
+  
+  # 271 / 1000 = 0.271 = (0.60 * (2 / 6)) + (0.20 * (397 / 1400)) + (0.20 * (1 / 14))
+  tweet-b121 = tweet("b121", "A", empty)
+  # 397 / 1400 = 0.283 = (0.60 * (4 / 16)) + (0.20 * (21 / 40)) + (0.20 * (2 / 14))
+  tweet-b12 = tweet("b12", "B B B B", [list: tweet-b121])
+  # 337 / 1400 = 0.319 = (0.60 * (2 / 6)) + (0.20 * (21 / 40)) + (0.20 * (1 / 14))
+  tweet-b11 = tweet("b11", "B C D", empty)
+  # 21 / 40 = 0.525 = (0.60 * (6 / 8)) + (0.20 * (5 / 56)) + (0.20 * (4 / 14))
+  tweet-b1 = tweet("b1", "A A B B", [list: tweet-b11, tweet-b12])
+  # 5 / 56 = 0.089 = (0.75 * (0 / 6)) + (0.25 * (5 / 14))
+  tweet-b = tweet("b", "D", [list: tweet-b1])
+  
+  # 9 / 14 = 0.642 = (0.75 * (5 / 6)) + (0.25 * (1 / 14))
+  tweet-c = tweet("c", "A A B D", empty)
+  
+  search-tweet = tweet("search", "A A B C", empty)
+
+  sol = search(
+    search-tweet, 
+    [list: tweet-a, tweet-b, tweet-c],
+    0.28)
+  
+  sol satisfies oracle([list:
+      [list: tweet-a11],
+      [list: tweet-a, tweet-c],  
+      [list: tweet-b1], 
+      [list: tweet-a22], 
+      [list: tweet-a221], 
+      [list: tweet-a21], 
+      [list: tweet-a1, tweet-a3], 
+      [list: tweet-a2], 
+      [list: tweet-b11], 
+      [list: tweet-b12]], 
+    _)
+end
+|#
