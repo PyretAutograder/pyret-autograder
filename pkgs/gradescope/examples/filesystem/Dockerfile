@@ -7,7 +7,7 @@ ARG BASE
 
 # Step 1: Fix broken URIs in autograder-lib so the flatness checker
 # can find modules correctly when repl-runner.arr is recompiled from source.
-COPY ${BASE}/fix-autograder-lib-uris.js /fix-autograder-lib-uris.js
+COPY pkgs/gradescope/build/fix-autograder-lib-uris.js /fix-autograder-lib-uris.js
 RUN node /fix-autograder-lib-uris.js
 
 # Step 2: Delete repl-runner.arr from autograder-lib so it recompiles
@@ -65,7 +65,7 @@ RUN mkdir /out
 
 RUN gen_autograder -d /in -o /out
 
-COPY ${BASE}/patch-jarr.js /patch-jarr.js
+COPY pkgs/gradescope/build/patch-jarr.js /patch-jarr.js
 RUN node /patch-jarr.js /out/autograder.jarr
 
 FROM ${PKG_PREFIX}-run:${TAG} AS run
