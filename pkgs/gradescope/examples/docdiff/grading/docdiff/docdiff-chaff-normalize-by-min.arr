@@ -1,8 +1,10 @@
-use context essentials2021
+#| wheat (tdelvecc, Aug 26, 2020): 
+   Does NOT illustrate the following property:
 
-provide: overlap end
+   Overlap should be normalized by the squared magnitude of the larger vector
 
-# import lists as lists
+
+|#
 
 fun overlap(doc1 :: List<String>%(is-link), doc2 :: List<String>%(is-link)) -> Number:
   doc: "Finds the overlap value of two documents."

@@ -1,4 +1,7 @@
-provide: overlap end
+#| wheat (tdelvecc, Aug 26, 2020): 
+    Basic wheat; follows specs without additional features;
+    Raises error on empty doc.
+|#
 
 fun overlap(doc1 :: List<String>%(is-link), doc2 :: List<String>%(is-link)) -> Number:
   doc: "Finds the overlap value of two documents."
