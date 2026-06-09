@@ -1,5 +1,3 @@
-provide: median end
-
 fun median(lon :: List<Number>) -> Number block:
   if is-empty(lon):
     0

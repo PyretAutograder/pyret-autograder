@@ -5,16 +5,17 @@ include graders
 
 fun build-graders(path :: String):
   [list:
-    mk-wheat("median-wheat-1", empty, path, "median/wheat-1.arr", "median", 1),
+    mk-well-formed("wf", empty, path),
 
-    mk-wheat("median-wheat-2", empty, path, "median/wheat-2.arr", "median", 1),
+    mk-wheat("wheat-1-median", [list: "wf"], path, "median/median-wheat.arr",   "median", 1),
+    mk-wheat("wheat-2-median", [list: "wf"], path, "median/median-wheat-2.arr", "median", 1),
 
-    mk-chaff("median-chaff-1", empty, path, "median/chaff-1.arr", "median", 1),
-    mk-chaff("median-chaff-2", empty, path, "median/chaff-2.arr", "median", 1),
-    mk-chaff("median-chaff-3", empty, path, "median/chaff-3.arr", "median", 1),
-    mk-chaff("median-chaff-4", empty, path, "median/chaff-4.arr", "median", 1),
-    mk-chaff("median-chaff-5", empty, path, "median/chaff-5.arr", "median", 1),
-    ]
+    mk-chaff("chaff-lower-on-even", [list: "wf"], path, "median/median-chaff-lower-on-even.arr", "median", 1),
+    mk-chaff("chaff-upper-on-even", [list: "wf"], path, "median/median-chaff-upper-on-even.arr", "median", 1),
+    mk-chaff("chaff-mean",          [list: "wf"], path, "median/median-chaff-mean.arr",          "median", 1),
+    mk-chaff("chaff-mode",          [list: "wf"], path, "median/median-chaff-mode.arr",          "median", 1),
+    mk-chaff("chaff-no-sort",       [list: "wf"], path, "median/median-chaff-no-sort.arr",       "median", 1),
+  ]
 end
 
 spec = build-graders("submission/assignment.arr")
