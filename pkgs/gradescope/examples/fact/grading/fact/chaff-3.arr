@@ -1,8 +1,3 @@
-provide:
-  *,
-  type *
-end
-
 # 1 for n in {0, 1}, 2 otherwise
 
 fun fact(n :: Number) -> Number:
@@ -14,4 +9,3 @@ fun fact(n :: Number) -> Number:
     2
   end
 end
-

@@ -1,8 +1,3 @@
-provide:
-  *,
-  type *
-end
-
 # non- tail-recursive
 
 fun fact(n :: Number) -> Number:
