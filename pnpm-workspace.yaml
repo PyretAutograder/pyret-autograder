@@ -11,7 +11,7 @@ catalog:
 
 catalogs:
   # NOTE(owen): be very careful to keep these in sync with pyret-lang/package.json
-  # This can lead to some incredibly nasty bugs otherwise.
+  # this can lead to some incredibly nasty bugs otherwise.
   pyret-runtime:
     ascii-table: ^0.0.9
     canvas: ^3.1.0
@@ -27,6 +27,10 @@ catalogs:
     source-map: ^0.5.7
     vega: ^6.1.2
 
-onlyBuiltDependencies:
-  - '@ironm00n/pyret-lang'
-  - 'canvas'
+allowBuilds:
+  '@ironm00n/pyret-lang': true
+  '@swc/core': true
+  bufferutil: true
+  canvas: true
+  es5-ext: false # protestware
+  utf-8-validate: true
