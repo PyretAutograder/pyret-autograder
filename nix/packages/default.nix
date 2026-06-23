@@ -10,7 +10,7 @@ let
   packages = {
     nodejs = pkgs.nodejs_24;
     nodejs-slim = pkgs.nodejs-slim_24;
-    pnpm = pkgs.pnpm_10;
+    pnpm = pkgs.pnpm_11;
     nodejs-slim-stripped = callPackage ./nodejs-slim-stripped { };
     pyret-lang-src = callPackage ./pyret-lang-src { };
     pyret-lang = callPackage ./pyret-lang { };
