@@ -1,0 +1,70 @@
+This a summary of the Claude changes to the
+`allow-subr-in-alt-impl` branch.
+
+The branch's core purpose is to **generalize how the examplar
+autograder merges an alternate implementation into a student's
+program.** Previously, when grading a student's tests against a
+"wheat" (a correct implementation) or a "chaff" (a subtly broken
+one), the engine could only splice in *one named function* — it
+extracted the single function under test from the alternate file
+and grafted it over the student's copy. That was too limited: real
+alternate implementations need to redefine several functions at
+once and carry their own helper subroutines. The branch replaces
+that single-function splice with a whole-program merge
+(`merge-impl-stmts`) that folds *all* of the alternate's top-level
+statements into the student program — replacing functions by name,
+prepending the alternate's helper functions, and preserving the
+student's statement order and per-function tests.
+
+That engine change rippled through a few core files. The new merge
+logic and its supporting AST-visitor helpers live in
+`visitors.arr`; `repl-runner.arr` was rewritten to rebuild the
+merged program from the **student's** module header (so the
+student's imports and data definitions are kept and the
+alternate's are discarded) and to drop the now-obsolete "missing
+replacement function" error path; and `examplar.arr` was updated
+so each result message names which alternate file it ran against,
+making multi-wheat/multi-chaff output legible. A key consequence,
+established here, is an asymmetry the rest of the work had to
+design around: **functions get merged, but data-type definitions
+in an alternate are silently dropped** — so any shared data type
+must be defined on the student side.
+
+The accompanying repo https://github.com/ds26gte/gradescope-examples contains
+the corresponding **suite of 19 example
+assignments** built and validated against the new engine — from
+trivial (`fact`, `median`) to very complex (`updater`, a
+tree-zipper with a student-defined cursor type; `mst`, minimum
+spanning trees with union-find, mutable state, randomness, and
+meta-testing oracles). A repeatable methodology emerged: each
+assignment has a self-contained reference `assignment.arr` with
+real per-function test blocks, shared types/helpers in an
+`assignment-support.arr`, a spec that maps each wheat/chaff to a
+single function, and header-stripped grading files. Every
+assignment was actually built, pushed to a registry, run through
+the grader on Gradescope-style infrastructure, and confirmed to
+pass all wheats and catch all chaffs — so the example suite
+doubles as an end-to-end regression test bed for the engine.
+
+Alongside the assignments came a set of infrastructure and
+packaging changes. Two Docker build-patch scripts that had been
+copied into every example directory were centralized into a single
+shared location; the example Dockerfiles were standardized to
+build against the *published* base image and patch the updated
+core sources into it at build time (recompiling the runner with
+the new engine, repairing corrupted module URIs, and clearing a
+stale compilation cache); a Nix-level regex bug that had been
+mangling those URIs was fixed at the source; the
+assignment-authoring prose in the result messages was tidied; and
+`pnpm-workspace.yaml`'s pnpm-11 build-approval placeholders were
+resolved to real values for local development.
+
+The net result is a working, more capable grading engine plus a
+broad, production-verified example library that exercises it. The
+branch is fully linear (no merges), every example is green in
+production, and the remaining known boundary — that alternates
+can't introduce or override data types — is documented, along with
+a scoped, non-regressing follow-up ("Case A") that would allow
+*new, non-colliding* data types from an alternate if it's ever
+wanted. Two working documents summarizing all of this
+(`BRANCH-NOTES.md` and `PR.md`) are included.

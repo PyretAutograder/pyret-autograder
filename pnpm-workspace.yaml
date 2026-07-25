@@ -1,6 +1,14 @@
 packages:
   - pkgs/*
 
+allowBuilds:
+  '@ironm00n/pyret-lang': true   # Pyret fork — part of the toolchain build
+  '@swc/core': true              # native; needed to build the TS packages (cli, pawtograder-exec)
+  canvas: true                   # native; image rendering (dom-render / valueskeleton)
+  bufferutil: false              # optional ws speedup — pure-JS fallback works
+  utf-8-validate: false          # optional ws speedup — pure-JS fallback works
+  es5-ext: false                 # benign postinstall banner — skip
+
 catalog:
   '@swc/cli': ^0.7.8
   '@swc/core': ^1.13.21

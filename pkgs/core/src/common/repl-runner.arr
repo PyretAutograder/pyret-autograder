@@ -91,9 +91,13 @@ repl = R.make-repl(
 #------------------------------------utils------------------------------------#
 
 fun remove-checks(stx :: A.Program, check-name :: Option<String>) -> A.Program:
-  pred = check-name
-         .and-then(lam(cn): lam(actual-name): cn == actual-name end end)
-         .or-else(lam(_): false end)
+  # pred :: (String -> Boolean), passed to make-check-filter.
+  # make-check-filter applies pred(name) for s-fun nodes (String name) and
+  # pred(inner-name) for named s-check blocks; unnamed s-check blocks are removed.
+  pred = cases (Option) check-name:
+    | none => lam(_): false end
+    | some(cn) => lam(n): cn == n end
+  end
   stx.visit(V.make-check-filter(pred))
 end
 
@@ -102,7 +106,6 @@ end
 data RunAltImplErr:
   | ai-cannot-parse-student(err :: CA.ParsePathErr)
   | ai-cannot-parse-alt-impl(err :: CA.ParsePathErr)
-  | ai-missing-replacement-fun(fun-name :: String)
   | ai-run-err(err :: RunChecksErr)
 end
 
@@ -115,30 +118,27 @@ fun run-with-alternate-impl(
     cases(Either) CA.parse-path(alt-impl-path):
     | left(err) => left(ai-cannot-parse-alt-impl(err))
     | right(alt-impl) =>
-      cases(Either) replace-fun(student, alt-impl, fun-name):
-      | left(err) => left(err)
-      | right(to-run) =>
-        filtered-checks = remove-checks(to-run, some(fun-name))
-        cases(Either) run(filtered-checks):
-        | left(err) => left(ai-run-err(err))
-        | right(res) => right(res)
-        end
+      to-run = cases (A.Program) student:
+        | s-program(l, _use, _provide, provided-types, provides, imports, body) =>
+          cases (A.Expr) body:
+            | s-block(bl, student-stmts) =>
+              cases (A.Program) alt-impl:
+                | s-program(_, _, _, _, _, _, alt-body) =>
+                  cases (A.Expr) alt-body:
+                    | s-block(_, alt-stmts) =>
+                      merged = V.merge-impl-stmts(student-stmts, alt-stmts)
+                      A.s-program(l, _use, _provide, provided-types, provides, imports,
+                        A.s-block(bl, merged))
+                  end
+              end
+          end
+      end
+      filtered-checks = remove-checks(to-run, some(fun-name))
+      cases(Either) run(filtered-checks):
+      | left(err) => left(ai-run-err(err))
+      | right(res) => right(res)
       end
     end
-  end
-end
-
-fun replace-fun(
-  base :: A.Program, replacement :: A.Program, fun-name :: String
-) -> Either<RunAltImplErr, A.Program> block:
-  fun-extractor = V.make-fun-extractor(fun-name)
-  replacement.visit(fun-extractor)
-  cases(Option) fun-extractor.get-target():
-    | none => left(ai-missing-replacement-fun(fun-name))
-    | some(f) =>
-      fun-to-splice = f.visit(V.shadow-visitor)
-      fun-splicer = V.make-fun-splicer(fun-to-splice)
-      right(base.visit(fun-splicer))
   end
 end
 
