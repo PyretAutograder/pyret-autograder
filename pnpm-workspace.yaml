@@ -27,6 +27,12 @@ catalogs:
     source-map: ^0.5.7
     vega: ^6.1.2
 
+# NOTE: these revert pnpm11 default config changes
+verifyDepsBeforeRun: false
+# skips postinstall scripts if installed initially with `--ignore-scrips` --
+# which we rely on since that's what nixpkgs' `pnpmConfigHook` uses
+optimisticRepeatInstall: false
+
 allowBuilds:
   '@ironm00n/pyret-lang': true
   '@swc/core': true
