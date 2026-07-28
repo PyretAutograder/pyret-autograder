@@ -37,5 +37,6 @@ dockerTools.streamLayeredImage {
     runtime
   ];
   config = {
+    WorkingDir = "/autograder";
   };
 }
