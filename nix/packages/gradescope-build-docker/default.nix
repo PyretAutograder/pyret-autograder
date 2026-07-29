@@ -8,7 +8,7 @@
   runtime-make-wrapper,
 }:
 dockerTools.streamLayeredImage {
-  name = "pyret-autograder-gradescope-build";
+  name = "pyretautograder/gradescope-build";
   tag = "0.0.1-pre.1";
 
   contents = [
