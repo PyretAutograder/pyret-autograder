@@ -1,0 +1,29 @@
+diff --git a/src/arr/compiler/cli-module-loader.arr b/src/arr/compiler/cli-module-loader.arr
+index 50a5433..457c58b 100644
+--- a/src/arr/compiler/cli-module-loader.arr
++++ b/src/arr/compiler/cli-module-loader.arr
+@@ -228,14 +228,22 @@ end
+ 
+ fun get-loadable(basedir, read-only-basedirs, l, max-dep-times) -> Option<Loadable>:
+   locuri = l.locator.uri()
++  # A --compiled-read-only-dir is a curated, immutable cache, so its entries are
++  # trusted unconditionally rather than checked against source mtimes. This is how
++  # get-builtin-locator already treats those dirs (it passes 0). Without it, any
++  # tree where sources and artifacts share an mtime -- e.g. a nix store, which
++  # normalizes both to 1 -- reports every artifact as stale.
++  fun staleness-floor(rob):
++    if rob == basedir: max-dep-times.get-value(locuri) else: 0 end
++  end
+ #  cached = cached-available(basedir, l.locator.uri(), l.locator.name(), l.locator.get-modified-time())
+   first-available = for find(rob from link(basedir, read-only-basedirs)):
+-    is-some(cached-available(rob, l.locator.uri(), l.locator.name(), max-dep-times.get-value(locuri)))
++    is-some(cached-available(rob, l.locator.uri(), l.locator.name(), staleness-floor(rob)))
+   end
+   cases(Option) first-available block:
+     | none => none
+     | some(found-basedir) => 
+-      c = cached-available(found-basedir, l.locator.uri(), l.locator.name(), max-dep-times.get-value(locuri))
++      c = cached-available(found-basedir, l.locator.uri(), l.locator.name(), staleness-floor(found-basedir))
+       saved-path = Filesystem.join(found-basedir, uri-to-path(locuri, l.locator.name()))
+       {static-path; module-path} = cases(CachedType) c.or-else(single-file):
+         | split =>
