@@ -42,5 +42,9 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out
     cp -r pkgs/gradescope/compiled $out/
+    # include.arr exists only to pull the trove into one compilation;
+    # we don't actually need the compiled artifact (just the side effects)
+    # plus this is the only non-portable (not behind npm URI) artifact
+    rm $out/compiled/include.arr-*
   '';
 }

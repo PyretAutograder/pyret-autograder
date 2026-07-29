@@ -62,9 +62,12 @@ runCommand "pyret-autograder-gradescope-build" { nativeBuildInputs = [ makeWrapp
   mkdir -p $NODE_MODULES
   cp -r --no-preserve=mode,ownership ${buildtime-deps}/node_modules/. $NODE_MODULES
 
-  find $SHARE/autograder-lib -type f -name '*.js' -print0 \
-    | xargs -0 grep -lE '.*/workspace-prepared/pkgs/core/' \
-    | xargs -r sed -i "s|.*/workspace-prepared/pkgs/core/|$NODE_MODULES/pyret-autograder/|g"
+  # artifacts compiled under an npm package are keyed on npm://<pkg>/<path>
+  # rather than on wherever they were built; see relocatable-npm-uris.patch
+  if grep -rF 'file:///' $SHARE/autograder-lib >/dev/null; then
+    echo "error: non-relocatable file:// uris remain in autograder-lib" >&2
+    exit 1
+  fi
 
   # FIXME: see if we can inline npm resolution inside the compiled files.
   # HACK: temporarily we will just copy the pyret source files into node_modules
