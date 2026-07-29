@@ -1,0 +1,29 @@
+name: Publish Docker Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        run: skopeo login docker.io -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin <<< "${{ secrets.DOCKERHUB_TOKEN }}"
+
+      - name: Publish Gradescope Build Docker
+        run: |
+          dest="docker.io/$(nix eval --raw .#gradescope-build-docker.imageName):$(nix eval --raw .#gradescope-build-docker.imageTag)"
+          "$(nix build .#gradescope-build-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$dest"
+
+      - name: Publish Gradescope Run Docker
+        run: |
+          dest="docker.io/$(nix eval --raw .#gradescope-run-docker.imageName):$(nix eval --raw .#gradescope-run-docker.imageTag)"
+          "$(nix build .#gradescope-run-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$dest"
