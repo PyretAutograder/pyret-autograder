@@ -27,7 +27,7 @@ let
 in
 
 dockerTools.streamLayeredImage {
-  name = "pyret-autograder-gradescope-run";
+  name = "pyretautograder/gradescope-run";
   tag = "0.0.1-pre.1";
 
   fromImage = gradescope-base;
