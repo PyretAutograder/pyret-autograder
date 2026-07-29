@@ -1,0 +1,177 @@
+Compiled artifacts are looked up by sha256 of the module uri, and a
+file-locator's uri is its realpath'd absolute path. Artifacts compiled in
+one tree are therefore never found when the package is loaded from another
+path, so --compiled-read-only-dir misses for anything shipped as a package.
+
+Instead, key files inside an npm package by npm://<pkg>/<path-in-package>:
+module-finder records the package directory and uri prefix (LogicalRoot)
+when it enters a package via an npm() import, and locators for files under
+that directory get uri() overridden accordingly. url-file already overrides
+uri() the same way for locally-cached urls.
+
+diff --git a/src/arr/compiler/locators/npm.arr b/src/arr/compiler/locators/npm.arr
+index bebcadc..67db52a 100644
+--- a/src/arr/compiler/locators/npm.arr
++++ b/src/arr/compiler/locators/npm.arr
+@@ -1,10 +1,16 @@
+-provide: make-npm-locator end
++provide: make-npm-locator, npm-package-root end
+ 
+ import require-util as R
+ import filesystem as FS
+ import file("../compile-structs.arr") as CS
+ import file("./file.arr") as F
+ 
++# via package.json: dirname(R.resolve(pkg)) is main's dir, which imports climb out of
++fun npm-package-root(package-name, current-load-path):
++    FS.dirname(R.resolve(package-name + "/package.json", current-load-path))
++end
++
++# paths stay relative to dirname(main): existing imports are written against it
+ fun make-npm-locator(package-name, path, current-load-path):
+     package-path = R.resolve(package-name, current-load-path)
+     F.file-locator(
+diff --git a/src/arr/compiler/cli-module-loader.arr b/src/arr/compiler/cli-module-loader.arr
+index 457c58b..29c80e1 100644
+--- a/src/arr/compiler/cli-module-loader.arr
++++ b/src/arr/compiler/cli-module-loader.arr
+@@ -82,6 +82,12 @@ fun uri-to-path(uri, name):
+   name + "-" + crypto.sha256(uri)
+ end
+ 
++# a stable uri prefix for the directory a package resolves to, so cache
++# identity comes from position-in-package rather than absolute path
++data LogicalRoot:
++  | logical-root(real :: String, uri :: String)
++end
++
+ # NOTE(joe): This is just a little one-off type to represent a simple
+ # situation: Builtin pure-JS files are stored in single files with a hash
+ # followed by .js, while builtin Pyret files are stored in two files – one with
+@@ -194,8 +200,13 @@ fun get-cached-if-available-known-mtimes(basedir, loc, max-dep-times) block:
+   end
+ end
+ 
+-fun get-file-locator(basedir, real-path):
+-  loc = FL.file-locator(real-path, CS.standard-globals)
++# override uri before the cache lookup: the lookup hashes it
++fun get-file-locator(basedir, real-path, logical-uri :: Option<String>):
++  base = FL.file-locator(real-path, CS.standard-globals)
++  loc = cases(Option) logical-uri:
++    | none => base
++    | some(u) => base.{ method uri(self): u end }
++  end
+   get-cached-if-available(basedir, loc)
+ end
+ 
+@@ -301,9 +312,24 @@ end
+ type CLIContext = {
+   current-load-path :: String,
+   cache-base-dir :: String,
+-  url-file-mode :: CS.UrlFileMode
++  url-file-mode :: CS.UrlFileMode,
++  logical :: Option<LogicalRoot>
+ }
+ 
++fun logical-uri-for(ctxt :: CLIContext, real-path :: String) -> Option<String>:
++  cases(Option) ctxt.logical:
++    | none => none
++    | some(lr) =>
++      prefix = lr.real + "/"
++      if string-starts-with(real-path, prefix):
++        rest = string-substring(real-path, string-length(lr.real), string-length(real-path))
++        some(lr.uri + rest)
++      else:
++        none
++      end
++  end
++end
++
+ fun get-real-path(current-load-path :: String, this-path :: String):
+   if Filesystem.is-absolute(this-path):
+     this-path
+@@ -317,7 +343,10 @@ fun locate-file(ctxt :: CLIContext, rel-path :: String):
+   real-path = get-real-path(clp, rel-path)
+   new-context = ctxt.{current-load-path: Filesystem.dirname(real-path)}
+   if Filesystem.exists(real-path):
+-    some(CL.located(get-file-locator(ctxt.cache-base-dir, real-path), new-context))
++    locator = get-file-locator(
++      ctxt.cache-base-dir, real-path, logical-uri-for(ctxt, real-path)
++    )
++    some(CL.located(locator, new-context))
+   else:
+     none
+   end
+@@ -359,8 +388,18 @@ fun module-finder(ctxt :: CLIContext, dep :: CS.Dependency):
+         locator = NPM.make-npm-locator(package-name, path, ctxt.current-load-path)
+         clp = ctxt.current-load-path
+         real-path = get-real-path(clp, locator.path)
+-        new-context = ctxt.{current-load-path: Filesystem.dirname(real-path)}
+-        CL.located(locator, new-context)
++        # uri via the root, so npm() and a relative import of the same file agree
++        new-context = ctxt.{
++          current-load-path: Filesystem.dirname(real-path),
++          logical: some(logical-root(
++            NPM.npm-package-root(package-name, clp), "npm://" + package-name
++          ))
++        }
++        locator-with-uri = cases(Option) logical-uri-for(new-context, real-path):
++          | none => locator
++          | some(u) => locator.{ method uri(self): u end }
++        end
++        CL.located(locator-with-uri, new-context)
+       else if protocol == "builtin-test":
+         l = get-builtin-test-locator(ctxt.cache-base-dir, args.first)
+         force-check-mode = l.{
+@@ -382,7 +421,11 @@ fun module-finder(ctxt :: CLIContext, dep :: CS.Dependency):
+         clp = ctxt.current-load-path
+         real-path = get-real-path(clp, args.get(0))
+         new-context = ctxt.{current-load-path: Filesystem.dirname(real-path)}
+-        locator = JSF.make-jsfile-locator(real-path)
++        base = JSF.make-jsfile-locator(real-path)
++        locator = cases(Option) logical-uri-for(ctxt, real-path):
++          | none => base
++          | some(u) => base.{ method uri(self): u end }
++        end
+         CL.located(locator, new-context)
+       else:
+         raise("Unknown import type: " + protocol)
+@@ -396,14 +439,16 @@ default-start-context = {
+   current-load-path: Filesystem.resolve("./"),
+   cache-base-dir: Filesystem.resolve("./compiled"),
+   compiled-read-only-dirs: empty,
+-  url-file-mode: CS.all-remote
++  url-file-mode: CS.all-remote,
++  logical: none
+ }
+ 
+ default-test-context = {
+   current-load-path: Filesystem.resolve("./"),
+   cache-base-dir: Filesystem.resolve("./tests/compiled"),
+   compiled-read-only-dirs: empty,
+-  url-file-mode: CS.all-remote
++  url-file-mode: CS.all-remote,
++  logical: none
+ }
+ 
+ fun compile(path, options):
+@@ -412,7 +457,8 @@ fun compile(path, options):
+     current-load-path: Filesystem.resolve(options.base-dir),
+     cache-base-dir: options.compiled-cache,
+     compiled-read-only-dirs: options.compiled-read-only.map(Filesystem.resolve),
+-    url-file-mode: options.url-file-mode
++    url-file-mode: options.url-file-mode,
++    logical: none
+   }, base-module)
+   wl = CL.compile-worklist(module-finder, base.locator, base.context)
+   compiled = CL.compile-program(wl, options)
+@@ -477,7 +523,8 @@ fun build-program(path, options, stats) block:
+     current-load-path: Filesystem.resolve(options.base-dir),
+     cache-base-dir: options.compiled-cache,
+     compiled-read-only-dirs: options.compiled-read-only.map(Filesystem.resolve),
+-    url-file-mode: options.url-file-mode
++    url-file-mode: options.url-file-mode,
++    logical: none
+   }, base-module)
+   clear-and-print("Compiling worklist...")
+   wl = CL.compile-worklist(module-finder, base.locator, base.context)
