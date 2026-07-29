@@ -1,6 +1,6 @@
 {
   "name": "pyret-autograder-gradescope",
-  "version": "0.0.1-pre.1",
+  "version": "0.0.1-pre.2",
   "description": "Gradescope adaptor for pyret autograder.",
   "author": "Owen Duckham <me@ironmoon.dev>",
   "license": "LGPL-3.0-or-later",

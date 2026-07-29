@@ -1,5 +1,5 @@
 ARG PKG_PREFIX=pyretautograder/gradescope
-ARG TAG=0.0.1-pre.1
+ARG TAG=0.0.1-pre.2
 ARG BASE=./pkgs/gradescope/examples/tower
 
 FROM ${PKG_PREFIX}-build:${TAG} AS build
