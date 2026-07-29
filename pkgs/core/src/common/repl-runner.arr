@@ -78,7 +78,8 @@ context = {
   cache-base-dir: cache-base-dir,
 
   compiled-read-only-dirs: pyret-lang-compiled,
-  url-file-mode: CS.all-remote
+  url-file-mode: CS.all-remote,
+  logical: none
 }
 repl = R.make-repl(
   RT.make-runtime(),
