@@ -5,7 +5,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var STORE_HASH = 'bsb1zjvp31k4xq0g57k7k6pwqmp1cwdh';
+var STORE_HASH = '2ashmahcfs9i051ffyh6ifqrya72sgp7';
 var AUTOGRADER_LIB = '/nix/store/' + STORE_HASH +
   '-pyret-autograder-gradescope-build/share/pyret-autograder/autograder-lib';
 
