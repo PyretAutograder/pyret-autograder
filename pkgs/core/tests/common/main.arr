@@ -17,3 +17,4 @@
   with pyret-autograder. If not, see <http://www.gnu.org/licenses/>.
 |#
 import file("./locs.arr") as _
+import file("./visitors.arr") as _

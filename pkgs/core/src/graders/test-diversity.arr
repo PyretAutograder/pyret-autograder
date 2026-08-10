@@ -358,7 +358,9 @@ fun instrument(
       make-size-check(output-set-name(fn), output-check-name(fn), min-out)
     ]
     # TODO: this should remove all irrelevant code. see #16
-    student-checks-removed = wrapped.visit(V.make-check-filter(_ == fn))
+    student-checks-removed = wrapped
+      .visit(V.make-check-filter(_ == fn))
+      .visit(V.nothing-stripper)
     with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>

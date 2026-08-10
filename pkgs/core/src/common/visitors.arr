@@ -23,7 +23,8 @@ provide:
   make-check-extractor,
   make-check-filter,
   make-program-appender,
-  make-program-prepender
+  make-program-prepender,
+  nothing-stripper
 end
 
 import ast as A
@@ -121,3 +122,22 @@ end
 fun make-program-prepender(expr):
   block-transformer(link(expr, _))
 end
+
+fun is-nothing-stmt(stmt :: A.Expr) -> Boolean:
+  cases (A.Expr) stmt:
+    | s-id(_, name) =>
+      cases (A.Name) name:
+        | s-name(_, str) => str == "nothing"
+        | else => false
+      end
+    | else => false
+  end
+end
+
+fun drop-nothing-stmts(stmts :: List<A.Expr>) -> List<A.Expr>:
+  kept = stmts.filter(lam(stmt): not(is-nothing-stmt(stmt)) end)
+  if is-empty(kept): stmts else: kept end
+end
+
+# slight hack, can strip top-level student stmts too, but should be fine
+nothing-stripper = block-transformer(drop-nothing-stmts)

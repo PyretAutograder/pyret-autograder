@@ -96,6 +96,7 @@ fun remove-checks(stx :: A.Program, check-name :: Option<String>) -> A.Program:
          .and-then(lam(cn): lam(actual-name): cn == actual-name end end)
          .or-else(lam(_): false end)
   stx.visit(V.make-check-filter(pred))
+     .visit(V.nothing-stripper)
 end
 
 #---------------------------run-with-alternate-impl---------------------------#
