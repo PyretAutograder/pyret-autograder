@@ -1,6 +1,7 @@
 {
   dockerTools,
   gradescope-build,
+  gradescope-version,
   bash,
   coreutils,
   file,
@@ -9,7 +10,7 @@
 }:
 dockerTools.streamLayeredImage {
   name = "pyretautograder/gradescope-build";
-  tag = "0.0.1-pre.3";
+  tag = gradescope-version;
 
   contents = [
     gradescope-build

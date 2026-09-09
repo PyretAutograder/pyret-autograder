@@ -1,6 +1,7 @@
 {
   dockerTools,
   runCommand,
+  gradescope-version,
   nodejs-slim-stripped,
   runtime-deps,
   compiled-builtins,
@@ -28,7 +29,7 @@ in
 
 dockerTools.streamLayeredImage {
   name = "pyretautograder/gradescope-run";
-  tag = "0.0.1-pre.3";
+  tag = gradescope-version;
 
   fromImage = gradescope-base;
 

@@ -1,0 +1,19 @@
+{
+  "pyret-lang": {
+    "upstream": "brownplt/pyret-lang",
+    "branch": "master",
+    "owner": "ironm00n",
+    "repo": "pyret-lang",
+    "rev": "75e29b94ae61c0fef8171414d1743c027444eeb6",
+    "hash": "sha256-WFn+FYqqK+D5WeL742oqu+4fCMFYSE8CyPunYYWmpX8="
+  },
+  "pyret-npm": {
+    "upstream": "brownplt/pyret-npm",
+    "branch": "master",
+    "owner": "ironm00n",
+    "repo": "pyret-npm",
+    "rev": "cabdc16c1fa56b93b92e8b72dc98465d875d34df",
+    "hash": "sha256-t8ag8Za4HWEFMKhJpZwFD1mEvX6hy9IbysMgRZDDaeI=",
+    "npmDepsHash": "sha256-Lo/BqSK+jMQVpjYi+ZGrOGDSEvPE/jhH6PyrNBpEvMI="
+  }
+}

@@ -3,6 +3,8 @@ let
   callPackage = pkgs.lib.callPackageWith (pkgs // fakePackages // packages);
   fakePackages = {
     inherit callPackage;
+    sources = pkgs.lib.importJSON ../sources.json;
+    gradescope-version = (pkgs.lib.importJSON ../../pkgs/gradescope/package.json).version;
     buildNpmPackageCanvas = callPackage ./build-npm-package-canvas { };
     fetchPnpmDeps = pkgs.fetchPnpmDeps.override { inherit (packages) pnpm; };
     inherit (pkgs) pnpmConfigHook;
@@ -29,6 +31,7 @@ let
     runtime-make-wrapper = callPackage ./runtime-make-wrapper { };
 
     scc = callPackage ./scc { };
+    update-sources = callPackage ./update-sources { };
   };
 in
 packages

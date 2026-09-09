@@ -2,6 +2,16 @@ name: Publish Docker Images
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Republish even if the tag already exists"
+        type: boolean
+        default: false
+  push:
+    branches: [master]
+    paths:
+      - nix/sources.json
+      - pkgs/gradescope/package.json
 
 jobs:
   publish:
@@ -15,15 +25,39 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve image references
+        id: images
+        run: |
+          for image in gradescope-build gradescope-run; do
+            name=$(nix eval --raw ".#$image-docker.imageName")
+            tag=$(nix eval --raw ".#$image-docker.imageTag")
+            echo "$image=docker.io/$name:$tag" >> "$GITHUB_OUTPUT"
+          done
+
       - name: Log in to Docker Hub
         run: skopeo login docker.io -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin <<< "${{ secrets.DOCKERHUB_TOKEN }}"
 
-      - name: Publish Gradescope Build Docker
+      - name: Refuse to overwrite published tags
+        if: ${{ !inputs.force }}
+        env:
+          BUILD_REF: ${{ steps.images.outputs.gradescope-build }}
+          RUN_REF: ${{ steps.images.outputs.gradescope-run }}
         run: |
-          dest="docker.io/$(nix eval --raw .#gradescope-build-docker.imageName):$(nix eval --raw .#gradescope-build-docker.imageTag)"
-          "$(nix build .#gradescope-build-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$dest"
+          for ref in "$BUILD_REF" "$RUN_REF"; do
+            if skopeo inspect "docker://$ref" > /dev/null 2>&1; then
+              echo "::error::$ref is already published; bump \"version\" in pkgs/gradescope/package.json"
+              exit 1
+            fi
+          done
+
+      - name: Publish Gradescope Build Docker
+        env:
+          REF: ${{ steps.images.outputs.gradescope-build }}
+        run: |
+          "$(nix build .#gradescope-build-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$REF"
 
       - name: Publish Gradescope Run Docker
+        env:
+          REF: ${{ steps.images.outputs.gradescope-run }}
         run: |
-          dest="docker.io/$(nix eval --raw .#gradescope-run-docker.imageName):$(nix eval --raw .#gradescope-run-docker.imageTag)"
-          "$(nix build .#gradescope-run-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$dest"
+          "$(nix build .#gradescope-run-docker --print-out-paths)" | skopeo copy docker-archive:/dev/stdin "docker://$REF"

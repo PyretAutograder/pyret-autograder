@@ -1,0 +1,55 @@
+name: Upstream Bump
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update sources
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: nix run .#update-sources -- --report "$RUNNER_TEMP/bump.json"
+
+      - name: Render report
+        run: |
+          jq -r --slurpfile s nix/sources.json '
+            ([ .updated | to_entries[]
+               | "- `\(.key)`: [`\(.value.from[0:8])` → `\(.value.to[0:8])`]"
+                 + "(https://github.com/\($s[0][.key].owner)/\($s[0][.key].repo)"
+                 + "/compare/\(.value.from)...\(.value.to))" ]
+             | if length == 0 then [] else ["## Bumped", ""] + . + [""] end)
+            + ([ .drift | to_entries[]
+                 | "- `\(.key)`: \(.value.upstream) is \(.value.behind) commits ahead of"
+                   + " the pinned fork (head `\(.value.head[0:8])`)." ]
+               | if length == 0 then [] else
+                   ["## Pins tracking a fork", "",
+                    "These were not bumped: the pin points at a fork, so taking upstream'"'"'s",
+                    "head would drop the fork'"'"'s own commits. Repoint the pin in",
+                    "`nix/sources.json` to make these bump automatically.", ""] + . + [""]
+                 end)
+            | .[]
+          ' "$RUNNER_TEMP/bump.json" | tee "$RUNNER_TEMP/bump-body.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: upstream-bump
+          title: "nix: bump upstream sources"
+          commit-message: "nix: bump upstream sources"
+          body-path: ${{ runner.temp }}/bump-body.md
+          delete-branch: true

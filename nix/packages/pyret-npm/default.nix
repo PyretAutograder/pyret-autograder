@@ -2,20 +2,22 @@
   buildNpmPackageCanvas,
   fetchFromGitHub,
   pyret-lang,
+  sources,
 }:
 
 buildNpmPackageCanvas {
   name = "pyret-npm";
 
-  # https://github.com/ironm00n/pyret-npm/tree/fork
   src = fetchFromGitHub {
-    owner = "ironm00n";
-    repo = "pyret-npm";
-    rev = "cabdc16c1fa56b93b92e8b72dc98465d875d34df";
-    hash = "sha256-t8ag8Za4HWEFMKhJpZwFD1mEvX6hy9IbysMgRZDDaeI=";
+    inherit (sources.pyret-npm)
+      owner
+      repo
+      rev
+      hash
+      ;
   };
 
-  npmDepsHash = "sha256-Lo/BqSK+jMQVpjYi+ZGrOGDSEvPE/jhH6PyrNBpEvMI=";
+  inherit (sources.pyret-npm) npmDepsHash;
 
   dontNpmBuild = true;
   needsCanvas = true;
