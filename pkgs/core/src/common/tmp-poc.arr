@@ -36,23 +36,54 @@ provide:
   tmp-extract-ac-ran-program,
 end
 
-fun handle(res, path, name):
+type BlockSummary = { Number; Number; List<String> }
+
+fun block-summary(block) -> Either<String, BlockSummary>:
+  passed = block.get("passed").n()
+  total = block.get("total").n()
+
+  if is-left(passed) or is-left(total):
+    left("cannot find json: " + to-repr(block))
+  else:
+    messages = block
+      .get("results").v
+      .and-then(lam(x): x.native().map(_.get-value("message")) end)
+      .or-else([list:])
+    right({ passed.v; total.v; messages })
+  end
+end
+
+fun sum-summaries(blocks) -> Either<String, BlockSummary>:
+  for fold(acc from right({0; 0; [list:]}), block from blocks):
+    cases (Either) acc:
+    | left(_) => acc
+    | right({passed; total; messages}) =>
+      cases (Either) block-summary(block):
+      | left(err) => left(err)
+      | right({p; t; m}) => right({ passed + p; total + t; messages + m })
+      end
+    end
+  end
+end
+
+fun handle(res, path, selector :: R.CheckSelector):
   cases (Either) res:
   | left(err) => left(err)
   | right({json; program}) =>
-    tests = JU.pson(json).get(path).find-match("name", name)
-    passed = tests.get("passed").n()
-    total = tests.get("total").n()
-
-    if is-left(passed) or is-left(total):
-      left("cannot find json: " + to-repr(tests))
-    else:
-      results = tests
-        .get("results").v
-        .and-then(lam(x): x.native().map(_.get-value("message")).join-str("\n") end)
-        .or-else("")
+    blocks = JU.pson(json).get(path)
+    selected = cases (R.CheckSelector) selector:
+      | check-named(name) => right([list: blocks.find-match("name", name)])
+      | all-checks => blocks.elements()
+    end
+    summed = cases (Either) selected:
+      | left(ops) => left("cannot find json: " + to-repr(ops))
+      | right(shadow selected) => sum-summaries(selected)
+    end
+    cases (Either) summed:
+    | left(err) => left(err)
+    | right({passed; total; messages}) =>
       program-thunk = lam(): program end # otherwise debugging is a pain
-      right({ passed.v; total.v; results; program-thunk })
+      right({ passed; total; messages.join-str("\n"); program-thunk })
     end
   end
 end
@@ -65,14 +96,14 @@ fun tmp-run-with-alternate-impl(
   student-path :: String, alt-impl-path :: String, fun-name :: String
 ) -> AiInfo:
   res = R.run-with-alternate-impl(student-path, alt-impl-path, fun-name)
-  handle(res, student-path, fun-name)
+  handle(res, student-path, R.check-named(fun-name))
 end
 
 fun tmp-run-with-alternate-checks(
-  student-path :: String, check-path :: String, check-name :: String
+  student-path :: String, check-path :: String, selector :: R.CheckSelector
 ) -> AcInfo:
-  res = R.run-with-alternate-checks(student-path, check-path, check-name)
-  handle(res, check-path, check-name)
+  res = R.run-with-alternate-checks(student-path, check-path, selector)
+  handle(res, check-path, selector)
 end
 
 fun tmp-fmt-runtime-err(err :: R.RunChecksErr) -> String:
@@ -118,6 +149,8 @@ fun tmp-fmt-ac-err(err) -> String:
         "Cannot parse specified check file:\n" + to-repr(err)
       | ac-cannot-find-check-block(name) =>
         "Cannot find a check block named `" + name + "` in the specified file."
+      | ac-no-check-blocks =>
+        "The specified file has no top-level check blocks."
       | ac-run-err(shadow err) => tmp-fmt-runtime-err(err)
     end
   end

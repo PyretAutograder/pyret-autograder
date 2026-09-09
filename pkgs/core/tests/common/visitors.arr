@@ -57,3 +57,44 @@ end
 check "a program that is only checks does not become an empty block":
   strip("check: 1 is 1 end") is expect("nothing")
 end
+
+fun parse(src :: String):
+  PP.surface-parse(src, "test")
+end
+
+check "top-level-checks collects only top-level check blocks, in source order":
+  prog = parse(```
+    check "a": 1 is 1 end
+    fun f():
+      1
+    where:
+      f() is 1
+    end
+    fun g() block:
+      check "nested": 1 is 1 end
+      1
+    end
+    check: 2 is 2 end
+    check "c": 3 is 3 end
+  ```)
+  V.top-level-checks(prog).map(_.name) is [list: some("a"), none, some("c")]
+  V.top-level-checks(parse("fun f(): 1 end")) is empty
+end
+
+check "make-program-appender and make-program-prepender keep statement order":
+  checks = V.top-level-checks(parse(```
+    check "x": 1 is 1 end
+    check "y": 2 is 2 end
+  ```))
+  base = parse("fun f(): 1 end")
+  pretty(base.visit(V.make-program-appender(checks))) is expect(```
+    fun f(): 1 end
+    check "x": 1 is 1 end
+    check "y": 2 is 2 end
+  ```)
+  pretty(base.visit(V.make-program-prepender(checks))) is expect(```
+    check "x": 1 is 1 end
+    check "y": 2 is 2 end
+    fun f(): 1 end
+  ```)
+end

@@ -20,22 +20,24 @@ import file("../core.arr") as C
 import file("../grading.arr") as G
 import file("../grading-builders.arr") as GB
 import file("../common/tmp-poc.arr") as AAAA # TODO: proper implementation
+import file("../common/repl-runner.arr") as R
 import safe-divide from file("../utils/general.arr")
 include either
 include from C: type Id end
 include from G: data AggregateOutput end
 
 provide:
-  mk-functional
+  mk-functional,
+  mk-functional-all
 end
 
 # TODO: this should be more descriptive
 type Info = String
 
 fun score-functional-test(
-  student-path :: String, ref-path :: String, check-name :: String
+  student-path :: String, ref-path :: String, selector :: R.CheckSelector
 ):
-  res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, check-name)
+  res = AAAA.tmp-run-with-alternate-checks(student-path, ref-path, selector)
   cases(Either) res:
     | left(_) => right({0; res})
     | right({score; total; _; _}) =>
@@ -43,19 +45,19 @@ fun score-functional-test(
   end
 end
 
-fun fmt-functional-test(check-name :: String, fun-name :: Option<String>, score :: G.NormalizedNumber, info):
+fun fmt-functional-test(target :: String, fun-name :: Option<String>, score :: G.NormalizedNumber, info):
   # TODO: improve both staff and student output
   general = output-markdown(cases(Either) info:
     | left(_) =>
-      error-msg = cases(Option) fun-name:
-        | none => "implementation in `" + check-name + "`"
+      subject = cases(Option) fun-name:
+        | none => target
         | some(fn) => "function `" + fn + "`"
       end
       "An error occured while trying to run our tests against your " +
-      error-msg + ". Make sure your function is defined"
+      subject + ". Make sure your function is defined"
     | right({passed; total; _; _}) =>
       "**" + to-repr(passed) + "** of our **" + to-repr(total) + "** checks " +
-      "succeeded against your own implementation in `" + check-name + "`."
+      "succeeded against your " + target + "."
   end)
   staff = output-markdown(cases(Either) info:
     | left(err) =>
@@ -67,17 +69,40 @@ fun fmt-functional-test(check-name :: String, fun-name :: Option<String>, score 
   {general; staff}
 end
 
+fun mk-functional-grader(
+  id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
+  selector :: R.CheckSelector, points :: Number, fun-name :: Option<String>,
+  name :: String, target :: String
+):
+  scorer = lam(): score-functional-test(student-path, ref-path, selector) end
+  calc = GB.simple-calculator
+  fmter = fmt-functional-test(target, fun-name, _, _)
+  get-rp = AAAA.tmp-extract-ac-ran-program(_, G.rp-staff)
+  GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, fun-name, get-rp)
+end
+
 # TODO: make fun-name required
 fun mk-functional(
   id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
   check-name :: String, points :: Number, fun-name :: Option<String>
 ):
-  name = "Functional Test for " + check-name
-  scorer = lam(): score-functional-test(student-path, ref-path, check-name) end
-  calc = GB.simple-calculator
-  fmter = fmt-functional-test(check-name, fun-name, _, _)
-  part = fun-name
-  get-rp = AAAA.tmp-extract-ac-ran-program(_, G.rp-staff)
-  GB.mk-repl-scorer(id, deps, scorer, name, points, calc, fmter, part, get-rp)
+  doc: "Runs the check block named `check-name` from `ref-path` against the student's program."
+  mk-functional-grader(
+    id, deps, student-path, ref-path, R.check-named(check-name), points, fun-name,
+    "Functional Test for " + check-name,
+    "implementation in `" + check-name + "`"
+  )
+end
+
+fun mk-functional-all(
+  id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
+  points :: Number, fun-name :: Option<String>
+):
+  doc: "Runs every top-level check block in `ref-path` against the student's program, scored together."
+  mk-functional-grader(
+    id, deps, student-path, ref-path, R.all-checks, points, fun-name,
+    "Functional Tests in " + ref-path,
+    "implementation"
+  )
 end
 

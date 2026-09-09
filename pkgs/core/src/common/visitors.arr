@@ -24,7 +24,8 @@ provide:
   make-check-filter,
   make-program-appender,
   make-program-prepender,
-  nothing-stripper
+  nothing-stripper,
+  top-level-checks
 end
 
 import ast as A
@@ -102,25 +103,33 @@ fun make-check-filter(pred :: (String -> Boolean)):
   }
 end
 
+fun body-stmts(body :: A.Expr) -> List<A.Expr>:
+  cases(A.Expr) body:
+    | s-block(_, stmts) => stmts
+    # TODO: is it ok to throw here? is this a true invariant?
+    | else => raise("body-stmts: found a non-s-block inside s-program")
+  end
+end
+
 fun block-transformer(transformer :: (List<A.Expr> -> List<A.Expr>)):
   A.default-map-visitor.{
     method s-program(self, l, _use, _provide, provided-types, provides, imports, body) block:
-      new-body = cases(A.Expr) body:
-        | s-block(shadow l, stmts) => A.s-block(l, transformer(stmts))
-        # TODO: is it ok to throw here? is this a true invariant?
-        | else => raise("make-program-appender: found a non-s-block inside s-program")
-      end
+      new-body = A.s-block(body.l, transformer(body-stmts(body)))
       A.s-program(l, self.option(_use), _provide.visit(self), provided-types.visit(self), provides.map(_.visit(self)), imports.map(_.visit(self)), new-body.visit(self))
     end
   }
 end
 
-fun make-program-appender(expr):
-  block-transformer(_.append([list: expr]))
+fun make-program-appender(exprs :: List<A.Expr>):
+  block-transformer(_.append(exprs))
 end
 
-fun make-program-prepender(expr):
-  block-transformer(link(expr, _))
+fun make-program-prepender(exprs :: List<A.Expr>):
+  block-transformer(exprs.append(_))
+end
+
+fun top-level-checks(stx :: A.Program) -> List<A.Expr>:
+  body-stmts(stx.block).filter(A.is-s-check)
 end
 
 fun is-nothing-stmt(stmt :: A.Expr) -> Boolean:

@@ -82,6 +82,18 @@ data PJSON:
             | else => E.left(link("n()", self.ops))
           end
       end
+    end,
+    method elements(self):
+      op = "elements()"
+      cases(Option) self.v:
+        | none => E.left(self.ops)
+        | some(j) =>
+          cases(J.JSON) j:
+            | j-arr(l) =>
+              E.right(l.map(lam(e): mk(some(e), link(E.right(op), self.ops)) end))
+            | else => E.left(link(E.left(op + " not an array"), self.ops))
+          end
+      end
     end
 end
 

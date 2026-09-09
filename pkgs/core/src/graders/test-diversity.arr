@@ -319,7 +319,7 @@ fun instrument(
       empty-list-set-stx()
     )
   ]
-  state-added = add-all(ast-ended, state, V.make-program-prepender)
+  state-added = ast-ended.visit(V.make-program-prepender(state))
   utils = [list:
     # fun $autograder-at-least(a, b):
     #   a >= b
@@ -350,7 +350,7 @@ fun instrument(
       false
     )
   ]
-  utils-added = add-all(state-added, utils, V.make-program-prepender)
+  utils-added = state-added.visit(V.make-program-prepender(utils))
   cases (Option) wrap-function(utils-added, fn):
   | some(wrapped) =>
     checks = [list:
@@ -361,7 +361,7 @@ fun instrument(
     student-checks-removed = wrapped
       .visit(V.make-check-filter(_ == fn))
       .visit(V.nothing-stripper)
-    with-checks = add-all(student-checks-removed, checks, V.make-program-appender)
+    with-checks = student-checks-removed.visit(V.make-program-appender(checks))
     cases (A.Program) with-checks:
     | s-program(l, uses, p, ptypes, provides, imports, body) =>
       new-imports = link(
@@ -858,16 +858,4 @@ fun fix-recursion(body :: A.Expr, fn :: String, new-name :: String) -> A.Expr:
   end
 
   body.visit(expr-visitor)
-end
-
-# --- Utils ---
-
-fun add-all(
-  base :: A.Program,
-  items :: List<A.Expr>,
-  make-visitor
-) -> A.Program:
-  for fold(acc from base, i from items):
-    acc.visit(make-visitor(i))
-  end
 end

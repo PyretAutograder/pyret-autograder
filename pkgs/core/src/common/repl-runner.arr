@@ -146,15 +146,21 @@ end
 
 #--------------------------run-with-alternate-checks--------------------------#
 
+data CheckSelector:
+  | check-named(name :: String)
+  | all-checks
+end
+
 data RunAltChecksErr:
   | ac-cannot-parse-student(err :: CA.ParsePathErr)
   | ac-cannot-parse-checks(err :: CA.ParsePathErr)
   | ac-cannot-find-check-block(name :: String)
+  | ac-no-check-blocks
   | ac-run-err(err :: RunChecksErr)
 end
 
 fun run-with-alternate-checks(
-  student-path :: String, checks-path :: String, check-name :: String
+  student-path :: String, checks-path :: String, selector :: CheckSelector
 ) -> Either<RunAltChecksErr, RunChecksResult> block:
   cases(Either) CA.parse-path(student-path):
   | left(err) => left(ac-cannot-parse-student(err))
@@ -163,10 +169,10 @@ fun run-with-alternate-checks(
     | left(err) => left(ac-cannot-parse-checks(err))
     | right(checks) =>
       without-checks = remove-checks(student, none)
-      cases(Either) get-check-named(checks, check-name):
+      cases(Either) select-checks(checks, selector):
       | left(err) => left(err)
-      | right(extra-check) =>
-        prog = add-to-program(without-checks, extra-check)
+      | right(extra-checks) =>
+        prog = add-to-program(without-checks, extra-checks)
         shadow prog = prog.visit(V.shadow-visitor)
         cases(Either) run(prog):
         | left(err) => left(ac-run-err(err))
@@ -177,9 +183,24 @@ fun run-with-alternate-checks(
   end
 end
 
+fun select-checks(
+  stx :: A.Program, selector :: CheckSelector
+) -> Either<RunAltChecksErr, List<A.Expr>>:
+  cases(CheckSelector) selector:
+    | check-named(name) =>
+      cases(Either) get-check-named(stx, name):
+        | left(err) => left(err)
+        | right(c) => right([list: c])
+      end
+    | all-checks =>
+      checks = V.top-level-checks(stx)
+      if is-empty(checks): left(ac-no-check-blocks) else: right(checks) end
+  end
+end
+
 fun get-check-named(
   stx :: A.Program, str :: String
-) -> Either<RunAltChecksErr, A.Program> block:
+) -> Either<RunAltChecksErr, A.Expr> block:
   extractor = V.make-check-extractor(str)
   stx.visit(extractor)
   cases(Option) extractor.get-target():
@@ -188,8 +209,8 @@ fun get-check-named(
   end
 end
 
-fun add-to-program(stx :: A.Program, expr :: A.Expr):
-  stx.visit(V.make-program-appender(expr))
+fun add-to-program(stx :: A.Program, exprs :: List<A.Expr>):
+  stx.visit(V.make-program-appender(exprs))
 end
 
 #--------------------------------run-image-save--------------------------------#
@@ -213,7 +234,7 @@ fun run-image-save(
       cases (A.Program) question:
       | s-program(_, _, _, _, _, _, q-body) =>
         without-checks = remove-checks(student, none)
-        prog = add-to-program(without-checks, q-body)
+        prog = add-to-program(without-checks, [list: q-body])
         cases (Either) run-base(prog, CS.default-compile-options):
         | left(err) =>
           err

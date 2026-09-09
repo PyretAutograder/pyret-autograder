@@ -20,5 +20,6 @@ import file("./well-formed.arr") as _
 import file("./fn-def.arr") as _
 import file("./const-def.arr") as _
 import file("./test-diversity.arr") as _
+import file("./functional.arr") as _
 import file("./training-wheels.arr") as _
 import file("./image-artifact.arr") as _
