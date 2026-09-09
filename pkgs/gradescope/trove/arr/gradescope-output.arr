@@ -206,61 +206,88 @@ fun aggregate-output-to-gradescope(output :: A.AggregateOutput) -> {GradescopeFo
   end
 end
 
-fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
+fun visibility-rank(visibility :: GradescopeVisibility) -> Number:
+  cases (GradescopeVisibility) visibility:
+    | visible => 0
+    | after-due-date => 1
+    | after-published => 2
+    | hidden => 3
+  end
+end
+
+fun more-restrictive(
+  a :: GradescopeVisibility, b :: GradescopeVisibility
+) -> GradescopeVisibility:
+  if visibility-rank(a) >= visibility-rank(b): a else: b end
+end
+
+fun tests-for(
+  name :: String, max-score :: Number, score :: Number,
+  go :: A.AggregateOutput, so :: Option<A.AggregateOutput>,
+  part :: Option<String>, visibility :: GradescopeVisibility
+) -> List<GradescopeTest>:
+  tags = cases (Option) part:
+    | some(shadow part) => [list: part]
+    | none => [list:]
+  end
+
+  {gof; gos} = aggregate-output-to-gradescope(go)
+  test = gradescope-test(
+    some(score), some(max-score),
+    none, # TODO: consider if overriding status would be useful
+    some(name), none,
+    none,
+    some(gos), some(gof),
+    tags,
+    some(visibility),
+    none
+  )
+
+  # NOTE(owen): since Gradescope doesn't support instructor only output,
+  # we create additional hidden dummy tests to show this info.
+  cases (Option) so:
+    | none => [list: test]
+    | some(shadow so) =>
+      {sof; sos} = aggregate-output-to-gradescope(so)
+      dummy-test = gradescope-test(
+        none, none,
+        some(passed),
+        some("[Staff Only] " + name), none,
+        none,
+        some(sos), some(sof),
+        tags,
+        some(hidden),
+        none
+      )
+      [list: dummy-test, test]
+  end
+end
+
+fun prepare-for-gradescope(
+  output :: A.GradingOutput, visibilities :: SD.StringDict<GradescopeVisibility>
+) -> J.JSON block:
   flattened = grading-helpers.aggregate-to-flat(output.aggregated)
-  {tests; score; max-score} = for fold(
-    {acc-tests; acc-score; acc-max-score} as acc from {[list:]; 0; 0},
+  {tests; score; max-score; visibility} = for fold(
+    {acc-tests; acc-score; acc-max-score; acc-visibility} as acc from {[list:]; 0; 0; visible},
     {id; flat} from flattened
   ):
     cases (grading-helpers.FlatAggregateResult) flat:
       | flat-agg-test(name, max-score, score, go, so, part) =>
-        tags = cases (Option) part:
-          | some(shadow part) => [list: part]
-          | none => [list:]
-        end
-
-        # NOTE(owen): since Gradescope doesn't support instructor only output,
-        # we create additional hidden dummy tests to show this info.
-        shadow acc-tests = cases (Option) so:
-          | some(shadow so) =>
-            {sof; sos} = aggregate-output-to-gradescope(so)
-            dummy-test = gradescope-test(
-              none, none,
-              some(passed),
-              some("[Staff Only] " + name), none,
-              none,
-              some(sos), some(sof),
-              tags,
-              some(hidden),
-              none
-            )
-            link(dummy-test, acc-tests)
-          | none => acc-tests
-        end
-
-        {gof; gos} = aggregate-output-to-gradescope(go)
-        test = gradescope-test(
-          some(score), some(max-score),
-          none, # TODO: consider if overriding status would be useful
-          some(name), none,
-          none,
-          some(gos), some(gof),
-          tags,
-          some(visible),
-          none
-        )
-        shadow acc-tests = link(test, acc-tests)
-        shadow acc-score = acc-score + score
-        shadow acc-max-score = acc-max-score + max-score
-        {acc-tests; acc-score; acc-max-score}
+        shadow visibility = visibilities.get-value(id)
+        {
+          acc-tests + tests-for(name, max-score, score, go, so, part, visibility);
+          acc-score + score;
+          acc-max-score + max-score;
+          more-restrictive(acc-visibility, visibility)
+        }
       # TODO: support artifacts: upload, create dummy test with link
       | flat-agg-art(_, _, _, _) => acc
     end
   end
-  ^ {({tests; score; max-score}): {tests.reverse(); score; max-score}}
 
   # We repeat the score here since Gradescope won't show a student's score when
-  # there are hidden tests (which are used to display staff-only output).
+  # there are hidden tests (which are used to display staff-only output). The
+  # score sums the entries, so its visibility takes the meet.
   tl-output = "**Score**: " +
     num-to-string-digits(score, 3) + "/" + num-to-string-digits(max-score, 3)
 
@@ -271,8 +298,8 @@ fun prepare-for-gradescope(output :: A.GradingOutput) -> J.JSON block:
     some(md),
     some(text),
     some(text),
-    some(visible),
-    some(visible),
+    some(visibility),
+    some(visibility),
     none,
     tests,
     [list:]

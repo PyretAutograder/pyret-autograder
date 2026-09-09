@@ -85,3 +85,4 @@ fun build-graders(path :: String):
 end
 
 spec = build-graders("submission/assignment.arr")
+  .map(gradescope-grader(_, default-options))

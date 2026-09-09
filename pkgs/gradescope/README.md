@@ -66,7 +66,6 @@ FROM pyretautograder/gradescope-run:${TAG} AS run
 COPY --from=build /out/. /autograder
 ```
 
-<!-- TODO: use custom `spec` constructor -->
 spec.arr:
 ```arr
 use context autograder-spec
@@ -74,10 +73,33 @@ include graders
 
 provide: spec end
 
-spec = [list:
+graders = [list:
 
 ]
+
+spec = graders.map(gradescope-grader(_, default-options))
 ```
+
+Each entry of `spec` pairs a grader with its Gradescope options.
+`default-options` is `{ visibility: visible }`; override fields with record
+extension, e.g. to hide results until grades are published:
+
+```arr
+spec = graders.map(gradescope-grader(_, default-options.{visibility: after-published}))
+```
+
+`visibility` is one of `visible`, `after-due-date`, `after-published`, `hidden`
+(Gradescope's own values). It applies per grader, so a spec can concatenate
+lists with different options. The top-level score takes the most restrictive
+visibility of its entries, so it never leaks a hidden score.
+
+> [!NOTE]
+> Record extension does not check field names: `default-options.{visibilty: hidden}`
+> silently keeps the default. A literal `{ visibility: hidden }` fails at
+> autograder start if a field is missing.
+
+A bare list of graders (written before `gradescope-grader`) is still accepted
+and means `default-options` for every grader.
 
 ### Build and Push
 
@@ -156,10 +178,18 @@ fun mk-test-diversity(
 The following graders award points based on test results.
 
 ```arr
-# Tests student implementation against instructor-provided tests.
+# Tests the student's implementation against the check block named
+# `check-name` in `ref-path`.
 fun mk-functional(
   id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
   check-name :: String, points :: Number, fun-name :: Option<String>
+): ... end
+
+# Like mk-functional, but runs every top-level check block in `ref-path`;
+# passed and total are summed across blocks, points scale by the ratio.
+fun mk-functional-all(
+  id :: Id, deps :: List<Id>, student-path :: String, ref-path :: String,
+  points :: Number, fun-name :: Option<String>
 ): ... end
 
 # Tests student's tests against a known good implementation.
