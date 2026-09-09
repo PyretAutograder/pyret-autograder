@@ -52,7 +52,7 @@ A minimal autograder example with the following structure:
 Dockerfile:
 ```dockerfile
 # NOTE: gradescope-build and gradescope-run should be kept in sync
-ARG TAG=0.0.1-pre.3
+ARG TAG=0.0.1-pre.4
 
 FROM pyretautograder/gradescope-build:${TAG} AS build
 
