@@ -15,6 +15,7 @@
     "integration:gcd": "pnpm run pyret-trove -- -p tests/integration/inspect-gcd.arr",
     "integration:fold": "pnpm run pyret-trove -- -p tests/integration/inspect-fold.arr",
     "integration:tower": "pnpm run pyret-trove -- -p tests/integration/inspect-tower.arr",
+    "integration:imports": "pnpm run pyret-trove -- -p tests/integration/inspect-imports.arr",
     "clean": "rm -rf -- ./pyret"
   },
   "dependencies": {

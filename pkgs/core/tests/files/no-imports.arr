@@ -1,0 +1,1 @@
+fun double(x): x * 2 end
